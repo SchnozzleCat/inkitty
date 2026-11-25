@@ -14,12 +14,12 @@
           <SolidColorBrush x:Key="InkittyNewHighlight" Color="#33FFD54F" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="Dark">
-          <SolidColorBrush x:Key="InkittyPlayerBackground" Color="#FF1F1F22" />
-          <SolidColorBrush x:Key="InkittyPlayerForeground" Color="#FFE2E2E2" />
+          <SolidColorBrush x:Key="InkittyPlayerBackground" Color="#FF1E1E1E" />
+          <SolidColorBrush x:Key="InkittyPlayerForeground" Color="#FFE6E6E6" />
           <SolidColorBrush x:Key="InkittyMuted" Color="#FF9A9A9A" />
-          <SolidColorBrush x:Key="InkittyTagBackground" Color="#FF35353A" />
-          <SolidColorBrush x:Key="InkittyChoiceBackground" Color="#FF2C2C31" />
-          <SolidColorBrush x:Key="InkittyChoiceHover" Color="#FF3A3A41" />
+          <SolidColorBrush x:Key="InkittyTagBackground" Color="#FF37373D" />
+          <SolidColorBrush x:Key="InkittyChoiceBackground" Color="#FF2D2D30" />
+          <SolidColorBrush x:Key="InkittyChoiceHover" Color="#FF3E3E42" />
           <SolidColorBrush x:Key="InkittyInfoBar" Color="#FF4A3F1E" />
           <SolidColorBrush x:Key="InkittyNewHighlight" Color="#33FFD54F" />
         </ResourceDictionary>
@@ -45,10 +45,18 @@
     <Setter Property="FontSize" Value="15" />
   </Style>
 
+  <!-- Window chrome: menu bar and status bar share one colour. -->
+  <Style Selector="Menu#InWindowMenu">
+    <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundChromeMediumBrush}" />
+  </Style>
+  <Style Selector="Window">
+    <Setter Property="Background" Value="{DynamicResource SystemRegionBrush}" />
+  </Style>
+
   <!-- Status bar -->
   <Style Selector="Border.statusbar">
     <Setter Property="Padding" Value="8,2" />
-    <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}" />
+    <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundChromeMediumBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseLowBrush}" />
     <Setter Property="BorderThickness" Value="0,1,0,0" />
   </Style>
@@ -125,6 +133,12 @@
   </Style>
 
   <!-- Player -->
+  <Style Selector="ScrollViewer#Scroller">
+    <Setter Property="Background" Value="{DynamicResource InkittyPlayerBackground}" />
+  </Style>
+  <Style Selector="ScrollViewer#Scroller SelectableTextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource InkittyPlayerForeground}" />
+  </Style>
   <Style Selector="StackPanel.transcript">
     <Setter Property="Margin" Value="18,12" />
     <Setter Property="Spacing" Value="10" />

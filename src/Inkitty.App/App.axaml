@@ -15,12 +15,47 @@
         <ResourceDictionary>
           <ControlRecycling x:Key="ControlRecyclingKey" TryToUseIdAsKey="True" />
         </ResourceDictionary>
+        <ResourceDictionary>
+          <!-- Dock's panel background key; keep it in step with the Fluent palette above. -->
+          <ResourceDictionary.ThemeDictionaries>
+            <ResourceDictionary x:Key="Light">
+              <Color x:Key="RegionColor">#FFF3F3F3</Color>
+            </ResourceDictionary>
+            <ResourceDictionary x:Key="Dark">
+              <Color x:Key="RegionColor">#FF252526</Color>
+            </ResourceDictionary>
+          </ResourceDictionary.ThemeDictionaries>
+        </ResourceDictionary>
       </ResourceDictionary.MergedDictionaries>
     </ResourceDictionary>
   </Application.Resources>
 
   <Application.Styles>
-    <FluentTheme />
+    <!-- One palette for the whole window (menus, Dock panes, editor), matching the editor's
+         VS Code "Dark+" / "Light+" TextMate themes, instead of Fluent's pure black/white defaults. -->
+    <FluentTheme>
+      <FluentTheme.Palettes>
+        <ColorPaletteResources x:Key="Light"
+                               RegionColor="#FFF3F3F3"
+                               AltHigh="#FFFFFFFF"
+                               ChromeLow="#FFF3F3F3"
+                               ChromeMedium="#FFE8E8E8"
+                               ChromeMediumLow="#FFF8F8F8" />
+        <ColorPaletteResources x:Key="Dark"
+                               RegionColor="#FF252526"
+                               AltHigh="#FF1E1E1E"
+                               AltMediumHigh="#CC1E1E1E"
+                               AltMedium="#991E1E1E"
+                               ChromeLow="#FF252526"
+                               ChromeMedium="#FF2D2D30"
+                               ChromeMediumLow="#FF2D2D30"
+                               ChromeHigh="#FF5A5A5E"
+                               ChromeAltLow="#FFCCCCCC"
+                               BaseHigh="#FFE6E6E6"
+                               ListLow="#1AFFFFFF"
+                               ListMedium="#2EFFFFFF" />
+      </FluentTheme.Palettes>
+    </FluentTheme>
     <DockFluentTheme DensityStyle="Compact" />
     <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
     <StyleInclude Source="avares://Inkitty/Styles/Inkitty.axaml" />
