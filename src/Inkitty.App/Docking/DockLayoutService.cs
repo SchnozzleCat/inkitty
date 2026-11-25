@@ -22,6 +22,9 @@ public sealed class DockLayoutService(string configDirectory, ILogger<DockLayout
 
     public string LayoutPath => Path.Join(configDirectory, FileName);
 
+    /// <summary>The last save/load failure, for diagnostics.</summary>
+    public Exception? LastError { get; private set; }
+
     public IRootDock? TryLoad(InkittyDockFactory factory)
     {
         var versionPath = Path.Join(configDirectory, VersionFileName);
@@ -46,10 +49,12 @@ public sealed class DockLayoutService(string configDirectory, ILogger<DockLayout
                 return null;
             }
 
+            LastError = null;
             return layout;
         }
         catch (Exception ex) when (ex is JsonException or IOException or NotSupportedException or InvalidOperationException or InvalidCastException)
         {
+            LastError = ex;
             logger.LogWarning(ex, "Could not restore dock layout; using default layout");
             return null;
         }
@@ -60,22 +65,132 @@ public sealed class DockLayoutService(string configDirectory, ILogger<DockLayout
         try
         {
             Directory.CreateDirectory(configDirectory);
-            var json = _serializer.Serialize(layout);
 
-            // Strip open documents from the saved copy: deserialise, prune, re-serialise.
-            var copy = _serializer.Deserialize<IRootDock?>(json);
-            if (copy is not null)
+            // Tool view models need services, so they can't be deserialised. Temporarily swap each
+            // live tool for a plain placeholder Tool with the same id (and documents out entirely),
+            // serialise, then put everything back.
+            var swaps = SwapForPlaceholders(layout);
+            string json;
+            try
             {
-                RemoveDocuments(copy);
-                json = _serializer.Serialize(copy);
+                json = _serializer.Serialize(layout);
+            }
+            finally
+            {
+                Restore(swaps);
             }
 
             File.WriteAllText(LayoutPath, json);
             File.WriteAllText(Path.Join(configDirectory, VersionFileName), LayoutVersion.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            LastError = null;
         }
         catch (Exception ex)
         {
+            LastError = ex;
             logger.LogWarning(ex, "Could not save dock layout");
+        }
+    }
+
+    private sealed record Swap(IList<IDockable> List, int Index, IDockable Original, IDock? Owner, IDockable? Active, IDockable? Focused);
+
+    private static List<Swap> SwapForPlaceholders(IRootDock root)
+    {
+        List<Swap> swaps = [];
+        Dictionary<string, IDockable> placeholders = [];
+
+        IDockable Placeholder(IDockable tool) =>
+            placeholders.TryGetValue(tool.Id, out var existing)
+                ? existing
+                : placeholders[tool.Id] = new Dock.Model.Mvvm.Controls.Tool
+                {
+                    Id = tool.Id,
+                    Title = tool.Title,
+                    CanClose = tool.CanClose,
+                    CanPin = tool.CanPin,
+                    CanFloat = tool.CanFloat,
+                    Proportion = tool.Proportion,
+                    PinnedBounds = tool.PinnedBounds,
+                };
+
+        void Visit(IList<IDockable>? list, IDock? owner)
+        {
+            if (list is null)
+            {
+                return;
+            }
+
+            for (var i = list.Count - 1; i >= 0; i--)
+            {
+                var dockable = list[i];
+                if (dockable is ITool && dockable.GetType() != typeof(Dock.Model.Mvvm.Controls.Tool))
+                {
+                    swaps.Add(new Swap(list, i, dockable, owner, owner?.ActiveDockable, owner?.FocusedDockable));
+                    var placeholder = Placeholder(dockable);
+                    list[i] = placeholder;
+                    if (owner is not null && owner.ActiveDockable == dockable)
+                    {
+                        owner.ActiveDockable = placeholder;
+                    }
+
+                    if (owner is not null && owner.FocusedDockable == dockable)
+                    {
+                        owner.FocusedDockable = placeholder;
+                    }
+                }
+                else if (dockable is IDocument and not ITool)
+                {
+                    swaps.Add(new Swap(list, i, dockable, owner, owner?.ActiveDockable, owner?.FocusedDockable));
+                    list.RemoveAt(i);
+                    if (owner is not null && (owner.ActiveDockable == dockable || owner.FocusedDockable == dockable))
+                    {
+                        owner.ActiveDockable = null;
+                        owner.FocusedDockable = null;
+                    }
+                }
+                else if (dockable is IDock dock)
+                {
+                    Visit(dock.VisibleDockables, dock);
+                }
+            }
+        }
+
+        Visit(root.VisibleDockables, root);
+        Visit(root.HiddenDockables, null);
+        Visit(root.LeftPinnedDockables, null);
+        Visit(root.RightPinnedDockables, null);
+        Visit(root.TopPinnedDockables, null);
+        Visit(root.BottomPinnedDockables, null);
+        foreach (var window in root.Windows ?? [])
+        {
+            if (window.Layout is { } windowLayout)
+            {
+                Visit(windowLayout.VisibleDockables, windowLayout);
+            }
+        }
+
+        return swaps;
+    }
+
+    private static void Restore(List<Swap> swaps)
+    {
+        // Undo in reverse order of application so indices line up.
+        for (var i = swaps.Count - 1; i >= 0; i--)
+        {
+            var swap = swaps[i];
+            if (swap.Original is ITool)
+            {
+                swap.List[swap.Index] = swap.Original;
+            }
+            else
+            {
+                swap.List.Insert(swap.Index, swap.Original);
+            }
+
+            if (swap.Owner is not null)
+            {
+                swap.Owner.ActiveDockable = swap.Active;
+                swap.Owner.FocusedDockable = swap.Focused;
+            }
         }
     }
 
