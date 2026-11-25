@@ -1,8 +1,9 @@
 using Avalonia;
+using Avalonia.Media.Fonts;
 
 namespace Inkitty.App;
 
-internal static class Program
+public static class Program
 {
     [STAThread]
     public static int Main(string[] args) =>
@@ -13,6 +14,7 @@ internal static class Program
         var builder = AppBuilder.Configure<App>()
             .UsePlatformDetect()
             .WithInterFont()
+            .ConfigureFonts(ConfigureFonts)
             .LogToTrace();
 
         // Avalonia's native Wayland backend is still experimental, so X11/XWayland stays the default.
@@ -24,6 +26,12 @@ internal static class Program
 
         return builder;
     }
+
+    /// <summary>Registers the bundled fonts (JetBrains Mono for the editor).</summary>
+    public static void ConfigureFonts(Avalonia.Media.FontManager fonts) =>
+        fonts.AddFontCollection(new EmbeddedFontCollection(
+            new Uri("fonts:Inkitty", UriKind.Absolute),
+            new Uri("avares://Inkitty/Assets/Fonts/JetBrainsMono", UriKind.Absolute)));
 
     private static bool UseNativeWayland()
     {

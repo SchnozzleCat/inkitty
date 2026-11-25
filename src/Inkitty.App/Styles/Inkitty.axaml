@@ -97,7 +97,7 @@
   </Style>
   <Style Selector="TextBlock.outline-icon">
     <Setter Property="Foreground" Value="{DynamicResource InkittyMuted}" />
-    <Setter Property="FontFamily" Value="Cascadia Mono, Menlo, Consolas, DejaVu Sans Mono, monospace" />
+    <Setter Property="FontFamily" Value="fonts:Inkitty#JetBrains Mono, monospace" />
     <Setter Property="FontSize" Value="11" />
     <Setter Property="MinWidth" Value="16" />
     <Setter Property="VerticalAlignment" Value="Center" />

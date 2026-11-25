@@ -92,7 +92,10 @@ public sealed class SettingsStore : ISettingsStore, IAsyncDisposable
         try
         {
             using var stream = File.OpenRead(_path);
-            return JsonSerializer.Deserialize(stream, SettingsJsonContext.Default.AppSettings) ?? new AppSettings();
+            var loaded = JsonSerializer.Deserialize(stream, SettingsJsonContext.Default.AppSettings) ?? new AppSettings();
+            return AppSettings.LegacyDefaultEditorFonts.Contains(loaded.EditorFontFamily)
+                ? loaded with { EditorFontFamily = AppSettings.DefaultEditorFont }
+                : loaded;
         }
         catch (Exception ex) when (ex is JsonException or NotSupportedException)
         {

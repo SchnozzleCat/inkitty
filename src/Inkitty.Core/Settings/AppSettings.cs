@@ -16,10 +16,23 @@ public sealed record AppSettings
     /// <summary>Editor font; a comma-separated fallback list. The default picks each OS's standard monospace font.</summary>
     public string EditorFontFamily { get; init; } = DefaultEditorFont;
 
-    public static string DefaultEditorFont =>
-        OperatingSystem.IsWindows() ? "Cascadia Mono, Consolas, Courier New"
-        : OperatingSystem.IsMacOS() ? "SF Mono, Menlo, Monaco"
-        : "DejaVu Sans Mono, Liberation Mono, Noto Sans Mono, monospace";
+    /// <summary>
+    /// JetBrains Mono is bundled with the app (so it looks the same everywhere); the OS monospace
+    /// fonts after it are only fallbacks.
+    /// </summary>
+    public const string DefaultEditorFont = BundledMonoFont + ", Cascadia Mono, Menlo, Consolas, DejaVu Sans Mono, monospace";
+
+    /// <summary>Earlier default values, upgraded to <see cref="DefaultEditorFont"/> on load.</summary>
+    internal static readonly string[] LegacyDefaultEditorFonts =
+    [
+        "Cascadia Mono, Menlo, Consolas, DejaVu Sans Mono, monospace",
+        "Cascadia Mono, Consolas, Courier New",
+        "SF Mono, Menlo, Monaco",
+        "DejaVu Sans Mono, Liberation Mono, Noto Sans Mono, monospace",
+    ];
+
+    /// <summary>Avalonia name of the bundled JetBrains Mono (a bare "JetBrains Mono" only finds an installed copy).</summary>
+    public const string BundledMonoFont = "fonts:Inkitty#JetBrains Mono";
 
     public double EditorFontSize { get; init => field = Math.Clamp(value, 6, 72); } = 14;
 
