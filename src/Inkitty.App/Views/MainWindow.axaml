@@ -55,9 +55,10 @@
       <MenuItem Header="_File">
         <MenuItem Header="_New Project…" Command="{Binding NewProjectCommand}" InputGesture="Ctrl+N" />
         <MenuItem Header="_Open…" Command="{Binding OpenCommand}" InputGesture="Ctrl+O" />
-        <MenuItem Header="Open _Recent" ItemsSource="{Binding RecentProjects}" IsEnabled="{Binding HasRecentProjects}">
+        <MenuItem x:Name="RecentMenu" Header="Open _Recent" ItemsSource="{Binding RecentProjects}" IsEnabled="{Binding HasRecentProjects}">
           <MenuItem.Styles>
-            <Style Selector="MenuItem" x:DataType="x:String">
+            <!-- Only the generated children: a bare "MenuItem" selector would also match this item itself. -->
+            <Style Selector="MenuItem#RecentMenu > MenuItem" x:DataType="x:String">
               <Setter Property="Header" Value="{Binding}" />
               <Setter Property="Command" Value="{Binding #InWindowMenu.((vm:MainWindowViewModel)DataContext).OpenRecentCommand}" />
               <Setter Property="CommandParameter" Value="{Binding}" />
