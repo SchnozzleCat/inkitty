@@ -127,8 +127,10 @@ public sealed class InkProject
                     continue;
                 }
 
+                // Only auto-create files that look like ink files, so half-typed INCLUDE lines
+                // ("INCLUDE chap") don't spawn stray buffers.
                 var existed = _loaded.ContainsKey(relative) || _fileSystem.FileExists(ProjectPaths.ToFullPath(RootDirectory, relative));
-                if (GetOrLoad(relative, createIfMissing: true) is { } child)
+                if (GetOrLoad(relative, createIfMissing: ProjectPaths.IsInkFile(relative)) is { } child)
                 {
                     if (!existed)
                     {
