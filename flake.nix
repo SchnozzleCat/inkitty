@@ -13,6 +13,7 @@
       freetype
       libGL
       libxkbcommon
+      wayland
       libx11
       libice
       libsm
