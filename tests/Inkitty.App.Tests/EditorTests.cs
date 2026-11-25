@@ -9,7 +9,7 @@ public class EditorTests
 {
     private static List<string> ScopesOf(string line)
     {
-        var registry = new Registry(new InkTextMateRegistry(dark: false));
+        var registry = new Registry(new InkTextMateRegistry(TextMateSharp.Grammars.ThemeName.LightPlus));
         var grammar = registry.LoadGrammar(InkTextMateRegistry.InkScope);
         var result = grammar.TokenizeLine(line);
         return [.. result.Tokens.SelectMany(t => t.Scopes)];

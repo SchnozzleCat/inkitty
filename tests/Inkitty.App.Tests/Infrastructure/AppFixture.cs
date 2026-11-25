@@ -49,6 +49,7 @@ public sealed class AppFixture : IAsyncDisposable
             Dialogs = new FakeDialogService(),
         });
         configure?.Invoke(services.GetRequiredService<ISettingsStore>());
+        services.GetRequiredService<Services.ThemeService>().ApplyCurrent(); // as App startup does
         return new AppFixture(services, configDirectory);
     }
 

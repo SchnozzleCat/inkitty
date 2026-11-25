@@ -12,13 +12,13 @@ public class SettingsStoreTests
         using var dir = new TempDirectory();
         var store = new SettingsStore(dir.Path);
 
-        store.Update(s => s with { AutoSave = AutoSaveMode.AfterDelay, EditorFontSize = 16, Theme = ThemePreference.Dark });
+        store.Update(s => s with { AutoSave = AutoSaveMode.AfterDelay, EditorFontSize = 16, ColorTheme = "dracula" });
         await store.FlushAsync();
 
         var reloaded = new SettingsStore(dir.Path).Current;
         await Assert.That(reloaded.AutoSave).IsEqualTo(AutoSaveMode.AfterDelay);
         await Assert.That(reloaded.EditorFontSize).IsEqualTo(16);
-        await Assert.That(reloaded.Theme).IsEqualTo(ThemePreference.Dark);
+        await Assert.That(reloaded.ColorTheme).IsEqualTo("dracula");
     }
 
     [Test]
@@ -62,6 +62,18 @@ public class SettingsStoreTests
 
         dir.Write(SettingsStore.FileName, """{ "editorFontFamily": "Iosevka" }""");
         await Assert.That(new SettingsStore(dir.Path).Current.EditorFontFamily).IsEqualTo("Iosevka");
+    }
+
+    [Test]
+    [Arguments("Dark", "dark-plus")]
+    [Arguments("Light", "light-plus")]
+    [Arguments("System", "system")]
+    public async Task Legacy_light_dark_setting_migrates_to_colour_theme(string legacy, string expected)
+    {
+        using var dir = new TempDirectory();
+        dir.Write(SettingsStore.FileName, $$"""{ "theme": "{{legacy}}" }""");
+
+        await Assert.That(new SettingsStore(dir.Path).Current.ColorTheme).IsEqualTo(expected);
     }
 
     [Test]
