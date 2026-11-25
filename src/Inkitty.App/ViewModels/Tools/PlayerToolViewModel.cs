@@ -22,6 +22,7 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
     private readonly TimeProvider _time;
     private ProjectViewModel? _project;
     private PlaySession? _session;
+    private Task _sessionWork = Task.CompletedTask;
     private ChoiceHistory _history = ChoiceHistory.Empty;
     private List<Issue> _runtimeIssues = [];
     private CancellationTokenSource? _replayCts;
@@ -71,8 +72,7 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
         HasProject = project is not null;
         _history = ChoiceHistory.Empty;
         ChoiceCount = 0;
-        _session?.Dispose();
-        _session = null;
+        ReleaseSession();
         Items.Clear();
         Choices.Clear();
         IsStale = false;
@@ -123,7 +123,7 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
         var budget = Budget();
         var generation = ++_replayGeneration;
         IsBusy = true;
-        _ = Task.Run(() =>
+        _sessionWork = Task.Run(() =>
         {
             List<StoryEvent> events = [];
             try
@@ -219,7 +219,7 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
                     return;
                 }
 
-                _session?.Dispose();
+                ReleaseSession();
                 _session = session;
                 _history = session.History;
                 ChoiceCount = _history.Count;
@@ -267,7 +267,19 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
     {
         _replayCts?.Cancel();
         _replayCts?.Dispose();
-        _session?.Dispose();
+        ReleaseSession();
+    }
+
+    /// <summary>Disposes the current session once any background choice running on it has finished.</summary>
+    private void ReleaseSession()
+    {
+        if (_session is { } old)
+        {
+            _session = null;
+            _sessionWork.ContinueWith(_ => old.Dispose(), TaskScheduler.Default);
+        }
+
+        _sessionWork = Task.CompletedTask;
     }
 
     private void ReportRuntimeIssues(IEnumerable<StoryEvent> events, bool append)

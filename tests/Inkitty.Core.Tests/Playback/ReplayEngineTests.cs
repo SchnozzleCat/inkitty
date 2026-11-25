@@ -109,6 +109,24 @@ public class ReplayEngineTests
     }
 
     [Test]
+    public async Task Story_interrupted_by_the_guard_can_be_replayed_again()
+    {
+        const string loop = "* [Loop] -> a\n* [Stop] Stopped.\n-> END\n=== a ===\n~ temp x = 1\n-> b\n=== b ===\n-> a";
+        var snapshot = InMemoryProject.OneFile(loop);
+        var story = ((CompileSucceeded)new InkCompilerService().Compile(snapshot)).Story;
+
+        var first = new PlaySession(story, snapshot);
+        first.ContinueUntilChoice(PlaybackBudget.Default);
+        first.Choose(0);
+        var stopped = ReplayEngine.Replay(new PlaySession(story, snapshot), first.History, new PlaybackBudget(TimeSpan.FromMilliseconds(200)));
+        await Assert.That(stopped.Events.OfCase<RuntimeIssue>()).IsNotEmpty();
+
+        // Restart on the same compiled story must still work.
+        var again = new PlaySession(story, snapshot).ContinueUntilChoice(PlaybackBudget.Default);
+        await Assert.That(again[^1].Is<ChoicesOffered>()).IsTrue();
+    }
+
+    [Test]
     public async Task Text_flood_is_stopped_by_line_budget()
     {
         const string flood = "-> a\n=== a ===\nLine\n-> a";

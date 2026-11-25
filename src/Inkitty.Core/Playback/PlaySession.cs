@@ -14,9 +14,25 @@ public sealed class PlaySession : IDisposable
     private readonly TimeProvider _time;
     private readonly List<StoryEvent> _pendingIssues = [];
 
+    /// <summary>Compiled stories currently owned by a live session (a Story is single-threaded and stateful).</summary>
+    private static readonly HashSet<Ink.Runtime.Story> InUse = [with(ReferenceEqualityComparer.Instance)];
+
+    /// <summary>Cached JSON of compiled stories, used to make independent copies cheaply.</summary>
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Ink.Runtime.Story, string> JsonCache = [];
+
+    private readonly bool _ownsOriginal;
+
     public PlaySession(Ink.Runtime.Story story, ProjectSnapshot snapshot, TimeProvider? time = null)
     {
-        _story = story;
+        // Each session needs exclusive use of its Story. Take the compiled one if it's free and
+        // resettable; otherwise (another session may be running it on a background thread, or a run
+        // was interrupted mid-ContinueAsync) play an independent copy.
+        lock (InUse)
+        {
+            _ownsOriginal = story.asyncContinueComplete && InUse.Add(story);
+        }
+
+        _story = _ownsOriginal ? story : new Ink.Runtime.Story(JsonCache.GetValue(story, s => s.ToJson()));
         _snapshot = snapshot;
         _time = time ?? TimeProvider.System;
         _story.ResetState(); // always play from the beginning, even when reusing a compiled story
@@ -25,7 +41,17 @@ public sealed class PlaySession : IDisposable
 
     public ProjectSnapshot Snapshot => _snapshot;
 
-    public void Dispose() => _story.onError -= OnStoryError;
+    public void Dispose()
+    {
+        _story.onError -= OnStoryError;
+        if (_ownsOriginal)
+        {
+            lock (InUse)
+            {
+                InUse.Remove(_story);
+            }
+        }
+    }
 
     public ChoiceHistory History { get; private set; } = ChoiceHistory.Empty;
 
