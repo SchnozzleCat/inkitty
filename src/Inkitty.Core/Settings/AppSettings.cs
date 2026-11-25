@@ -13,7 +13,13 @@ public sealed record AppSettings
 
     public ThemePreference Theme { get; init; } = ThemePreference.System;
 
-    public string EditorFontFamily { get; init; } = "Cascadia Mono, Menlo, Consolas, DejaVu Sans Mono, monospace";
+    /// <summary>Editor font; a comma-separated fallback list. The default picks each OS's standard monospace font.</summary>
+    public string EditorFontFamily { get; init; } = DefaultEditorFont;
+
+    public static string DefaultEditorFont =>
+        OperatingSystem.IsWindows() ? "Cascadia Mono, Consolas, Courier New"
+        : OperatingSystem.IsMacOS() ? "SF Mono, Menlo, Monaco"
+        : "DejaVu Sans Mono, Liberation Mono, Noto Sans Mono, monospace";
 
     public double EditorFontSize { get; init => field = Math.Clamp(value, 6, 72); } = 14;
 

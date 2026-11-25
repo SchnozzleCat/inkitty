@@ -79,7 +79,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
             AutoSave = AutoSave,
             AutoSaveDelayMs = (int)AutoSaveDelayMs,
             Theme = Theme,
-            EditorFontFamily = string.IsNullOrWhiteSpace(EditorFontFamily) ? new AppSettings().EditorFontFamily : EditorFontFamily,
+            EditorFontFamily = string.IsNullOrWhiteSpace(EditorFontFamily) ? AppSettings.DefaultEditorFont : EditorFontFamily,
             EditorFontSize = (double)EditorFontSize,
             WordWrap = WordWrap,
             CompileDebounceMs = (int)CompileDebounceMs,
