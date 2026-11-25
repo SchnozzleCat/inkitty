@@ -37,11 +37,9 @@ public sealed class InkEditor : UserControl
         _editor = new TextEditor
         {
             ShowLineNumbers = true,
-            FontFamily = new FontFamily("Cascadia Mono, Menlo, Consolas, DejaVu Sans Mono, monospace"),
+            FontFamily = new FontFamily(AppSettings.DefaultEditorFont),
             FontSize = 14,
             WordWrap = true,
-            HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
-            VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
             Padding = new Thickness(4, 2),
         };
         _editor.Options.ConvertTabsToSpaces = false;
@@ -224,6 +222,9 @@ public sealed class InkEditor : UserControl
         _editor.FontFamily = new FontFamily(settings.EditorFontFamily);
         _editor.FontSize = settings.EditorFontSize;
         _editor.WordWrap = settings.WordWrap;
+        _editor.HorizontalScrollBarVisibility = settings.WordWrap
+            ? Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled
+            : Avalonia.Controls.Primitives.ScrollBarVisibility.Auto;
     }
 
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
