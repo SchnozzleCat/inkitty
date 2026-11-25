@@ -1,0 +1,7 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Inkitty.App.Views.MainWindow"
+        Title="Inkitty"
+        Width="1280" Height="800">
+  <TextBlock Text="Inkitty" HorizontalAlignment="Center" VerticalAlignment="Center" />
+</Window>

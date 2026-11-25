@@ -1,0 +1,9 @@
+* text=auto
+*.cs text eol=lf
+*.axaml text eol=lf
+*.ink text
+*.png binary
+*.ico binary
+*.icns binary
+# Test data whose line endings are part of the test
+tests/**/TestData/crlf/*.ink -text

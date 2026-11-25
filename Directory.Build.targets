@@ -1,0 +1,10 @@
+<Project>
+  <!-- Only build the netstandard2.0 flavour of the ink runtime (skip netstandard1.0). -->
+  <PropertyGroup Condition="'$(IsExternal)' == 'true' And '$(MSBuildProjectName)' == 'ink-engine-runtime'">
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+  </PropertyGroup>
+  <!-- The ink submodule is built as-is; silence its doc-comment and legacy warnings. -->
+  <PropertyGroup Condition="'$(IsExternal)' == 'true'">
+    <NoWarn>$(NoWarn);CS0108;CS0114;CS0168;CS0169;CS0219;CS0414;CS0618;CS0649;CS1570;CS1572;CS1573;CS1574;CS1587;CS1591;CS8632</NoWarn>
+  </PropertyGroup>
+</Project>

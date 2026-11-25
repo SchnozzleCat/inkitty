@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Inkitty.Core</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\external\ink\compiler\ink_compiler.csproj" />
+    <ProjectReference Include="..\..\external\ink\ink-engine-runtime\ink-engine-runtime.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Inkitty.Core.Tests" />
+  </ItemGroup>
+
+</Project>
