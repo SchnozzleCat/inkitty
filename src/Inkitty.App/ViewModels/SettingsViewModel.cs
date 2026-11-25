@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Inkitty.App.Theming;
 using Inkitty.Core.Settings;
 
 namespace Inkitty.App.ViewModels;
@@ -18,7 +19,12 @@ public sealed partial class SettingsViewModel : ViewModelBase
 
     public IReadOnlyList<AutoSaveMode> AutoSaveModes { get; } = Enum.GetValues<AutoSaveMode>();
 
-    public IReadOnlyList<ThemePreference> Themes { get; } = Enum.GetValues<ThemePreference>();
+    /// <summary>"System" followed by every built-in theme.</summary>
+    public IReadOnlyList<ThemeChoice> Themes { get; } =
+    [
+        new(ThemeCatalog.SystemId, "System (Light+ / Dark+)", null),
+        .. ThemeCatalog.Themes.Select(t => new ThemeChoice(t.Id, t.DisplayName, t)),
+    ];
 
     [ObservableProperty]
     public partial AutoSaveMode AutoSave { get; set; }
@@ -27,7 +33,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
     public partial decimal AutoSaveDelayMs { get; set; }
 
     [ObservableProperty]
-    public partial ThemePreference Theme { get; set; }
+    public partial ThemeChoice? Theme { get; set; }
 
     [ObservableProperty]
     public partial string EditorFontFamily { get; set; } = string.Empty;
@@ -78,7 +84,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         {
             AutoSave = AutoSave,
             AutoSaveDelayMs = (int)AutoSaveDelayMs,
-            Theme = Theme,
+            ColorTheme = Theme?.Id ?? ThemeCatalog.SystemId,
             EditorFontFamily = string.IsNullOrWhiteSpace(EditorFontFamily) ? AppSettings.DefaultEditorFont : EditorFontFamily,
             EditorFontSize = (double)EditorFontSize,
             WordWrap = WordWrap,
@@ -95,7 +101,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         {
             AutoSave = s.AutoSave;
             AutoSaveDelayMs = s.AutoSaveDelayMs;
-            Theme = s.Theme;
+            Theme = Themes.FirstOrDefault(t => t.Id == s.ColorTheme) ?? Themes[0];
             EditorFontFamily = s.EditorFontFamily;
             EditorFontSize = (decimal)s.EditorFontSize;
             WordWrap = s.WordWrap;
@@ -108,4 +114,19 @@ public sealed partial class SettingsViewModel : ViewModelBase
             _loading = false;
         }
     }
+}
+
+/// <summary>An entry in the theme picker.</summary>
+public sealed record ThemeChoice(string Id, string DisplayName, ThemeDefinition? Theme)
+{
+    public bool IsDark => Theme?.IsDark ?? false;
+
+    public string Kind => Theme is null ? "follows OS" : Theme.IsDark ? "dark" : "light";
+
+    /// <summary>Swatches for the picker: background, sidebar, accent, foreground.</summary>
+    public IReadOnlyList<Avalonia.Media.IBrush> Swatches => Theme is { Colors: var c }
+        ? [new Avalonia.Media.SolidColorBrush(c.Background), new Avalonia.Media.SolidColorBrush(c.Sidebar), new Avalonia.Media.SolidColorBrush(c.Accent), new Avalonia.Media.SolidColorBrush(c.Foreground)]
+        : [new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#FFFFFF")), new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#1E1E1E"))];
+
+    public override string ToString() => DisplayName;
 }

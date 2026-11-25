@@ -8,7 +8,7 @@ using TextMateSharp.Themes;
 namespace Inkitty.App.Controls.InkEditor;
 
 /// <summary>
-/// TextMate registry serving the ink grammar (converted from inkle's Sublime syntax) plus
+/// TextMate registry serving the ink grammar (converted from inkle's Sublime syntax) plus one of
 /// TextMateSharp's bundled VS Code themes.
 /// </summary>
 public sealed class InkTextMateRegistry : IRegistryOptions
@@ -19,9 +19,9 @@ public sealed class InkTextMateRegistry : IRegistryOptions
     private readonly RegistryOptions _themes;
     private readonly ThemeName _theme;
 
-    public InkTextMateRegistry(bool dark)
+    public InkTextMateRegistry(ThemeName theme)
     {
-        _theme = dark ? ThemeName.DarkPlus : ThemeName.LightPlus;
+        _theme = theme;
         _themes = new RegistryOptions(_theme);
     }
 

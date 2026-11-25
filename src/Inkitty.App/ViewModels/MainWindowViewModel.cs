@@ -53,7 +53,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IRecipient<Navi
         DockLayoutService layoutService,
         ILoggerFactory loggerFactory,
         TimeProvider? time = null,
-        bool watchFiles = true)
+        bool watchFiles = true,
+        ThemeService? themes = null)
     {
         Factory = factory;
         _compiler = compiler;
@@ -69,6 +70,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IRecipient<Navi
         _watchFiles = watchFiles;
 
         _messenger.RegisterAll(this);
+        _settings.Changed += (_, _) => _dispatcher.Post(() => OnPropertyChanged(nameof(Settings)));
+        if (themes is not null)
+        {
+            SyntaxTheme = themes.Current?.TextMateTheme;
+            themes.ThemeChanged += (_, theme) => SyntaxTheme = theme.TextMateTheme;
+        }
         _autoSave.Saved += (_, count) => ShowStatus(count == 1 ? "Auto-saved" : $"Auto-saved {count} files");
         History.Changed += (_, _) =>
         {
@@ -126,6 +133,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IRecipient<Navi
     public bool HasRecentProjects => RecentProjects.Count > 0;
 
     public AppSettings Settings => _settings.Current;
+
+    /// <summary>The editor's TextMate theme, from the selected colour theme.</summary>
+    [ObservableProperty]
+    public partial TextMateSharp.Grammars.ThemeName? SyntaxTheme { get; private set; }
 
     /// <summary>Raised when the view should show the settings window.</summary>
     public event EventHandler? SettingsRequested;

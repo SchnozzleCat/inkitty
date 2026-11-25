@@ -2,28 +2,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <Styles.Resources>
     <ResourceDictionary>
-      <ResourceDictionary.ThemeDictionaries>
-        <ResourceDictionary x:Key="Light">
-          <SolidColorBrush x:Key="InkittyPlayerBackground" Color="#FFFDFBF7" />
-          <SolidColorBrush x:Key="InkittyPlayerForeground" Color="#FF2B2B2B" />
-          <SolidColorBrush x:Key="InkittyMuted" Color="#FF7A7A7A" />
-          <SolidColorBrush x:Key="InkittyTagBackground" Color="#FFE8E4DA" />
-          <SolidColorBrush x:Key="InkittyChoiceBackground" Color="#FFF1ECE1" />
-          <SolidColorBrush x:Key="InkittyChoiceHover" Color="#FFE5DDCB" />
-          <SolidColorBrush x:Key="InkittyInfoBar" Color="#FFFFF4CE" />
-          <SolidColorBrush x:Key="InkittyNewHighlight" Color="#33FFD54F" />
-        </ResourceDictionary>
-        <ResourceDictionary x:Key="Dark">
-          <SolidColorBrush x:Key="InkittyPlayerBackground" Color="#FF1E1E1E" />
-          <SolidColorBrush x:Key="InkittyPlayerForeground" Color="#FFE6E6E6" />
-          <SolidColorBrush x:Key="InkittyMuted" Color="#FF9A9A9A" />
-          <SolidColorBrush x:Key="InkittyTagBackground" Color="#FF37373D" />
-          <SolidColorBrush x:Key="InkittyChoiceBackground" Color="#FF2D2D30" />
-          <SolidColorBrush x:Key="InkittyChoiceHover" Color="#FF3E3E42" />
-          <SolidColorBrush x:Key="InkittyInfoBar" Color="#FF4A3F1E" />
-          <SolidColorBrush x:Key="InkittyNewHighlight" Color="#33FFD54F" />
-        </ResourceDictionary>
-      </ResourceDictionary.ThemeDictionaries>
+      <!-- Theme-dependent brushes (InkittyPlayerBackground, InkittyMuted, ...) are provided at runtime
+           by Services/ThemeService from the selected colour theme. -->
       <SolidColorBrush x:Key="InkittyError" Color="#FFE53935" />
       <SolidColorBrush x:Key="InkittyWarning" Color="#FFF5A623" />
       <SolidColorBrush x:Key="InkittyTodo" Color="#FF428BF5" />
@@ -47,7 +27,7 @@
 
   <!-- Window chrome: menu bar and status bar share one colour. -->
   <Style Selector="Menu#InWindowMenu">
-    <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundChromeMediumBrush}" />
+    <Setter Property="Background" Value="{DynamicResource InkittyChromeBackground}" />
   </Style>
   <Style Selector="Window">
     <Setter Property="Background" Value="{DynamicResource SystemRegionBrush}" />
@@ -56,7 +36,7 @@
   <!-- Status bar -->
   <Style Selector="Border.statusbar">
     <Setter Property="Padding" Value="8,2" />
-    <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundChromeMediumBrush}" />
+    <Setter Property="Background" Value="{DynamicResource InkittyChromeBackground}" />
     <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseLowBrush}" />
     <Setter Property="BorderThickness" Value="0,1,0,0" />
   </Style>

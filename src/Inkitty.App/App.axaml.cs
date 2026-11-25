@@ -104,7 +104,8 @@ public partial class App : Application
             sp.GetRequiredService<DockLayoutService>(),
             sp.GetRequiredService<ILoggerFactory>(),
             sp.GetRequiredService<TimeProvider>(),
-            options.WatchFiles));
+            options.WatchFiles,
+            sp.GetRequiredService<ThemeService>()));
         services.AddTransient<SettingsViewModel>();
         return services.BuildServiceProvider();
     }

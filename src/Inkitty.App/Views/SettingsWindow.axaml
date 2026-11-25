@@ -18,8 +18,30 @@
 
     <TextBlock Classes="section" Text="Appearance" />
     <Grid ColumnDefinitions="180,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="8">
-      <TextBlock Grid.Row="0" Text="Theme" VerticalAlignment="Center" />
-      <ComboBox Grid.Row="0" Grid.Column="1" ItemsSource="{Binding Themes}" SelectedItem="{Binding Theme}" HorizontalAlignment="Stretch" />
+      <TextBlock Grid.Row="0" Text="Colour theme" VerticalAlignment="Center" />
+      <ComboBox Grid.Row="0" Grid.Column="1" x:Name="ThemeBox" ItemsSource="{Binding Themes}" SelectedItem="{Binding Theme}"
+                HorizontalAlignment="Stretch" MaxDropDownHeight="420">
+        <ComboBox.ItemTemplate>
+          <DataTemplate DataType="vm:ThemeChoice">
+            <DockPanel>
+              <ItemsControl DockPanel.Dock="Left" ItemsSource="{Binding Swatches}" Margin="0,0,10,0" VerticalAlignment="Center">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate DataType="IBrush">
+                    <Border Width="12" Height="16" Background="{Binding}" BorderBrush="#40808080" BorderThickness="0.5" />
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock DockPanel.Dock="Right" Text="{Binding Kind}" Opacity="0.6" FontSize="11" VerticalAlignment="Center" Margin="10,0,0,0" />
+              <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center" />
+            </DockPanel>
+          </DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
       <TextBlock Grid.Row="1" Text="Editor font" VerticalAlignment="Center" />
       <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding EditorFontFamily}" />
       <TextBlock Grid.Row="2" Text="Editor font size" VerticalAlignment="Center" />

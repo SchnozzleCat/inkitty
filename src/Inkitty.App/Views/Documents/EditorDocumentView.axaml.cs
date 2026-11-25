@@ -16,6 +16,7 @@ public partial class EditorDocumentView : UserControl
         if (TopLevel.GetTopLevel(this)?.DataContext is MainWindowViewModel shell)
         {
             Editor.Settings = shell.Settings;
+            Editor.SyntaxTheme = shell.SyntaxTheme;
             shell.PropertyChanged -= OnShellPropertyChanged;
             shell.PropertyChanged += OnShellPropertyChanged;
         }
@@ -32,9 +33,18 @@ public partial class EditorDocumentView : UserControl
 
     private void OnShellPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(MainWindowViewModel.Settings) && sender is MainWindowViewModel shell)
+        if (sender is not MainWindowViewModel shell)
+        {
+            return;
+        }
+
+        if (e.PropertyName == nameof(MainWindowViewModel.Settings))
         {
             Editor.Settings = shell.Settings;
+        }
+        else if (e.PropertyName == nameof(MainWindowViewModel.SyntaxTheme))
+        {
+            Editor.SyntaxTheme = shell.SyntaxTheme;
         }
     }
 }

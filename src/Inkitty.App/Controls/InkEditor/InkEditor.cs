@@ -7,6 +7,7 @@ using Avalonia.Threading;
 using AvaloniaEdit;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.TextMate;
+using TextMateSharp.Grammars;
 using Inkitty.App.ViewModels.Documents;
 using Inkitty.Core.Settings;
 using Inkitty.Core.Symbols;
@@ -27,7 +28,7 @@ public sealed class InkEditor : UserControl
     private readonly IssueGutterMargin _gutter;
     private readonly ReferenceUnderlineColorizer _underline = new();
     private TextMate.Installation? _textMate;
-    private bool? _textMateDark;
+    private ThemeName? _textMateTheme;
     private EditorDocumentViewModel? _viewModel;
     private Point? _lastPointer;
     private DispatcherTimer? _flashTimer;
@@ -72,6 +73,16 @@ public sealed class InkEditor : UserControl
         ActualThemeVariantChanged += (_, _) => InstallTextMate();
     }
 
+    /// <summary>The TextMate theme to highlight with. Defaults to Light+/Dark+ following the theme variant.</summary>
+    public static readonly StyledProperty<ThemeName?> SyntaxThemeProperty =
+        AvaloniaProperty.Register<InkEditor, ThemeName?>(nameof(SyntaxTheme));
+
+    public ThemeName? SyntaxTheme
+    {
+        get => GetValue(SyntaxThemeProperty);
+        set => SetValue(SyntaxThemeProperty, value);
+    }
+
     /// <summary>Editor appearance settings.</summary>
     public AppSettings? Settings
     {
@@ -97,6 +108,10 @@ public sealed class InkEditor : UserControl
         {
             ApplySettings();
         }
+        else if (change.Property == SyntaxThemeProperty)
+        {
+            InstallTextMate();
+        }
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
@@ -114,7 +129,7 @@ public sealed class InkEditor : UserControl
         base.OnDetachedFromVisualTree(e);
         _textMate?.Dispose();
         _textMate = null;
-        _textMateDark = null;
+        _textMateTheme = null;
     }
 
     private void Bind(EditorDocumentViewModel? viewModel)
@@ -143,7 +158,7 @@ public sealed class InkEditor : UserControl
         // Re-apply highlighting to the new document.
         _textMate?.Dispose();
         _textMate = null;
-        _textMateDark = null;
+        _textMateTheme = null;
         InstallTextMate();
     }
 
@@ -154,8 +169,8 @@ public sealed class InkEditor : UserControl
             return;
         }
 
-        var dark = ActualThemeVariant == ThemeVariant.Dark;
-        if (_textMate is not null && _textMateDark == dark)
+        var theme = SyntaxTheme ?? (ActualThemeVariant == ThemeVariant.Dark ? ThemeName.DarkPlus : ThemeName.LightPlus);
+        if (_textMate is not null && _textMateTheme == theme)
         {
             return;
         }
@@ -164,15 +179,15 @@ public sealed class InkEditor : UserControl
         {
             if (_textMate is null)
             {
-                _textMate = _editor.InstallTextMate(new InkTextMateRegistry(dark));
+                _textMate = _editor.InstallTextMate(new InkTextMateRegistry(theme));
                 _textMate.SetGrammar(InkTextMateRegistry.InkScope);
             }
             else
             {
-                _textMate.SetTheme(new InkTextMateRegistry(dark).GetDefaultTheme());
+                _textMate.SetTheme(new InkTextMateRegistry(theme).GetDefaultTheme());
             }
 
-            _textMateDark = dark;
+            _textMateTheme = theme;
             ApplyThemeColors();
         }
         catch (Exception ex) when (ex is IOException or InvalidOperationException or ArgumentException or NullReferenceException)
@@ -190,25 +205,55 @@ public sealed class InkEditor : UserControl
             return;
         }
 
-        if (_textMate.TryGetThemeColor("editor.background", out var bg) && Color.TryParse(bg, out var bgColor))
+        Color? ThemeColor(string key) =>
+            _textMate.TryGetThemeColor(key, out var value) ? Theming.ColorMath.ParseVsCode(value) : null;
+
+        var background = ThemeColor("editor.background");
+        var foreground = ThemeColor("editor.foreground");
+        if (background is { } bg)
         {
-            _editor.Background = new SolidColorBrush(bgColor);
+            _editor.Background = new SolidColorBrush(bg);
+        }
+        else
+        {
+            _editor.ClearValue(BackgroundProperty);
         }
 
-        if (_textMate.TryGetThemeColor("editor.foreground", out var fg) && Color.TryParse(fg, out var fgColor))
+        if (foreground is { } fg)
         {
-            _editor.Foreground = new SolidColorBrush(fgColor);
+            _editor.Foreground = new SolidColorBrush(background is { } b ? Theming.ColorMath.Over(fg, b) : fg);
+        }
+        else
+        {
+            _editor.ClearValue(ForegroundProperty);
         }
 
-        if (_textMate.TryGetThemeColor("editorLineNumber.foreground", out var ln) && Color.TryParse(ln, out var lnColor))
+        if (ThemeColor("editorLineNumber.foreground") is { } ln)
         {
-            _editor.LineNumbersForeground = new SolidColorBrush(lnColor);
+            _editor.LineNumbersForeground = new SolidColorBrush(ln);
+        }
+        else if (foreground is { } f && background is { } b2)
+        {
+            _editor.LineNumbersForeground = new SolidColorBrush(Theming.ColorMath.Mix(Theming.ColorMath.Over(f, b2), b2, 0.5));
         }
 
-        if (_textMate.TryGetThemeColor("editor.lineHighlightBackground", out var hl) && Color.TryParse(hl, out var hlColor))
+        var highlight = ThemeColor("editor.lineHighlightBackground") ?? (background is { } b3
+            ? Theming.ColorMath.Mix(b3, Theming.ColorMath.Luminance(b3) < 0.5 ? Colors.White : Colors.Black, 0.05)
+            : null);
+        if (highlight is { } hl)
         {
-            _editor.TextArea.TextView.CurrentLineBackground = new SolidColorBrush(hlColor);
-            _editor.TextArea.TextView.CurrentLineBorder = new Pen(new SolidColorBrush(hlColor));
+            _editor.TextArea.TextView.CurrentLineBackground = new SolidColorBrush(hl);
+            _editor.TextArea.TextView.CurrentLineBorder = new Pen(new SolidColorBrush(hl));
+        }
+
+        if (ThemeColor("editor.selectionBackground") is { } sel)
+        {
+            _editor.TextArea.SelectionBrush = new SolidColorBrush(sel.A == 255 ? Theming.ColorMath.WithAlpha(sel, 0x80) : sel);
+        }
+
+        if (ThemeColor("editorCursor.foreground") is { } cursor)
+        {
+            _editor.TextArea.CaretBrush = new SolidColorBrush(cursor);
         }
     }
 
