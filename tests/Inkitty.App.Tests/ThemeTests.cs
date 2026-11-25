@@ -1,9 +1,13 @@
 using Avalonia;
 using Avalonia.Media;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Styling;
+using Avalonia.VisualTree;
 using Inkitty.App.Services;
 using Inkitty.App.Tests.Infrastructure;
 using Inkitty.App.Theming;
+using Inkitty.App.Views.Tools;
 
 namespace Inkitty.App.Tests;
 
@@ -87,6 +91,50 @@ public class ThemeTests
             await Assert.That(ColorOf("RegionColor")).IsNotEqualTo(lightRegion);
             await Assert.That(editor.SyntaxTheme).IsEqualTo(TextMateSharp.Grammars.ThemeName.Dracula);
             await Assert.That(((ISolidColorBrush)editor.TextEditor.Background!).Color).IsEqualTo(Color.Parse("#282a36"));
+        });
+
+    /// <summary>The first opaque background behind a visual (what the user actually sees).</summary>
+    private static Color? BackgroundBehind(Visual visual)
+    {
+        for (var v = visual; v is not null; v = v.GetVisualParent())
+        {
+            var brush = v switch
+            {
+                Panel panel => panel.Background,
+                Border border => border.Background,
+                TemplatedControl control => control.Background,
+                _ => null,
+            };
+            if (brush is ISolidColorBrush { Color.A: > 0 } solid)
+            {
+                return solid.Color;
+            }
+        }
+
+        return null;
+    }
+
+    [Test]
+    public async Task Switching_theme_at_runtime_restyles_tool_panes() =>
+        await HeadlessSession.Run(async () =>
+        {
+            // Dock aliases its pane brushes with StaticResource, so they only follow a theme switch
+            // if the underlying brushes are updated rather than replaced.
+            await using var app = AppFixture.Create(configure: s => s.Update(x => x with { ColorTheme = "light-plus" }));
+            await app.OpenAsync(UiTestHelpers.CopySample("multi-file", out _));
+
+            app.Settings.Update(s => s with { ColorTheme = "dracula" });
+            app.Window.UpdateLayout();
+
+            var sidebar = ThemeCatalog.Find("dracula")!.Colors.Sidebar;
+            var panes = app.Window.GetVisualDescendants().OfType<UserControl>()
+                .Where(v => v is FileTreeToolView or PlayerToolView or IssuesToolView)
+                .ToList();
+            await Assert.That(panes.Count).IsEqualTo(3);
+            foreach (var pane in panes)
+            {
+                await Assert.That(BackgroundBehind(pane)).IsEqualTo(sidebar);
+            }
         });
 
     [Test]
