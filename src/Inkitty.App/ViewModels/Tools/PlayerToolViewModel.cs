@@ -47,9 +47,14 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
     [ObservableProperty]
     public partial bool IsBusy { get; private set; }
 
-    /// <summary>True while the story has compile errors: the last good run is shown dimmed.</summary>
+    /// <summary>True while the story has compile errors: the last good run (if any) is shown dimmed.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(StaleMessage))]
     public partial bool IsStale { get; private set; }
+
+    public string StaleMessage => Items.Count > 0 || Choices.Count > 0
+        ? "Story has errors — showing the last successful run"
+        : "Story has errors — fix them to play it (see Issues)";
 
     [ObservableProperty]
     public partial bool HasProject { get; private set; }
@@ -178,7 +183,8 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
                 StartReplay(success);
                 break;
             case CompileFailed:
-                IsStale = Items.Count > 0 || Choices.Count > 0;
+                IsStale = true;
+                OnPropertyChanged(nameof(StaleMessage));
                 break;
         }
     }

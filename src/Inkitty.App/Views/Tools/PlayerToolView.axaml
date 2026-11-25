@@ -10,7 +10,7 @@
       <ProgressBar IsIndeterminate="True" Width="60" IsVisible="{Binding IsBusy}" VerticalAlignment="Center" Margin="8,0" />
     </StackPanel>
     <Border DockPanel.Dock="Top" Classes="stale-banner" IsVisible="{Binding IsStale}">
-      <TextBlock Text="Story has errors — showing the last successful run" TextWrapping="Wrap" />
+      <TextBlock Text="{Binding StaleMessage}" TextWrapping="Wrap" />
     </Border>
     <TextBlock DockPanel.Dock="Top" Classes="placeholder" Text="Open an ink file to play it here."
                IsVisible="{Binding !HasProject}" />
