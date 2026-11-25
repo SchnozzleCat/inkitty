@@ -4,6 +4,7 @@
     <OutputType>Exe</OutputType>
     <IsTestProject>true</IsTestProject>
     <IsPackable>false</IsPackable>
+    <TestingPlatformCommandLineArguments>$(TestingPlatformCommandLineArguments) --fail-on-unobserved-task-exceptions</TestingPlatformCommandLineArguments>
   </PropertyGroup>
 
   <ItemGroup>

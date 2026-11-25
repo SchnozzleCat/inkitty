@@ -27,5 +27,14 @@ public static class HeadlessSession
 
     public static Task<T> Run<T>(Func<T> action) => Instance.Dispatch(action, CancellationToken.None);
 
-    public static Task Run(Func<Task> action) => Instance.Dispatch(action, CancellationToken.None);
+    /// <summary>
+    /// Runs an async test body on the UI thread and awaits it. (Passing a <c>Func&lt;Task&gt;</c> to
+    /// <c>Dispatch(Action)</c> would silently fire-and-forget, so route through the <c>Task&lt;T&gt;</c> overload.)
+    /// </summary>
+    public static Task Run(Func<Task> action) =>
+        Instance.Dispatch<bool>(async () =>
+        {
+            await action();
+            return true;
+        }, CancellationToken.None);
 }
