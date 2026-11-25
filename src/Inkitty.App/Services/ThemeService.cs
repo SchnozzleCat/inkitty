@@ -141,44 +141,57 @@ public sealed class ThemeService
         };
     }
 
-    /// <summary>Brushes used by Dock and Inkitty's own styles. Replaced in place so DynamicResources update.</summary>
+    /// <summary>
+    /// Brushes used by Dock and Inkitty's own styles. Each key keeps one brush instance whose colour is
+    /// changed in place: Dock's presets alias these keys with <c>StaticResource</c> (e.g.
+    /// DockSurfacePanelBrush → DockThemeBackgroundBrush), and those aliases hold on to the first brush
+    /// they resolved, so replacing the brush would leave tool panes in the previous theme.
+    /// </summary>
     private void FillBrushes(ThemeDefinition theme)
     {
         var c = theme.Colors;
         var contrast = theme.IsDark ? Colors.White : Colors.Black;
         var warm = theme.IsDark ? Color.Parse("#FFD54F") : Color.Parse("#F5B800");
 
-        Dictionary<string, object> values = new()
-        {
-            // Dock reads RegionColor (a Color, not a brush) for its pane backgrounds.
-            ["RegionColor"] = c.Sidebar,
-            ["DockThemeBackgroundBrush"] = new SolidColorBrush(c.Sidebar),
-            ["DockThemeControlBackgroundBrush"] = new SolidColorBrush(c.Background),
-            ["DockThemeForegroundBrush"] = new SolidColorBrush(c.Foreground),
-            ["DockThemeBorderLowBrush"] = new SolidColorBrush(ColorMath.Mix(c.Sidebar, contrast, 0.15)),
-            ["DockThemeAccentBrush"] = new SolidColorBrush(c.Accent),
-            ["DockSurfaceWorkbenchBrush"] = new SolidColorBrush(c.Sidebar),
-            ["DockApplicationAccentBrushLow"] = new SolidColorBrush(c.Accent),
-            ["DockApplicationAccentBrushMed"] = new SolidColorBrush(ColorMath.Mix(c.Accent, Colors.White, 0.15)),
-            ["DockApplicationAccentBrushHigh"] = new SolidColorBrush(ColorMath.Mix(c.Accent, Colors.White, 0.3)),
-            ["DockApplicationAccentBrushIndicator"] = new SolidColorBrush(c.Accent),
-            ["DockApplicationAccentForegroundBrush"] = new SolidColorBrush(ColorMath.Luminance(c.Accent) > 0.6 ? Colors.Black : Colors.White),
+        // Dock reads RegionColor (a Color, not a brush) for its pane backgrounds.
+        _brushes["RegionColor"] = c.Sidebar;
 
-            ["InkittyEditorBackground"] = new SolidColorBrush(c.Background),
-            ["InkittyChromeBackground"] = new SolidColorBrush(c.Chrome),
-            ["InkittyPlayerBackground"] = new SolidColorBrush(c.Background),
-            ["InkittyPlayerForeground"] = new SolidColorBrush(c.Foreground),
-            ["InkittyMuted"] = new SolidColorBrush(ColorMath.Mix(c.Foreground, c.Background, 0.4)),
-            ["InkittyTagBackground"] = new SolidColorBrush(ColorMath.Mix(c.Background, contrast, 0.12)),
-            ["InkittyChoiceBackground"] = new SolidColorBrush(ColorMath.Mix(c.Background, contrast, 0.07)),
-            ["InkittyChoiceHover"] = new SolidColorBrush(ColorMath.Mix(c.Background, contrast, 0.14)),
-            ["InkittyInfoBar"] = new SolidColorBrush(ColorMath.Mix(c.Background, warm, theme.IsDark ? 0.22 : 0.3)),
-            ["InkittyNewHighlight"] = new SolidColorBrush(ColorMath.WithAlpha(warm, 0x33)),
+        Dictionary<string, Color> brushes = new()
+        {
+            ["DockThemeBackgroundBrush"] = c.Sidebar,
+            ["DockThemeControlBackgroundBrush"] = c.Background,
+            ["DockThemeForegroundBrush"] = c.Foreground,
+            ["DockThemeBorderLowBrush"] = ColorMath.Mix(c.Sidebar, contrast, 0.15),
+            ["DockThemeAccentBrush"] = c.Accent,
+            ["DockSurfaceWorkbenchBrush"] = c.Sidebar,
+            ["DockApplicationAccentBrushLow"] = c.Accent,
+            ["DockApplicationAccentBrushMed"] = ColorMath.Mix(c.Accent, Colors.White, 0.15),
+            ["DockApplicationAccentBrushHigh"] = ColorMath.Mix(c.Accent, Colors.White, 0.3),
+            ["DockApplicationAccentBrushIndicator"] = c.Accent,
+            ["DockApplicationAccentForegroundBrush"] = ColorMath.Luminance(c.Accent) > 0.6 ? Colors.Black : Colors.White,
+
+            ["InkittyEditorBackground"] = c.Background,
+            ["InkittyChromeBackground"] = c.Chrome,
+            ["InkittyPlayerBackground"] = c.Background,
+            ["InkittyPlayerForeground"] = c.Foreground,
+            ["InkittyMuted"] = ColorMath.Mix(c.Foreground, c.Background, 0.4),
+            ["InkittyTagBackground"] = ColorMath.Mix(c.Background, contrast, 0.12),
+            ["InkittyChoiceBackground"] = ColorMath.Mix(c.Background, contrast, 0.07),
+            ["InkittyChoiceHover"] = ColorMath.Mix(c.Background, contrast, 0.14),
+            ["InkittyInfoBar"] = ColorMath.Mix(c.Background, warm, theme.IsDark ? 0.22 : 0.3),
+            ["InkittyNewHighlight"] = ColorMath.WithAlpha(warm, 0x33),
         };
 
-        foreach (var (key, value) in values)
+        foreach (var (key, color) in brushes)
         {
-            _brushes[key] = value;
+            if (_brushes.TryGetValue(key, out var existing) && existing is SolidColorBrush brush)
+            {
+                brush.Color = color;
+            }
+            else
+            {
+                _brushes[key] = new SolidColorBrush(color);
+            }
         }
     }
 }
