@@ -11,10 +11,3 @@ public enum AutoSaveMode
     /// <summary>Save a dirty file a short delay after its last edit.</summary>
     AfterDelay,
 }
-
-public enum ThemePreference
-{
-    System,
-    Light,
-    Dark,
-}

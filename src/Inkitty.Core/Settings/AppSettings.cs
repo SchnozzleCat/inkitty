@@ -11,7 +11,8 @@ public sealed record AppSettings
 
     public int AutoSaveDelayMs { get; init => field = Math.Clamp(value, 200, 60_000); } = 1000;
 
-    public ThemePreference Theme { get; init; } = ThemePreference.System;
+    /// <summary>Colour theme id (see the app's theme catalog), or <c>system</c> to follow the OS light/dark setting.</summary>
+    public string ColorTheme { get; init; } = "system";
 
     /// <summary>Editor font; a comma-separated fallback list. The default picks each OS's standard monospace font.</summary>
     public string EditorFontFamily { get; init; } = DefaultEditorFont;

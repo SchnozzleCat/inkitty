@@ -93,9 +93,7 @@ public sealed class SettingsStore : ISettingsStore, IAsyncDisposable
         {
             using var stream = File.OpenRead(_path);
             var loaded = JsonSerializer.Deserialize(stream, SettingsJsonContext.Default.AppSettings) ?? new AppSettings();
-            return AppSettings.LegacyDefaultEditorFonts.Contains(loaded.EditorFontFamily)
-                ? loaded with { EditorFontFamily = AppSettings.DefaultEditorFont }
-                : loaded;
+            return Migrate(loaded, File.ReadAllText(_path));
         }
         catch (Exception ex) when (ex is JsonException or NotSupportedException)
         {
@@ -111,6 +109,33 @@ public sealed class SettingsStore : ISettingsStore, IAsyncDisposable
 
             return new AppSettings();
         }
+    }
+
+    /// <summary>Upgrades values written by older versions.</summary>
+    private static AppSettings Migrate(AppSettings loaded, string json)
+    {
+        if (AppSettings.LegacyDefaultEditorFonts.Contains(loaded.EditorFontFamily))
+        {
+            loaded = loaded with { EditorFontFamily = AppSettings.DefaultEditorFont };
+        }
+
+        // "theme": "Light"/"Dark" predates "colorTheme".
+        using var document = JsonDocument.Parse(json, new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
+        var root = document.RootElement;
+        if (!root.TryGetProperty("colorTheme", out _) && root.TryGetProperty("theme", out var legacy) && legacy.ValueKind == JsonValueKind.String)
+        {
+            loaded = loaded with
+            {
+                ColorTheme = legacy.GetString() switch
+                {
+                    "Light" => "light-plus",
+                    "Dark" => "dark-plus",
+                    _ => "system",
+                },
+            };
+        }
+
+        return loaded;
     }
 
     private async Task SaveNowAsync()
