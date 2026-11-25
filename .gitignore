@@ -10,3 +10,4 @@ TestResults/
 artifacts/
 .DS_Store
 .envrc
+.direnv/
