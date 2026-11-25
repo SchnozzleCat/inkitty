@@ -9,7 +9,10 @@ An IDE for [ink](https://github.com/inkle/ink), inkle's narrative scripting lang
 - **Play as you write.** The player re-runs the story after every edit and replays your choices,
   so you stay where you were. Choices are matched by text, so inserting or reordering choices
   doesn't lose your place. Restart and step back are one click away.
-- **Syntax highlighting** with inkle's own TextMate grammar, in light and dark themes.
+- **Syntax highlighting** with inkle's own TextMate grammar.
+- **Colour themes:** 18 built-in themes (Light+/Dark+, Dracula, Monokai, Solarized, One Dark/Light,
+  Visual Studio, Abyss, High Contrast, ...) that restyle the whole window, not just the editor,
+  or "System" to follow the OS light/dark setting. The editor font is the bundled JetBrains Mono.
 - **Error highlighting.** Live recompiles as you type show squiggles, gutter markers and
   tooltips. Unresolved diverts are underlined at the exact token, not just the line.
 - **Issue browser** listing errors, warnings, TODOs and runtime errors, with filters. Click an
@@ -23,7 +26,7 @@ An IDE for [ink](https://github.com/inkle/ink), inkle's narrative scripting lang
   lets you reload or keep yours.
 - **Docking.** The default layout is three panes (Files | Editor + Issues | Player). Every pane
   can be moved, tabbed, floated or pinned, and the layout is remembered.
-- **Settings** for auto-save (off / on focus lost / after a delay), theme, editor font, word wrap,
+- **Settings** for auto-save (off / on focus lost / after a delay), colour theme, editor font, word wrap,
   recompile delay and replay time limit.
 
 ## Building and running
