@@ -45,6 +45,19 @@ public partial class App : Application
             {
                 window.Opened += async (_, _) => await shell.OpenProjectAsync(Path.GetFullPath(file));
             }
+
+            // Developer aid: INKITTY_SNAPSHOT=out.png renders the window to a PNG after startup.
+            if (Environment.GetEnvironmentVariable("INKITTY_SNAPSHOT") is { Length: > 0 } snapshotPath)
+            {
+                window.Opened += async (_, _) =>
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(4));
+                    var size = new PixelSize((int)window.Bounds.Width, (int)window.Bounds.Height);
+                    using var bitmap = new Avalonia.Media.Imaging.RenderTargetBitmap(size);
+                    bitmap.Render(window);
+                    bitmap.Save(snapshotPath, new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
+                };
+            }
         }
 
         // macOS: files opened from Finder / dropped on the dock icon.
