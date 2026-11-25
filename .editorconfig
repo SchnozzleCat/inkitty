@@ -81,3 +81,4 @@ dotnet_diagnostic.CA2007.severity = none              # ConfigureAwait: app code
 dotnet_diagnostic.CA1031.severity = none              # catch general exceptions at boundaries
 dotnet_diagnostic.CA1002.severity = none
 dotnet_diagnostic.CA1812.severity = none              # DI/XAML-instantiated classes
+dotnet_diagnostic.CA1859.severity = none              # prefer interfaces in signatures

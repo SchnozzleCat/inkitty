@@ -1,0 +1,33 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:tools="using:Inkitty.App.ViewModels.Tools"
+             x:Class="Inkitty.App.Views.Tools.IssuesToolView"
+             x:DataType="tools:IssuesToolViewModel">
+  <DockPanel>
+    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="4" Margin="4">
+      <ToggleButton Classes="filter error" IsChecked="{Binding ShowErrors}" Content="{Binding ErrorsLabel}" />
+      <ToggleButton Classes="filter warning" IsChecked="{Binding ShowWarnings}" Content="{Binding WarningsLabel}" />
+      <ToggleButton Classes="filter todo" IsChecked="{Binding ShowTodos}" Content="{Binding TodosLabel}" />
+    </StackPanel>
+    <TextBlock DockPanel.Dock="Top" Classes="placeholder" Text="No issues" IsVisible="{Binding !Items.Count}" />
+    <ListBox x:Name="List"
+             ItemsSource="{Binding Items}"
+             SelectedItem="{Binding SelectedItem}"
+             DoubleTapped="OnDoubleTapped"
+             KeyDown="OnKeyDown"
+             Classes="issues">
+      <ListBox.ItemTemplate>
+        <DataTemplate DataType="tools:IssueItem">
+          <Grid ColumnDefinitions="20,*,Auto">
+            <Ellipse Grid.Column="0" Width="9" Height="9" VerticalAlignment="Center"
+                     Classes.error="{Binding Severity, Converter={x:Static tools:IssueConverters.IsError}}"
+                     Classes.warning="{Binding Severity, Converter={x:Static tools:IssueConverters.IsWarning}}"
+                     Classes.todo="{Binding Severity, Converter={x:Static tools:IssueConverters.IsTodo}}" />
+            <TextBlock Grid.Column="1" Text="{Binding Message}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Message}" />
+            <TextBlock Grid.Column="2" Classes="location" Text="{Binding Location}" Margin="12,0,4,0" />
+          </Grid>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+  </DockPanel>
+</UserControl>

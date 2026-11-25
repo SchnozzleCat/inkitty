@@ -1,0 +1,34 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:tools="using:Inkitty.App.ViewModels.Tools"
+             x:Class="Inkitty.App.Views.Tools.FileTreeToolView"
+             x:DataType="tools:FileTreeToolViewModel">
+  <DockPanel>
+    <TextBlock DockPanel.Dock="Top" Classes="pane-header" Text="{Binding ProjectName}" />
+    <TextBlock DockPanel.Dock="Top" Classes="placeholder" Text="No project open"
+               IsVisible="{Binding !Nodes.Count}" />
+    <TreeView x:Name="Tree"
+              ItemsSource="{Binding Nodes}"
+              SelectedItem="{Binding SelectedNode}"
+              DoubleTapped="OnDoubleTapped"
+              KeyDown="OnKeyDown">
+      <TreeView.Styles>
+        <Style Selector="TreeViewItem" x:DataType="tools:FileNode">
+          <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+        </Style>
+      </TreeView.Styles>
+      <TreeView.ItemTemplate>
+        <TreeDataTemplate DataType="tools:FileNode" ItemsSource="{Binding Children}">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBlock Classes="outline-icon" Text="{Binding Icon}" IsVisible="{Binding IsOutline}" />
+            <TextBlock Text="{Binding Label}"
+                       Classes.unincluded="{Binding IsUnincluded}"
+                       Classes.header="{Binding IsHeader}"
+                       Classes.has-errors="{Binding HasErrors}" />
+            <TextBlock Text="●" Classes="dirty" IsVisible="{Binding IsDirty}" />
+          </StackPanel>
+        </TreeDataTemplate>
+      </TreeView.ItemTemplate>
+    </TreeView>
+  </DockPanel>
+</UserControl>

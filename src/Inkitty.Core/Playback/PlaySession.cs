@@ -7,7 +7,7 @@ namespace Inkitty.Core.Playback;
 /// Drives one compiled <see cref="Ink.Runtime.Story"/>: continues until choices, makes choices,
 /// and converts runtime errors into <see cref="RuntimeIssue"/> events. Not thread-safe; use from one thread at a time.
 /// </summary>
-public sealed class PlaySession
+public sealed class PlaySession : IDisposable
 {
     private readonly Ink.Runtime.Story _story;
     private readonly ProjectSnapshot _snapshot;
@@ -19,8 +19,13 @@ public sealed class PlaySession
         _story = story;
         _snapshot = snapshot;
         _time = time ?? TimeProvider.System;
+        _story.ResetState(); // always play from the beginning, even when reusing a compiled story
         _story.onError += OnStoryError;
     }
+
+    public ProjectSnapshot Snapshot => _snapshot;
+
+    public void Dispose() => _story.onError -= OnStoryError;
 
     public ChoiceHistory History { get; private set; } = ChoiceHistory.Empty;
 

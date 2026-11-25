@@ -1,0 +1,192 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Styles.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="InkittyPlayerBackground" Color="#FFFDFBF7" />
+          <SolidColorBrush x:Key="InkittyPlayerForeground" Color="#FF2B2B2B" />
+          <SolidColorBrush x:Key="InkittyMuted" Color="#FF7A7A7A" />
+          <SolidColorBrush x:Key="InkittyTagBackground" Color="#FFE8E4DA" />
+          <SolidColorBrush x:Key="InkittyChoiceBackground" Color="#FFF1ECE1" />
+          <SolidColorBrush x:Key="InkittyChoiceHover" Color="#FFE5DDCB" />
+          <SolidColorBrush x:Key="InkittyInfoBar" Color="#FFFFF4CE" />
+          <SolidColorBrush x:Key="InkittyNewHighlight" Color="#33FFD54F" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="InkittyPlayerBackground" Color="#FF1F1F22" />
+          <SolidColorBrush x:Key="InkittyPlayerForeground" Color="#FFE2E2E2" />
+          <SolidColorBrush x:Key="InkittyMuted" Color="#FF9A9A9A" />
+          <SolidColorBrush x:Key="InkittyTagBackground" Color="#FF35353A" />
+          <SolidColorBrush x:Key="InkittyChoiceBackground" Color="#FF2C2C31" />
+          <SolidColorBrush x:Key="InkittyChoiceHover" Color="#FF3A3A41" />
+          <SolidColorBrush x:Key="InkittyInfoBar" Color="#FF4A3F1E" />
+          <SolidColorBrush x:Key="InkittyNewHighlight" Color="#33FFD54F" />
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+      <SolidColorBrush x:Key="InkittyError" Color="#FFE53935" />
+      <SolidColorBrush x:Key="InkittyWarning" Color="#FFF5A623" />
+      <SolidColorBrush x:Key="InkittyTodo" Color="#FF428BF5" />
+    </ResourceDictionary>
+  </Styles.Resources>
+
+  <!-- General -->
+  <Style Selector="TextBlock.placeholder">
+    <Setter Property="Foreground" Value="{DynamicResource InkittyMuted}" />
+    <Setter Property="Margin" Value="12" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style Selector="TextBlock.pane-header">
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Margin" Value="8,6" />
+  </Style>
+  <Style Selector="TextBlock.section">
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="FontSize" Value="15" />
+  </Style>
+
+  <!-- Status bar -->
+  <Style Selector="Border.statusbar">
+    <Setter Property="Padding" Value="8,2" />
+    <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseLowBrush}" />
+    <Setter Property="BorderThickness" Value="0,1,0,0" />
+  </Style>
+  <Style Selector="Border.statusbar TextBlock">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.counts">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Padding" Value="6,1" />
+  </Style>
+  <Style Selector="TextBlock.count.error">
+    <Setter Property="Foreground" Value="{StaticResource InkittyError}" />
+  </Style>
+  <Style Selector="TextBlock.count.warning">
+    <Setter Property="Foreground" Value="{StaticResource InkittyWarning}" />
+  </Style>
+  <Style Selector="TextBlock.count.todo">
+    <Setter Property="Foreground" Value="{StaticResource InkittyTodo}" />
+  </Style>
+
+  <!-- Files tree -->
+  <Style Selector="TextBlock.unincluded">
+    <Setter Property="Foreground" Value="{DynamicResource InkittyMuted}" />
+    <Setter Property="FontStyle" Value="Italic" />
+  </Style>
+  <Style Selector="TextBlock.header">
+    <Setter Property="Foreground" Value="{DynamicResource InkittyMuted}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="TextBlock.has-errors">
+    <Setter Property="Foreground" Value="{StaticResource InkittyError}" />
+  </Style>
+  <Style Selector="TextBlock.dirty">
+    <Setter Property="Foreground" Value="{DynamicResource InkittyMuted}" />
+    <Setter Property="FontSize" Value="10" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.outline-icon">
+    <Setter Property="Foreground" Value="{DynamicResource InkittyMuted}" />
+    <Setter Property="FontFamily" Value="Cascadia Mono, Menlo, Consolas, DejaVu Sans Mono, monospace" />
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="MinWidth" Value="16" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <!-- Issues -->
+  <Style Selector="ListBox.issues ListBoxItem">
+    <Setter Property="Padding" Value="6,3" />
+    <Setter Property="MinHeight" Value="0" />
+  </Style>
+  <Style Selector="Ellipse.error">
+    <Setter Property="Fill" Value="{StaticResource InkittyError}" />
+  </Style>
+  <Style Selector="Ellipse.warning">
+    <Setter Property="Fill" Value="{StaticResource InkittyWarning}" />
+  </Style>
+  <Style Selector="Ellipse.todo">
+    <Setter Property="Fill" Value="{StaticResource InkittyTodo}" />
+  </Style>
+  <Style Selector="TextBlock.location">
+    <Setter Property="Foreground" Value="{DynamicResource InkittyMuted}" />
+    <Setter Property="FontSize" Value="12" />
+  </Style>
+  <Style Selector="ToggleButton.filter">
+    <Setter Property="Padding" Value="8,2" />
+    <Setter Property="FontSize" Value="12" />
+  </Style>
+
+  <!-- Editor info bar -->
+  <Style Selector="Border.infobar">
+    <Setter Property="Background" Value="{DynamicResource InkittyInfoBar}" />
+    <Setter Property="Padding" Value="10,6" />
+  </Style>
+
+  <!-- Player -->
+  <Style Selector="StackPanel.transcript">
+    <Setter Property="Margin" Value="18,12" />
+    <Setter Property="Spacing" Value="10" />
+  </Style>
+  <Style Selector="ScrollViewer.stale StackPanel.transcript">
+    <Setter Property="Opacity" Value="0.45" />
+  </Style>
+  <Style Selector="StackPanel.paragraph SelectableTextBlock">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="LineHeight" Value="23" />
+  </Style>
+  <Style Selector="StackPanel.paragraph.new">
+    <Setter Property="Background" Value="{DynamicResource InkittyNewHighlight}" />
+  </Style>
+  <Style Selector="TextBlock.echo">
+    <Setter Property="FontStyle" Value="Italic" />
+    <Setter Property="Foreground" Value="{DynamicResource InkittyMuted}" />
+    <Setter Property="Margin" Value="16,0,0,0" />
+  </Style>
+  <Style Selector="Border.divider">
+    <Setter Property="Height" Value="1" />
+    <Setter Property="Margin" Value="40,4" />
+    <Setter Property="Background" Value="{DynamicResource SystemControlForegroundBaseLowBrush}" />
+  </Style>
+  <Style Selector="TextBlock.end">
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="Foreground" Value="{DynamicResource InkittyMuted}" />
+    <Setter Property="Margin" Value="0,12" />
+  </Style>
+  <Style Selector="Border.tag">
+    <Setter Property="Background" Value="{DynamicResource InkittyTagBackground}" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="7,1" />
+    <Setter Property="Margin" Value="0,4,4,0" />
+  </Style>
+  <Style Selector="Border.tag TextBlock">
+    <Setter Property="FontSize" Value="11" />
+  </Style>
+  <Style Selector="Border.runtime-error">
+    <Setter Property="BorderBrush" Value="{StaticResource InkittyError}" />
+    <Setter Property="BorderThickness" Value="3,0,0,0" />
+    <Setter Property="Padding" Value="8,4" />
+  </Style>
+  <Style Selector="Border.runtime-error.warning">
+    <Setter Property="BorderBrush" Value="{StaticResource InkittyWarning}" />
+  </Style>
+  <Style Selector="ItemsControl.choices">
+    <Setter Property="Margin" Value="0,8,0,0" />
+  </Style>
+  <Style Selector="Button.choice">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="Background" Value="{DynamicResource InkittyChoiceBackground}" />
+    <Setter Property="Margin" Value="0,3" />
+    <Setter Property="Padding" Value="12,7" />
+    <Setter Property="CornerRadius" Value="6" />
+  </Style>
+  <Style Selector="Button.choice:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource InkittyChoiceHover}" />
+  </Style>
+  <Style Selector="Border.stale-banner">
+    <Setter Property="Background" Value="{DynamicResource InkittyInfoBar}" />
+    <Setter Property="Padding" Value="10,6" />
+  </Style>
+</Styles>

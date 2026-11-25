@@ -1,0 +1,25 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:docs="using:Inkitty.App.ViewModels.Documents"
+             xmlns:editor="using:Inkitty.App.Controls.InkEditor"
+             x:Class="Inkitty.App.Views.Documents.EditorDocumentView"
+             x:DataType="docs:EditorDocumentDockable">
+  <DockPanel>
+    <Border DockPanel.Dock="Top"
+            Classes="infobar"
+            IsVisible="{Binding Editor.HasInfoBar}">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6">
+          <Button Content="Reload from disk" Command="{Binding Editor.ReloadFromDiskCommand}"
+                  IsVisible="{Binding Editor.IsChangedOnDisk}" />
+          <Button Content="Keep mine" Command="{Binding Editor.KeepMineCommand}"
+                  IsVisible="{Binding Editor.IsChangedOnDisk}" />
+          <Button Content="Dismiss" Command="{Binding Editor.DismissInfoBarCommand}"
+                  IsVisible="{Binding Editor.IsDeletedOnDisk}" />
+        </StackPanel>
+        <TextBlock Text="{Binding Editor.InfoBarMessage}" VerticalAlignment="Center" TextWrapping="Wrap" />
+      </DockPanel>
+    </Border>
+    <editor:InkEditor x:Name="Editor" DataContext="{Binding Editor}" />
+  </DockPanel>
+</UserControl>

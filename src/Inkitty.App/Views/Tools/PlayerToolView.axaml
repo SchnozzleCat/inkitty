@@ -1,0 +1,70 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:tools="using:Inkitty.App.ViewModels.Tools"
+             x:Class="Inkitty.App.Views.Tools.PlayerToolView"
+             x:DataType="tools:PlayerToolViewModel">
+  <DockPanel>
+    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="4" Margin="4">
+      <Button Content="⟲ Restart" Command="{Binding RestartCommand}" ToolTip.Tip="Restart the story" />
+      <Button Content="↶ Step back" Command="{Binding StepBackCommand}" ToolTip.Tip="Undo the last choice" />
+      <ProgressBar IsIndeterminate="True" Width="60" IsVisible="{Binding IsBusy}" VerticalAlignment="Center" Margin="8,0" />
+    </StackPanel>
+    <Border DockPanel.Dock="Top" Classes="stale-banner" IsVisible="{Binding IsStale}">
+      <TextBlock Text="Story has errors — showing the last successful run" TextWrapping="Wrap" />
+    </Border>
+    <TextBlock DockPanel.Dock="Top" Classes="placeholder" Text="Open an ink file to play it here."
+               IsVisible="{Binding !HasProject}" />
+    <ScrollViewer x:Name="Scroller" Classes.stale="{Binding IsStale}" HorizontalScrollBarVisibility="Disabled">
+      <StackPanel Classes="transcript">
+        <ItemsControl ItemsSource="{Binding Items}">
+          <ItemsControl.DataTemplates>
+            <DataTemplate DataType="tools:PlayerParagraph">
+              <StackPanel Classes="paragraph" Classes.new="{Binding IsNew}">
+                <SelectableTextBlock Text="{Binding Text}" TextWrapping="Wrap" />
+                <ItemsControl ItemsSource="{Binding Tags}" IsVisible="{Binding HasTags}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <WrapPanel />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="x:String">
+                      <Border Classes="tag">
+                        <TextBlock Text="{Binding}" />
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </DataTemplate>
+            <DataTemplate DataType="tools:PlayerChoiceEcho">
+              <TextBlock Classes="echo" Classes.new="{Binding IsNew}" Text="{Binding Text}" TextWrapping="Wrap" />
+            </DataTemplate>
+            <DataTemplate DataType="tools:PlayerTurnDivider">
+              <Border Classes="divider" />
+            </DataTemplate>
+            <DataTemplate DataType="tools:PlayerEnd">
+              <TextBlock Classes="end" Text="— THE END —" />
+            </DataTemplate>
+            <DataTemplate DataType="tools:PlayerError">
+              <Border Classes="runtime-error" Classes.warning="{Binding IsWarning}">
+                <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+              </Border>
+            </DataTemplate>
+          </ItemsControl.DataTemplates>
+        </ItemsControl>
+        <ItemsControl ItemsSource="{Binding Choices}" Classes="choices">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate DataType="tools:PlayerChoice">
+              <Button Classes="choice"
+                      Command="{Binding $parent[UserControl].((tools:PlayerToolViewModel)DataContext).ChooseCommand}"
+                      CommandParameter="{Binding}">
+                <TextBlock Text="{Binding Text}" TextWrapping="Wrap" />
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>
