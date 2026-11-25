@@ -54,6 +54,17 @@ public class SettingsStoreTests
     }
 
     [Test]
+    public async Task Old_default_editor_font_is_upgraded_but_custom_fonts_are_kept()
+    {
+        using var dir = new TempDirectory();
+        dir.Write(SettingsStore.FileName, """{ "editorFontFamily": "Cascadia Mono, Menlo, Consolas, DejaVu Sans Mono, monospace" }""");
+        await Assert.That(new SettingsStore(dir.Path).Current.EditorFontFamily).IsEqualTo(AppSettings.DefaultEditorFont);
+
+        dir.Write(SettingsStore.FileName, """{ "editorFontFamily": "Iosevka" }""");
+        await Assert.That(new SettingsStore(dir.Path).Current.EditorFontFamily).IsEqualTo("Iosevka");
+    }
+
+    [Test]
     public async Task Recent_projects_are_deduplicated_and_capped()
     {
         var settings = new AppSettings();
