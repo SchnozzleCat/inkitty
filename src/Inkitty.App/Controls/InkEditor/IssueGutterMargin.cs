@@ -108,8 +108,12 @@ public sealed class IssueGutterMargin : AbstractMargin
             return [];
         }
 
+        // Only the line's own text: including the delimiter would also match markers starting on the next line.
         var line = Document.GetLineByNumber(lineNumber);
-        return _renderer.Markers.FindOverlappingSegments(line.Offset, Math.Max(1, line.TotalLength)).Select(m => m.Issue);
+        return _renderer.Markers
+            .FindOverlappingSegments(line.Offset, line.Length)
+            .Where(m => m.StartOffset <= line.EndOffset && m.EndOffset >= line.Offset && (m.StartOffset < line.EndOffset || line.Length == 0 || m.Length == 0))
+            .Select(m => m.Issue);
     }
 
     private IssueSeverity? WorstOn(int lineNumber) =>
