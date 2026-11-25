@@ -3,6 +3,7 @@ using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm;
 using Dock.Model.Mvvm.Controls;
+using Dock.Settings;
 using Inkitty.App.ViewModels.Tools;
 
 namespace Inkitty.App.Docking;
@@ -120,7 +121,10 @@ public sealed class InkittyDockFactory(FileTreeToolViewModel files, PlayerToolVi
 
         HostWindowLocator = new Dictionary<string, Func<IHostWindow?>>
         {
-            [nameof(IDockWindow)] = () => new HostWindow(),
+            // Managed hosts live inside the main window (see Program.UseManagedDockWindows).
+            [nameof(IDockWindow)] = () => DockSettings.IsManagedWindowHostingEnabled()
+                ? new ManagedHostWindow()
+                : new HostWindow(),
         };
 
         base.InitLayout(layout);
