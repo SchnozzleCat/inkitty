@@ -53,6 +53,7 @@ public sealed class InkEditor : UserControl
         _editor.Options.AllowScrollBelowDocument = true;
 
         _gutter = new IssueGutterMargin(_markers);
+        HideLineNumberSeparator();
         _editor.TextArea.LeftMargins.Insert(0, _gutter);
         _editor.TextArea.LeftMargins.Add(_playthrough);
         _editor.TextArea.TextView.BackgroundRenderers.Add(_playthrough);
@@ -76,6 +77,18 @@ public sealed class InkEditor : UserControl
 
         Content = _editor;
         ActualThemeVariantChanged += (_, _) => InstallTextMate();
+    }
+
+    /// <summary>
+    /// AvaloniaEdit puts a dotted line between the line numbers and the text (re-added whenever line numbers
+    /// are switched on). The gutter reads fine without it, so hide it.
+    /// </summary>
+    private void HideLineNumberSeparator()
+    {
+        foreach (var margin in _editor.TextArea.LeftMargins.Where(AvaloniaEdit.Editing.DottedLineMargin.IsDottedLineMargin))
+        {
+            margin.IsVisible = false;
+        }
     }
 
     /// <summary>The TextMate theme to highlight with. Defaults to Light+/Dark+ following the theme variant.</summary>
