@@ -12,3 +12,6 @@ artifacts/
 .envrc
 .direnv/
 docs/web.md
+# nix build output
+result
+result-*

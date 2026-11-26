@@ -1,5 +1,22 @@
 {
   "nodes": {
+    "ink": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1777979969,
+        "narHash": "sha256-IEYn7GHUTLABGVZH2AYUpbGeuZvUPbwHz5GcuMrRem8=",
+        "owner": "inkle",
+        "repo": "ink",
+        "rev": "35c63e52f1d36060930dc7ed3cfba38ea224b528",
+        "type": "github"
+      },
+      "original": {
+        "owner": "inkle",
+        "repo": "ink",
+        "rev": "35c63e52f1d36060930dc7ed3cfba38ea224b528",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1795234589,
@@ -18,6 +35,7 @@
     },
     "root": {
       "inputs": {
+        "ink": "ink",
         "nixpkgs": "nixpkgs"
       }
     }

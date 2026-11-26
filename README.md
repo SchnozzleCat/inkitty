@@ -31,11 +31,23 @@ cd inkitty
 dotnet run --project src/Inkitty.Desktop -- samples/multi-file/main.ink
 ```
 
-On NixOS, `nix develop` (or direnv) provides the SDK and the native libraries Avalonia needs.
-
 On Linux, Inkitty uses X11 (XWayland on Wayland desktops) by default. When there is no X server
 it switches to Avalonia's native Wayland backend, which can be overridden with
 `INKITTY_WAYLAND=1` or `INKITTY_WAYLAND=0`.
+
+### With Nix
+
+A flake is provided to run the app on Linux (x86_64 or aarch64):
+
+```sh
+nix run github:SchnozzleCat/inkitty                          # start Inkitty
+nix run github:SchnozzleCat/inkitty -- path/to/main.ink      # open a story
+```
+
+The flake also provides a devshell for `nix develop` (or direnv) with the SDK and the
+native libraries Avalonia needs. The flake fetches ink separately, pinned to the same commit as the
+`external/ink` submodule, and NuGet packages are locked in `deps.json`. After changing package
+versions, regenerate it with `nix build .#inkitty.fetch-deps && ./result deps.json`.
 
 ### In the browser
 
