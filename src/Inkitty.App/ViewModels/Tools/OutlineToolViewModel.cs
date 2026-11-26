@@ -27,6 +27,11 @@ public sealed partial class OutlineNode(OutlineItem item) : ObservableObject
 
     public bool HasCondition => Item.Condition is not null;
 
+    /// <summary>A choice's label, e.g. <c>(shouted)</c>, shown first as in the source.</summary>
+    public string? Label => Item.Label;
+
+    public bool HasLabel => Item.Label is not null;
+
     public ObservableCollection<OutlineNode> Children { get; } = [];
 
     [ObservableProperty]

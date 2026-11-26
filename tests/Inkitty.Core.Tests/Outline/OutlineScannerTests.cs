@@ -4,10 +4,10 @@ namespace Inkitty.Core.Tests.Outline;
 
 public class OutlineScannerTests
 {
-    /// <summary>The outline as indented "Kind [Condition] Name [Detail] @line" lines.</summary>
+    /// <summary>The outline as indented "Kind [Label] [Condition] Name [Detail] @line" lines.</summary>
     private static string Shape(string text) =>
         string.Concat(OutlineScanner.Flatten(OutlineScanner.Scan("main.ink", text)).Select(i =>
-            $"{new string(' ', Depth(OutlineScanner.Scan("main.ink", text), i) * 2)}{i.Kind} {(i.Condition is null ? string.Empty : i.Condition + " ")}{i.Name}{(i.Detail is null ? string.Empty : " " + i.Detail)} @{i.Line}\n"));
+            $"{new string(' ', Depth(OutlineScanner.Scan("main.ink", text), i) * 2)}{i.Kind} {(i.Label is null ? string.Empty : i.Label + " ")}{(i.Condition is null ? string.Empty : i.Condition + " ")}{i.Name}{(i.Detail is null ? string.Empty : " " + i.Detail)} @{i.Line}\n"));
 
     private static int Depth(IReadOnlyList<OutlineItem> roots, OutlineItem target, int depth = 0)
     {
@@ -61,7 +61,7 @@ public class OutlineScannerTests
             List mood calm, (nervous) @4
             External playSound (name) @5
             Knot start @8
-              Choice {has_torch} Go left (left) @10
+              Choice (left) {has_torch} Go left @10
                 Choice Deeper @11
                 Gather regroup @12
               StickyChoice Wait @13

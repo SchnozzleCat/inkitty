@@ -19,10 +19,11 @@ public enum OutlineKind
 
 /// <summary>One element of a file's outline, with the elements nested inside it.</summary>
 /// <param name="Name">What to show: a knot name, a choice's text, a variable name.</param>
-/// <param name="Detail">Secondary text: parameters, a choice's label, a variable's value.</param>
+/// <param name="Detail">Secondary text after the name: parameters, a variable's value.</param>
 /// <param name="Range">Where to jump to (the name, or the whole line).</param>
 /// <param name="Condition">A choice's conditions as written, e.g. <c>{has_torch} {coins &gt; 1}</c>; shown before its text.</param>
-public sealed record OutlineItem(OutlineKind Kind, string Name, string? Detail, SourceRange Range, IReadOnlyList<OutlineItem> Children, string? Condition = null)
+/// <param name="Label">A choice's label as written, e.g. <c>(shouted)</c>; shown first, as in the source.</param>
+public sealed record OutlineItem(OutlineKind Kind, string Name, string? Detail, SourceRange Range, IReadOnlyList<OutlineItem> Children, string? Condition = null, string? Label = null)
 {
     public int Line => Range.Line;
 

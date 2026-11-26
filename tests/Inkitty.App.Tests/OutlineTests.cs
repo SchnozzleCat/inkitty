@@ -47,12 +47,15 @@ public class OutlineTests
             var torch = start.Children.Single(c => c.Name == "Light the torch first");
             await Assert.That(torch.Condition).IsEqualTo("{has_torch}");
             await Assert.That(torch.HasDetail).IsFalse();
+            await Assert.That(torch.HasLabel).IsFalse();
 
             app.Shell.OpenDocument(app.Project.Project.Find("chapters/forest.ink")!);
             await Assert.That(outline.FileName).IsEqualTo("forest.ink");
             var forest = outline.Nodes.Single(n => n.Name == "forest");
             await Assert.That(forest.Children.Select(c => c.Name)).IsEquivalentTo(["Light a torch", "Turn back", "clearing"]);
-            await Assert.That(forest.Children.Single(c => c.Name == "Light a torch").Detail).IsEqualTo("(light)");
+            var light = forest.Children.Single(c => c.Name == "Light a torch");
+            await Assert.That(light.Label).IsEqualTo("(light)");
+            await Assert.That(light.HasDetail).IsFalse();
             await Assert.That(outline.Nodes.Select(n => n.Item.Kind)).Contains(OutlineKind.Function);
         });
 
