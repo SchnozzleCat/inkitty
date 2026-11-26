@@ -22,6 +22,11 @@ public sealed partial class OutlineNode(OutlineItem item) : ObservableObject
 
     public bool HasDetail => Item.Detail is not null;
 
+    /// <summary>A choice's conditions, shown before its text.</summary>
+    public string? Condition => Item.Condition;
+
+    public bool HasCondition => Item.Condition is not null;
+
     public ObservableCollection<OutlineNode> Children { get; } = [];
 
     [ObservableProperty]

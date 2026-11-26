@@ -97,19 +97,13 @@ public static partial class OutlineScanner
 
                 var (conditions, content) = SplitConditions(rest);
                 var choiceText = ChoiceText(content);
-                List<string> details = [];
-                if (label.Success)
-                {
-                    details.Add($"({label.Groups["label"].Value})");
-                }
-
-                details.AddRange(conditions);
                 builder.Weave(
                     bullets.Contains('+', StringComparison.Ordinal) ? OutlineKind.StickyChoice : OutlineKind.Choice,
                     bullets.Count(c => c is '*' or '+'),
                     choiceText.Length > 0 ? choiceText : "(fallback)",
-                    details.Count > 0 ? string.Join(' ', details) : null,
-                    SourceRange.WholeLine(string.Empty, lineNumber));
+                    label.Success ? $"({label.Groups["label"].Value})" : null,
+                    SourceRange.WholeLine(string.Empty, lineNumber),
+                    conditions.Count > 0 ? string.Join(' ', conditions) : null);
                 continue;
             }
 
@@ -356,8 +350,10 @@ public static partial class OutlineScanner
     /// <summary>Collects items into a tree: flows at the top, stitches in knots, weave by depth.</summary>
     private sealed class Builder(string file)
     {
-        private sealed class Node(OutlineKind kind, string name, string? detail, SourceRange range)
+        private sealed class Node(OutlineKind kind, string name, string? detail, SourceRange range, string? condition = null)
         {
+            public string? Condition { get; } = condition;
+
             public OutlineKind Kind { get; } = kind;
 
             public string Name { get; } = name;
@@ -398,10 +394,10 @@ public static partial class OutlineScanner
 
         public void CloseWeave(int depth) => _weave.RemoveAll(w => w.Depth >= depth);
 
-        public void Weave(OutlineKind kind, int depth, string name, string? detail, SourceRange range)
+        public void Weave(OutlineKind kind, int depth, string name, string? detail, SourceRange range, string? condition = null)
         {
             CloseWeave(depth);
-            var node = new Node(kind, name, detail, Fix(range));
+            var node = new Node(kind, name, detail, Fix(range), condition);
             var parent = _weave.Count > 0 ? _weave[^1].Node.Children : (_stitch ?? _knot)?.Children ?? _root;
             parent.Add(node);
             _weave.Add((depth, node));
@@ -420,7 +416,7 @@ public static partial class OutlineScanner
                 var baseKey = $"{parentKey}/{node.Kind}:{node.Name}";
                 var n = seen[baseKey] = seen.GetValueOrDefault(baseKey) + 1;
                 var key = n == 1 ? baseKey : $"{baseKey}#{n}";
-                items.Add(new OutlineItem(node.Kind, node.Name, node.Detail, node.Range, Convert(node.Children, key)) { Key = key });
+                items.Add(new OutlineItem(node.Kind, node.Name, node.Detail, node.Range, Convert(node.Children, key), node.Condition) { Key = key });
             }
 
             return items;

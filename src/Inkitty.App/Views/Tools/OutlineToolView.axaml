@@ -34,6 +34,7 @@
                          Classes.flow="{Binding IsFlow}"
                          Classes.weave="{Binding KindClass, Converter={x:Static tools:OutlineConverters.IsWeave}}"
                          Text="{Binding Icon}" />
+              <TextBlock Classes="outline-condition" Text="{Binding Condition}" IsVisible="{Binding HasCondition}" />
               <TextBlock Classes="outline-name" Classes.flow="{Binding IsFlow}" Text="{Binding Name}" />
               <TextBlock Classes="outline-detail" Text="{Binding Detail}" IsVisible="{Binding HasDetail}" />
             </StackPanel>
