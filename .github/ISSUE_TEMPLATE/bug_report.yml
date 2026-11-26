@@ -59,7 +59,7 @@ body:
     id: build
     attributes:
       label: Inkitty build
-      description: For a desktop build, the commit you built from (`git rev-parse --short HEAD`). For the browser version, the date you used it.
+      description: The version number in the bottom left.
 
   - type: textarea
     id: logs
