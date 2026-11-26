@@ -84,6 +84,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
+          pattern: inkitty-*
           path: dist
           merge-multiple: true
 
