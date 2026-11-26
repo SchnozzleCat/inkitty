@@ -27,6 +27,7 @@ public partial class App : Application
     {
         AvaloniaXamlLoader.Load(this);
         DockTemplateFixes.Register();
+        Controls.ChevronTemplateFixes.Register();
     }
 
     public override void OnFrameworkInitializationCompleted()

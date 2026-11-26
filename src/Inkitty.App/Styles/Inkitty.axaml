@@ -274,6 +274,19 @@
     <Setter Property="VerticalAlignment" Value="Center" />
     <Setter Property="Margin" Value="12,0,4,0" />
   </Style>
+  <!-- Submenu arrow (shape and size are set in code, see ChevronTemplateFixes): stroked like the other icons. -->
+  <Style Selector="MenuItem /template/ Path#PART_ChevronPath">
+    <Setter Property="Stroke" Value="{DynamicResource MenuFlyoutSubItemChevron}" />
+    <Setter Property="StrokeThickness" Value="1.5" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+    <Setter Property="StrokeJoin" Value="Round" />
+  </Style>
+  <Style Selector="MenuItem:selected /template/ Path#PART_ChevronPath, MenuItem:open /template/ Path#PART_ChevronPath">
+    <Setter Property="Stroke" Value="{DynamicResource MenuFlyoutSubItemChevronPointerOver}" />
+  </Style>
+  <Style Selector="MenuItem:disabled /template/ Path#PART_ChevronPath">
+    <Setter Property="Stroke" Value="{DynamicResource MenuFlyoutSubItemChevronDisabled}" />
+  </Style>
   <Style Selector="Window">
     <Setter Property="Background" Value="{DynamicResource SystemRegionBrush}" />
   </Style>
@@ -378,6 +391,22 @@
   <Style Selector="WrapPanel.outline-toolbar">
     <Setter Property="Margin" Value="6,6,6,2" />
     <Setter Property="ItemSpacing" Value="4" />
+  </Style>
+  <!-- Tree expanders: the same chevron as submenus (see ChevronTemplateFixes), turning down when open. -->
+  <Style Selector="ToggleButton#PART_ExpandCollapseChevron /template/ Path#ChevronPath">
+    <Setter Property="Stroke" Value="{DynamicResource InkittyMuted}" />
+    <Setter Property="StrokeThickness" Value="1.5" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+    <Setter Property="StrokeJoin" Value="Round" />
+    <Setter Property="RenderTransform" Value="rotate(0deg)" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.12" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="ToggleButton#PART_ExpandCollapseChevron:checked /template/ Path#ChevronPath">
+    <Setter Property="RenderTransform" Value="rotate(90deg)" />
   </Style>
   <Style Selector="TreeView.outline TreeViewItem">
     <Setter Property="MinHeight" Value="24" />
