@@ -225,6 +225,62 @@ public sealed class InkittyDockFactory(FileTreeToolViewModel files, PlayerToolVi
         _hiddenFromHitTest.Clear();
     }
 
+    /// <summary>
+    /// A floating pane is its own root dock, and Dock hides a closed tool in the root it's in: the tool
+    /// stayed in the floating window (left open and empty, and reopened there by View), or was lost with
+    /// it once that window closed. Closed tools always go to the main window's hidden list instead,
+    /// remembering their old dock there if it still exists, and an emptied floating window goes away.
+    /// </summary>
+    protected override void CloseDockableCore(IDockable dockable)
+    {
+        if (dockable is not ITool tool || _root is null || FindRoot(tool, _ => true) is not { } root || ReferenceEquals(root, _root))
+        {
+            base.CloseDockableCore(dockable);
+            return;
+        }
+
+        if (!OnDockableClosing(tool))
+        {
+            return;
+        }
+
+        var home = tool.Owner is IDock owner ? FindMainDock(owner.Id) : null;
+        RemoveDockable(tool, collapse: true);
+        HideInMainWindow(tool, home);
+        if (root.Window is { } window && !HasTools(root) && _root.Windows?.Contains(window) == true)
+        {
+            RemoveWindow(window);
+        }
+
+        OnDockableClosed(tool);
+    }
+
+    private void HideInMainWindow(ITool tool, IDock? home)
+    {
+        _root!.HiddenDockables ??= CreateList<IDockable>();
+        tool.Owner = _root;
+        tool.OriginalOwner = home;
+        _root.HiddenDockables.Add(tool);
+        OnDockableHidden(tool);
+    }
+
+    /// <summary>A tool dock in the main window with this id (floating panes reuse their source dock's id).</summary>
+    private IDock? FindMainDock(string? id) =>
+        _root is null || string.IsNullOrEmpty(id) ? null : FindDockable(_root, d => d is IToolDock && d.Id == id) as IDock;
+
+    private static bool HasTools(IDockable dockable) => dockable switch
+    {
+        ITool => true,
+        IDock dock => dock.VisibleDockables?.Any(HasTools) == true,
+        _ => false,
+    };
+
+    /// <summary>The floating window a tool is shown in, or null if it isn't in one that's open.</summary>
+    private IRootDock? FloatingRootOf(ITool tool) =>
+        FindRoot(tool, _ => true) is { Window: { } window } root && !ReferenceEquals(root, _root) && _root?.Windows?.Contains(window) == true
+            ? root
+            : null;
+
     /// <summary>Makes a hidden or closed tool visible again, restoring it to its last dock.</summary>
     public void ShowTool(ITool tool)
     {
@@ -233,19 +289,41 @@ public sealed class InkittyDockFactory(FileTreeToolViewModel files, PlayerToolVi
             return;
         }
 
+        // Left behind outside the main window (hidden in a floating pane, or in one that's since closed,
+        // e.g. from a layout saved before closing worked as above): bring it back from there.
+        if (FindRoot(tool, _ => true) is { } root && !ReferenceEquals(root, _root)
+            && (root.HiddenDockables?.Contains(tool) == true || FloatingRootOf(tool) is null))
+        {
+            var home = tool.Owner is IDock lastOwner and not IRootDock ? FindMainDock(lastOwner.Id) : null;
+            if (root.HiddenDockables?.Remove(tool) != true && tool.Owner is IDock stale)
+            {
+                stale.VisibleDockables?.Remove(tool);
+            }
+
+            HideInMainWindow(tool, home);
+        }
+
         if (_root.HiddenDockables?.Contains(tool) == true)
         {
             RestoreDockable(tool);
+
+            // Its old dock has since left the layout (e.g. collapsed when emptied): place it afresh below.
+            if (!ReferenceEquals(FindRoot(tool, _ => true), _root))
+            {
+                (tool.Owner as IDock)?.VisibleDockables?.Remove(tool);
+                tool.Owner = null;
+            }
         }
 
         if (tool.Owner is null)
         {
             // Not anywhere in the layout (e.g. after a broken restore): put it next to the documents.
-            if (_documents?.Owner is IDock center)
+            if (_documents is not null)
             {
                 var dock = new ToolDock { Alignment = Alignment.Bottom, Proportion = 0.25, VisibleDockables = CreateList<IDockable>() };
-                AddDockable(center, dock);
                 AddDockable(dock, tool);
+                dock.ActiveDockable = tool;
+                SplitToDock(_documents, dock, DockOperation.Bottom);
             }
         }
 
@@ -256,8 +334,10 @@ public sealed class InkittyDockFactory(FileTreeToolViewModel files, PlayerToolVi
         }
     }
 
+    /// <summary>True if the tool is shown, in the main window or an open floating one.</summary>
     public bool IsToolVisible(ITool tool) =>
-        tool.Owner is not null && _root?.HiddenDockables?.Contains(tool) != true;
+        tool.Owner is IDock and not IRootDock
+        && (ReferenceEquals(FindRoot(tool, _ => true), _root) || FloatingRootOf(tool) is not null);
 
     private static IDocumentDock? FindDocumentDock(IDockable dockable) => dockable switch
     {

@@ -43,6 +43,7 @@ public sealed class DockLayoutService(string configDirectory, ILogger<DockLayout
             }
 
             RemoveDocuments(layout);
+            RemoveEmptyWindows(layout);
             if (!ReattachTools(layout, factory))
             {
                 logger.LogWarning("Saved layout is missing tools; using default layout");
@@ -154,15 +155,32 @@ public sealed class DockLayoutService(string configDirectory, ILogger<DockLayout
             }
         }
 
-        Visit(root.VisibleDockables, root);
-        Visit(root.HiddenDockables, null);
-        Visit(root.LeftPinnedDockables, null);
-        Visit(root.RightPinnedDockables, null);
-        Visit(root.TopPinnedDockables, null);
-        Visit(root.BottomPinnedDockables, null);
+        // A root's ActiveDockable/FocusedDockable can name a tool that isn't in its visible list (e.g. one
+        // hidden in a floating window): swap those too, or the live tool gets serialised and can't load.
+        void VisitRoot(IRootDock rootDock)
+        {
+            Visit(rootDock.VisibleDockables, rootDock);
+            Visit(rootDock.HiddenDockables, null);
+            Visit(rootDock.LeftPinnedDockables, null);
+            Visit(rootDock.RightPinnedDockables, null);
+            Visit(rootDock.TopPinnedDockables, null);
+            Visit(rootDock.BottomPinnedDockables, null);
+            if (rootDock.ActiveDockable is ITool or IDocument || rootDock.FocusedDockable is ITool or IDocument)
+            {
+                swaps.Add(new Swap(Array.Empty<IDockable>(), -1, rootDock, rootDock, rootDock.ActiveDockable, rootDock.FocusedDockable));
+                rootDock.ActiveDockable = rootDock.ActiveDockable is ITool active ? Placeholder(active) : rootDock.ActiveDockable is IDocument ? null : rootDock.ActiveDockable;
+                rootDock.FocusedDockable = rootDock.FocusedDockable is ITool focused ? Placeholder(focused) : rootDock.FocusedDockable is IDocument ? null : rootDock.FocusedDockable;
+            }
+        }
+
+        VisitRoot(root);
         foreach (var window in root.Windows ?? [])
         {
-            if (window.Layout is { } windowLayout)
+            if (window.Layout is IRootDock windowRoot)
+            {
+                VisitRoot(windowRoot);
+            }
+            else if (window.Layout is { } windowLayout)
             {
                 Visit(windowLayout.VisibleDockables, windowLayout);
             }
@@ -177,7 +195,11 @@ public sealed class DockLayoutService(string configDirectory, ILogger<DockLayout
         for (var i = swaps.Count - 1; i >= 0; i--)
         {
             var swap = swaps[i];
-            if (swap.Original is ITool)
+            if (swap.Index < 0)
+            {
+                // A root's own Active/Focused swap: no list entry.
+            }
+            else if (swap.Original is ITool)
             {
                 swap.List[swap.Index] = swap.Original;
             }
@@ -245,15 +267,33 @@ public sealed class DockLayoutService(string configDirectory, ILogger<DockLayout
             }
         }
 
-        Visit(root.VisibleDockables);
-        Visit(root.HiddenDockables);
-        Visit(root.LeftPinnedDockables);
-        Visit(root.RightPinnedDockables);
-        Visit(root.TopPinnedDockables);
-        Visit(root.BottomPinnedDockables);
+        void VisitRoot(IRootDock rootDock)
+        {
+            Visit(rootDock.VisibleDockables);
+            Visit(rootDock.HiddenDockables);
+            Visit(rootDock.LeftPinnedDockables);
+            Visit(rootDock.RightPinnedDockables);
+            Visit(rootDock.TopPinnedDockables);
+            Visit(rootDock.BottomPinnedDockables);
+            if (rootDock.ActiveDockable is ITool active && live.TryGetValue(active.Id, out var liveActive))
+            {
+                rootDock.ActiveDockable = liveActive;
+            }
+
+            if (rootDock.FocusedDockable is ITool focused && live.TryGetValue(focused.Id, out var liveFocused))
+            {
+                rootDock.FocusedDockable = liveFocused;
+            }
+        }
+
+        VisitRoot(root);
         foreach (var window in root.Windows ?? [])
         {
-            if (window.Layout is { } windowLayout)
+            if (window.Layout is IRootDock windowRoot)
+            {
+                VisitRoot(windowRoot);
+            }
+            else if (window.Layout is { } windowLayout)
             {
                 Visit(windowLayout.VisibleDockables);
             }
@@ -263,6 +303,42 @@ public sealed class DockLayoutService(string configDirectory, ILogger<DockLayout
         // document dock to exist so the editor has somewhere to live.
         return ContainsDocumentDock(root) && found.Count > 0;
     }
+
+    /// <summary>
+    /// Drops floating windows with no tools in them: closing a floating tool used to leave its window
+    /// behind, empty, and layouts saved then would bring it back on every start. A tool hidden in such
+    /// a window moves to the main window's hidden list, so View can still show it.
+    /// </summary>
+    private static void RemoveEmptyWindows(IRootDock root)
+    {
+        foreach (var window in root.Windows?.ToList() ?? [])
+        {
+            if (window.Layout is { } layout && ContainsTool(layout))
+            {
+                continue;
+            }
+
+            if (window.Layout is IRootDock { HiddenDockables: { } hidden })
+            {
+                root.HiddenDockables ??= new System.Collections.ObjectModel.ObservableCollection<IDockable>();
+                foreach (var tool in hidden.OfType<ITool>())
+                {
+                    tool.Owner = root;
+                    tool.OriginalOwner = null;
+                    root.HiddenDockables.Add(tool);
+                }
+            }
+
+            root.Windows!.Remove(window);
+        }
+    }
+
+    private static bool ContainsTool(IDockable dockable) => dockable switch
+    {
+        ITool => true,
+        IDock dock => dock.VisibleDockables?.Any(ContainsTool) == true,
+        _ => false,
+    };
 
     private static bool ContainsDocumentDock(IDockable dockable) => dockable switch
     {

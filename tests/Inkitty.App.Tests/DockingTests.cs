@@ -317,8 +317,141 @@ public class DockingTests
             app.Window.MouseUp(from, MouseButton.Left, RawInputModifiers.LeftMouseButton);
         });
 
+    [Test]
+    public async Task Empty_floating_window_in_a_saved_layout_is_dropped_on_load() =>
+        await HeadlessSession.Run(async () =>
+        {
+            var hostMode = Dock.Settings.DockSettings.FloatingWindowHostMode;
+            Dock.Settings.DockSettings.FloatingWindowHostMode = DockFloatingWindowHostMode.Managed;
+            using var restore = new Restore(() => Dock.Settings.DockSettings.FloatingWindowHostMode = hostMode);
+            var config = Path.Join(Path.GetTempPath(), "inkitty-app-tests", Guid.NewGuid().ToString("N"));
+            await using (var first = AppFixture.Create(config))
+            {
+                // What closing a floating tool used to leave: its window, empty, the tool hidden inside it.
+                var factory = first.Shell.Factory;
+                factory.FloatDockable(factory.StoryMapTool);
+                await UiTestHelpers.WaitUntil(() => FloatingWindows(first).Length == 1);
+                var window = first.Shell.Layout.Windows!.Single();
+                var floatingRoot = (IRootDock)window.Layout!;
+                var map = factory.StoryMapTool;
+                ((IDock)map.Owner!).VisibleDockables!.Remove(map);
+                floatingRoot.HiddenDockables ??= new System.Collections.ObjectModel.ObservableCollection<IDockable>();
+                floatingRoot.HiddenDockables.Add(map);
+                map.Owner = floatingRoot;
+                await first.Shell.OnClosingAsync();
+                await Assert.That(first.Get<DockLayoutService>().LastError?.ToString()).IsNull();
+            }
+
+            await using var second = AppFixture.Create(config);
+            await Assert.That(second.Get<DockLayoutService>().LastError?.ToString()).IsNull();
+            await Assert.That(second.Shell.Layout.Windows?.Count ?? 0).IsEqualTo(0);
+            await Assert.That(FloatingWindows(second).Length).IsEqualTo(0);
+            await Assert.That(second.Shell.Factory.IsToolVisible(second.Shell.Factory.StoryMapTool)).IsFalse();
+
+            second.Shell.ShowStoryMapCommand.Execute(null);
+            await Assert.That(second.Shell.Factory.IsToolVisible(second.Shell.Factory.StoryMapTool)).IsTrue();
+            await Assert.That(second.Shell.Factory.FindRoot(second.Shell.Factory.StoryMapTool)).IsSameReferenceAs(second.Shell.Layout);
+        });
+
+    [Test]
+    public async Task Layout_with_a_floating_tool_round_trips() =>
+        await HeadlessSession.Run(async () =>
+        {
+            var hostMode = Dock.Settings.DockSettings.FloatingWindowHostMode;
+            Dock.Settings.DockSettings.FloatingWindowHostMode = DockFloatingWindowHostMode.Managed;
+            using var restore = new Restore(() => Dock.Settings.DockSettings.FloatingWindowHostMode = hostMode);
+            var config = Path.Join(Path.GetTempPath(), "inkitty-app-tests", Guid.NewGuid().ToString("N"));
+            await using (var first = AppFixture.Create(config))
+            {
+                first.Shell.Factory.FloatDockable(first.Shell.Factory.StoryMapTool);
+                await UiTestHelpers.WaitUntil(() => FloatingWindows(first).Length == 1);
+                await first.Shell.OnClosingAsync();
+                await Assert.That(first.Get<DockLayoutService>().LastError?.ToString()).IsNull();
+            }
+
+            await using var second = AppFixture.Create(config);
+            await Assert.That(second.Get<DockLayoutService>().LastError?.ToString()).IsNull();
+            var factory = second.Shell.Factory;
+            await Assert.That(second.Shell.Layout.Windows?.Count).IsEqualTo(1);
+            await Assert.That(factory.FindRoot(factory.StoryMapTool)).IsNotSameReferenceAs(second.Shell.Layout);
+            await Assert.That(factory.IsToolVisible(factory.StoryMapTool)).IsTrue();
+        });
+
     private sealed class Restore(Action action) : IDisposable
     {
         public void Dispose() => action();
     }
+
+    private static MdiDocumentWindow[] FloatingWindows(AppFixture app)
+    {
+        app.Window.UpdateLayout();
+        return [.. app.Window.GetVisualDescendants().OfType<MdiDocumentWindow>().Where(w => w.IsEffectivelyVisible)];
+    }
+
+    [Test]
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task Closing_a_floating_tool_removes_its_window_and_view_menu_brings_it_back(bool closeFromWindowTitleBar) =>
+        await HeadlessSession.Run(async () =>
+        {
+            var hostMode = Dock.Settings.DockSettings.FloatingWindowHostMode;
+            Dock.Settings.DockSettings.FloatingWindowHostMode = DockFloatingWindowHostMode.Managed;
+            using var restore = new Restore(() => Dock.Settings.DockSettings.FloatingWindowHostMode = hostMode);
+            await using var app = AppFixture.Create();
+            var factory = app.Shell.Factory;
+            var map = factory.StoryMapTool;
+
+            factory.FloatDockable(map);
+            await UiTestHelpers.WaitUntil(() => FloatingWindows(app).Length == 1);
+
+            if (closeFromWindowTitleBar)
+            {
+                // The floating window's own close button (Dock's title bar).
+                var close = FloatingWindows(app)[0].GetVisualDescendants().OfType<Avalonia.Controls.Button>()
+                    .Single(b => b.Name == "PART_ToolCloseButton");
+                close.Command!.Execute(close.CommandParameter);
+            }
+            else
+            {
+                factory.CloseDockable(map);
+            }
+
+            await Assert.That(factory.IsToolVisible(map)).IsFalse();
+            await Assert.That(FloatingWindows(app).Length).IsEqualTo(0);
+            await Assert.That(app.Shell.Layout.Windows?.Count ?? 0).IsEqualTo(0);
+
+            // View > Map shows it again, docked in the main window.
+            app.Shell.ShowStoryMapCommand.Execute(null);
+            await Assert.That(factory.IsToolVisible(map)).IsTrue();
+            await Assert.That(factory.FindRoot(map)).IsSameReferenceAs(app.Shell.Layout);
+            await Assert.That(FloatingWindows(app).Length).IsEqualTo(0);
+            var shown = await UiTestHelpers.WaitUntil(() =>
+            {
+                app.Window.UpdateLayout();
+                return app.Window.GetVisualDescendants().OfType<Views.Tools.StoryMapToolView>().Any(v => v.IsEffectivelyVisible);
+            });
+            await Assert.That(shown).IsTrue();
+        });
+
+    [Test]
+    public async Task Closed_floating_tool_returns_to_its_old_dock_if_it_is_still_there() =>
+        await HeadlessSession.Run(async () =>
+        {
+            var hostMode = Dock.Settings.DockSettings.FloatingWindowHostMode;
+            Dock.Settings.DockSettings.FloatingWindowHostMode = DockFloatingWindowHostMode.Managed;
+            using var restore = new Restore(() => Dock.Settings.DockSettings.FloatingWindowHostMode = hostMode);
+            await using var app = AppFixture.Create();
+            var factory = app.Shell.Factory;
+
+            // Variables shares the bottom dock with Issues, so that dock stays when Variables floats.
+            var bottom = (IDock)factory.VariablesTool.Owner!;
+            factory.FloatDockable(factory.VariablesTool);
+            await UiTestHelpers.WaitUntil(() => FloatingWindows(app).Length == 1);
+            factory.CloseDockable(factory.VariablesTool);
+            await Assert.That(FloatingWindows(app).Length).IsEqualTo(0);
+
+            app.Shell.ShowVariablesCommand.Execute(null);
+            await Assert.That(factory.VariablesTool.Owner).IsSameReferenceAs(bottom);
+            await Assert.That(bottom.ActiveDockable).IsSameReferenceAs(factory.VariablesTool);
+        });
 }
