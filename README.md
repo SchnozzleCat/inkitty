@@ -1,41 +1,24 @@
 # Inkitty
 
 An IDE for [ink](https://github.com/inkle/ink), inkle's narrative scripting language, built with
-[Avalonia](https://avaloniaui.net/) and modern C#. It's a prototype alternative to
+[Avalonia](https://avaloniaui.net/) and modern C# as an alternative to
 [Inky](https://github.com/inkle/inky) and runs on **Linux, Windows and macOS**, and in the browser at
-**https://schnozzlecat.github.io/inkitty/**.
+**<https://schnozzlecat.github.io/inkitty/>**.
 
 ## Features
 
-- **Play as you write.** The player re-runs the story after every edit and replays your choices,
-  so you stay where you were. Choices are matched by text, so inserting or reordering choices
-  doesn't lose your place. Restart and step back are one click away.
-- **Syntax highlighting** with a TextMate grammar for ink (`tools/ink-grammar/generate.py`) that every bundled colour theme understands: knots, diverts, choices and gathers, labels, tags, glue, conditionals and sequences, and logic as real expressions.
-- **Outline** of the current file: knots, stitches, functions, declarations, and choices and labelled
-  gathers with their labels and conditions. It follows the caret; click an entry to jump to it.
-- **Story map** drawing the story as a flow chart: knots and stitches, the choices and diverts between
-  them, and their conditions. It shows where the playthrough has been and where it is now; click a
-  knot to open it.
-- **Variables** pane listing the story's global variables and their current values in the playthrough.
-- **Colour themes:** 18 built-in themes (Light+/Dark+, Dracula, Monokai, Solarized, One Dark/Light,
-  Visual Studio, Abyss, High Contrast, ...) that restyle the whole window, not just the editor,
-  or "System" to follow the OS light/dark setting. The editor font is the bundled JetBrains Mono.
-- **Error highlighting.** Live recompiles as you type show squiggles, gutter markers and
-  tooltips. Unresolved diverts are underlined at the exact token, not just the line.
-- **Issue browser** listing errors, warnings, TODOs and runtime errors, with filters. Click an
-  issue, or press F8 / Shift+F8, to jump to it.
-- **Jump to definition** for knots, stitches, labels, variables, constants, lists, functions and
-  parameters, across files. Use Ctrl/Cmd+click (Alt/Option+click optional) or F12. Go back and
-  forward through navigation history.
-- **Multi-file projects** with no project file. Open the main `.ink` and Inkitty follows its
-  `INCLUDE`s. Typing `INCLUDE new.ink` creates the file.
-- **File watching.** Files changed on disk are reloaded. If you have unsaved edits, an info bar
-  lets you reload or keep yours.
-- **Docking.** The default layout has three columns: Files and Outline on the left, the editor
-  above Issues and Variables in the middle, and the Player above the Map on the right. Every pane
-  can be moved, tabbed, floated or pinned, and the layout is remembered.
-- **Settings** for auto-save (off / on focus lost / after a delay), colour theme, editor font, word wrap,
-  recompile delay and replay time limit.
+- **Play as you write**, replaying your choices after every edit so you stay where you are in the story.
+- **Syntax highlighting** to easily differentiate knots, diverts, choices and gathers, labels, tags, glue, conditionals and sequences.
+- **Outline** of the current file, showing what it contains at a quick glance.
+- **Story map** drawing the story as a flow chart, as well as where you currently are, and how often knots have been visited.
+- **Variables** showing the story's global variables and their current state.
+- **Colour themes** so you don't burn your eyes.
+- **Error highlighting** so any syntax mistakes are quickly spotted.
+- **Issue browser** showing errors, warnings, and TODOs across the project.
+- **Jump to definition** for knots, stitches, labels, variables, constants, lists, functions and parameters, across files.
+- **Multi-file projects** with `INCLUDE`s. Writing an include for a file that doesn't exist creates it.
+- **File watching** with unsaved edit detection.
+- **Docking** so you can customise the experience.
 
 ## Building and running
 
@@ -51,17 +34,18 @@ dotnet run --project src/Inkitty.Desktop -- samples/multi-file/main.ink
 On NixOS, `nix develop` (or direnv) provides the SDK and the native libraries Avalonia needs.
 
 On Linux, Inkitty uses X11 (XWayland on Wayland desktops) by default. When there is no X server
-it switches to Avalonia's native Wayland backend. You can force that choice with
+it switches to Avalonia's native Wayland backend, which can be overridden with
 `INKITTY_WAYLAND=1` or `INKITTY_WAYLAND=0`.
 
 ### In the browser
 
-Inkitty also runs in a browser tab (WebAssembly), served as static files, at
-<https://schnozzlecat.github.io/inkitty/>. On the first visit it opens inkle's
-[*The Intercept*](https://github.com/inkle/the-intercept) as a sample project (`samples/the-intercept`).
-Projects are kept in the browser's storage (IndexedDB); *File > Open…* lists them and imports a
-project folder, `.ink` files or a `.zip`, and *File > Export Project as .zip…* downloads a copy.
-Clearing the site's data deletes the projects, so export regularly.
+Inkitty also runs in a browser tab using AOT-compiled WebAssembly. The `main` branch is served at
+<https://schnozzlecat.github.io/inkitty/>.
+Projects are kept in the browser's storage; _File > Open…_ lists them and imports a
+project folder, `.ink` files or a `.zip`, and _File > Export Project as .zip…_ downloads a copy.
+
+> [!WARNING]
+> Clearing the site's data deletes the projects. Back up your work regularly.
 
 ```sh
 just publish-web    # writes the site to artifacts/web (scripts/publish-web.sh)
@@ -69,14 +53,9 @@ just serve          # ...and serves it on http://localhost:8080 (dotnet-serve; `
 ```
 
 The browser build needs the `wasm-tools` workload (`dotnet workload install wasm-tools`). If it isn't
-installed (the Nix SDK is read-only), the script builds in the .NET SDK container with podman or
+installed, the script builds in the .NET SDK container with podman or
 docker. Release builds compile everything to WebAssembly ahead of time, so the first publish takes
 a few minutes.
-
-Each push to `main` publishes the site to GitHub Pages (`.github/workflows/web.yml`; in the
-repository settings, *Pages > Source* must be *GitHub Actions*). Any static host works, as long as it
-allows large files: the runtime file `dotnet.native.wasm` is about 61 MB (12 MB with Brotli), which
-rules out hosts with a small per-file limit, such as Cloudflare Pages (25 MiB).
 
 ### Tests
 
@@ -104,18 +83,18 @@ can open them with Inkitty.
 
 ## Keyboard shortcuts
 
-| Action | Linux / Windows | macOS |
-|---|---|---|
-| New / Open project | Ctrl+N / Ctrl+O | Cmd+N / Cmd+O |
-| Save / Save all | Ctrl+S / Ctrl+Shift+S | Cmd+S / Cmd+Shift+S |
-| Close tab | Ctrl+W | Cmd+W |
-| Go to definition | F12, Ctrl+click | F12, Cmd+click |
-| Back / Forward | Alt+← / Alt+→ | Ctrl+- / Ctrl+Shift+- |
-| Next / previous issue | F8 / Shift+F8 | F8 / Shift+F8 |
-| Restart story | Ctrl+R | Cmd+R |
-| Show the story's current line | Ctrl+J | Cmd+J |
-| Show the map | Ctrl+Shift+M | Cmd+Shift+M |
-| Settings | Ctrl+, | Cmd+, |
+| Action                        | Linux / Windows       | macOS                 |
+| ----------------------------- | --------------------- | --------------------- |
+| New / Open project            | Ctrl+N / Ctrl+O       | Cmd+N / Cmd+O         |
+| Save / Save all               | Ctrl+S / Ctrl+Shift+S | Cmd+S / Cmd+Shift+S   |
+| Close tab                     | Ctrl+W                | Cmd+W                 |
+| Go to definition              | F12, Ctrl+click       | F12, Cmd+click        |
+| Back / Forward                | Alt+← / Alt+→         | Ctrl+- / Ctrl+Shift+- |
+| Next / previous issue         | F8 / Shift+F8         | F8 / Shift+F8         |
+| Restart story                 | Ctrl+R                | Cmd+R                 |
+| Show the story's current line | Ctrl+J                | Cmd+J                 |
+| Show the map                  | Ctrl+Shift+M          | Cmd+Shift+M           |
+| Settings                      | Ctrl+,                | Cmd+,                 |
 
 ## Where things are stored
 
@@ -130,14 +109,12 @@ the site's IndexedDB storage.
 
 ## How it works
 
-Inky writes your files to a temp folder and runs the `inklecate` command-line compiler on them.
-Inkitty instead compiles **in-process** with ink's C# compiler (`external/ink`, pinned to v1.2.1):
+Rather than writing your files to a temp directory and running the `inklecate` tool, Inkitty compiles **in-process** with ink's C# compiler.
 
 - Unsaved editor buffers are served to the compiler from memory, so no temp files are needed.
 - The compiler's parsed hierarchy gives exact symbol positions for jump-to-definition. These
   are available even when compilation fails.
-- The compiled story runs directly in the player. It runs in time slices with time and output
-  limits, so an endless loop can't freeze the IDE.
+- The compiled story runs directly in the player.
 
 ```
 src/Inkitty.Core      project model, compilation, issues, symbols, playback, file watching, settings (no UI)
@@ -150,6 +127,6 @@ samples/              example ink projects (multi-file; The Intercept, the brows
 
 ## Licence
 
-Inkitty is released under the [MIT License](LICENSE). ink and *The Intercept* (`samples/the-intercept`)
+Inkitty is released under the [MIT License](LICENSE). ink and _The Intercept_ (`samples/the-intercept`)
 are also MIT, © inkle Ltd; their notices are in `external/ink/LICENSE.txt` and
 `samples/the-intercept/README.md`.
