@@ -564,9 +564,19 @@
   </Style>
 
   <!-- Story map -->
+  <Style Selector="DockPanel.map-toolbar">
+    <Setter Property="Margin" Value="4,2,10,2" />
+  </Style>
   <Style Selector="WrapPanel.map-toolbar">
-    <Setter Property="Margin" Value="4,2,6,2" />
     <Setter Property="ItemSpacing" Value="2" />
+  </Style>
+  <!-- "n of m visited", on the right of the toolbar. -->
+  <Style Selector="DockPanel.map-toolbar TextBlock.summary">
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{DynamicResource InkittyMuted}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Margin" Value="12,0,0,0" />
   </Style>
   <Style Selector="TextBlock.pane-title">
     <Setter Property="FontWeight" Value="SemiBold" />
@@ -574,10 +584,6 @@
     <Setter Property="Foreground" Value="{DynamicResource InkittyMuted}" />
     <Setter Property="VerticalAlignment" Value="Center" />
     <Setter Property="Margin" Value="4,0,8,0" />
-  </Style>
-  <Style Selector="WrapPanel.map-legend TextBlock.summary">
-    <Setter Property="FontWeight" Value="SemiBold" />
-    <Setter Property="Margin" Value="0,0,14,0" />
   </Style>
   <Style Selector="WrapPanel.map-legend">
     <Setter Property="Margin" Value="10,4" />
