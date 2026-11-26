@@ -10,12 +10,23 @@ namespace Inkitty.App.Tests;
 [NotInParallel("ui")]
 public class MenuTests
 {
+    /// <summary>
+    /// The in-window menu bar is hidden on macOS (the native menu replaces it), and a hidden menu never
+    /// builds its popups' items. Show it so these tests exercise the same menu on every platform.
+    /// </summary>
+    private static void ShowInWindowMenu(AppFixture app)
+    {
+        app.Window.MainView.FindControl<Control>("MenuBar")!.IsVisible = true;
+        app.Window.UpdateLayout();
+    }
+
     [Test]
     public async Task Every_menu_opens_without_throwing_and_recent_items_open_projects() =>
         await HeadlessSession.Run(async () =>
         {
             var main = UiTestHelpers.CopySample("multi-file", out _);
             await using var app = AppFixture.Create(configure: s => s.Update(x => x.WithRecentProject(main)));
+            ShowInWindowMenu(app);
 
             var menu = app.Window.GetLogicalDescendants().OfType<Menu>().Single();
             foreach (var item in menu.Items.OfType<MenuItem>())
@@ -47,6 +58,7 @@ public class MenuTests
         {
             var main = UiTestHelpers.CopySample("multi-file", out _);
             await using var app = AppFixture.Create(configure: s => s.Update(x => x.WithRecentProject(main)));
+            ShowInWindowMenu(app);
 
             var recent = app.Window.GetLogicalDescendants().OfType<MenuItem>().Single(m => m.Name == "RecentMenu");
             var file = (MenuItem)recent.Parent!;
