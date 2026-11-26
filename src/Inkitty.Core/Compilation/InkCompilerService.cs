@@ -73,7 +73,7 @@ public sealed class InkCompilerService : IInkCompilerService
         }
 
         var graph = compiler.parsedStory is { } parsedStory
-            ? SafeBuildGraph(parsedStory, snapshot.MainFile, ResolveFile)
+            ? SafeBuildGraph(parsedStory, snapshot, ResolveFile)
             : StoryGraph.Empty;
 
         stopwatch.Stop();
@@ -94,11 +94,11 @@ public sealed class InkCompilerService : IInkCompilerService
         }
     }
 
-    private static StoryGraph SafeBuildGraph(Ink.Parsed.Story parsed, string mainFile, Func<string?, string?> resolveFile)
+    private static StoryGraph SafeBuildGraph(Ink.Parsed.Story parsed, ProjectSnapshot snapshot, Func<string?, string?> resolveFile)
     {
         try
         {
-            return StoryGraphBuilder.Build(parsed, mainFile, resolveFile);
+            return StoryGraphBuilder.Build(parsed, snapshot.MainFile, resolveFile, snapshot.TextOf);
         }
         catch (Exception)
         {

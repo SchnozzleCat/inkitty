@@ -40,7 +40,14 @@ public sealed record StoryNode(string Id, string Title, StoryNodeKind Kind, Sour
 
 /// <summary>A way the story can move from one node to another.</summary>
 /// <param name="Range">Where the divert (or choice) is written.</param>
-public sealed record StoryEdge(string From, string To, StoryEdgeKind Kind, string? Label = null, SourceRange? Range = null);
+/// <param name="Condition">
+/// The condition guarding this way out, as written (e.g. <c>{has_torch}</c>, <c>{coins &gt; 3}</c>,
+/// <c>{else}</c>); null if it's always taken or offered.
+/// </param>
+public sealed record StoryEdge(string From, string To, StoryEdgeKind Kind, string? Label = null, SourceRange? Range = null, string? Condition = null)
+{
+    public bool IsConditional => Condition is not null;
+}
 
 /// <summary>
 /// The flow of a story at knot/stitch level: which knots can lead to which, and through which choices.
@@ -57,8 +64,8 @@ public sealed class StoryGraph
     {
         Nodes = [.. nodes.DistinctBy(n => n.Id)];
         _byId = Nodes.ToFrozenDictionary(n => n.Id);
-        Edges = [.. edges.Where(e => _byId.ContainsKey(e.From) && _byId.ContainsKey(e.To)).DistinctBy(e => (e.From, e.To, e.Kind, e.Label))];
-        StructureKey = string.Join('\n', [.. Nodes.Select(n => n.Id), "--", .. Edges.Select(e => $"{e.From}>{e.To}:{e.Kind}:{e.Label}")]);
+        Edges = [.. edges.Where(e => _byId.ContainsKey(e.From) && _byId.ContainsKey(e.To)).DistinctBy(e => (e.From, e.To, e.Kind, e.Label, e.Condition))];
+        StructureKey = string.Join('\n', [.. Nodes.Select(n => n.Id), "--", .. Edges.Select(e => $"{e.From}>{e.To}:{e.Kind}:{e.Label}:{e.Condition}")]);
     }
 
     public static StoryGraph Empty { get; } = new([], []);
