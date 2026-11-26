@@ -37,7 +37,7 @@ submodule.
 ```sh
 git clone --recurse-submodules <repo-url> inkitty   # or: git submodule update --init
 cd inkitty
-dotnet run --project src/Inkitty.App -- samples/multi-file/main.ink
+dotnet run --project src/Inkitty.Desktop -- samples/multi-file/main.ink
 ```
 
 On NixOS, `nix develop` (or direnv) provides the SDK and the native libraries Avalonia needs.
@@ -45,6 +45,23 @@ On NixOS, `nix develop` (or direnv) provides the SDK and the native libraries Av
 On Linux, Inkitty uses X11 (XWayland on Wayland desktops) by default. When there is no X server
 it switches to Avalonia's native Wayland backend. You can force that choice with
 `INKITTY_WAYLAND=1` or `INKITTY_WAYLAND=0`.
+
+### In the browser
+
+Inkitty also runs in a browser tab (WebAssembly), served as static files. Projects are kept in the
+browser's storage (IndexedDB); *File > Open…* lists them and imports `.ink` files or a `.zip`, and
+*File > Export Project as .zip…* downloads a copy. Clearing the site's data deletes the projects,
+so export regularly.
+
+```sh
+scripts/publish-web.sh            # writes the site to artifacts/web
+scripts/publish-web.sh --serve    # ...and serves it on http://localhost:8080
+```
+
+The browser build needs the `wasm-tools` workload (`dotnet workload install wasm-tools`). If it isn't
+installed (the Nix SDK is read-only), the script builds in the .NET SDK container with podman or
+docker. `.github/workflows/web.yml` publishes `main` to GitHub Pages. Design notes and limitations:
+[docs/web.md](docs/web.md).
 
 ### Tests
 
@@ -62,11 +79,11 @@ All tests use [TUnit](https://tunit.dev/):
 ### Publishing
 
 ```sh
-dotnet publish src/Inkitty.App -c Release -r linux-x64 --self-contained   # or win-x64, osx-arm64, osx-x64
+dotnet publish src/Inkitty.Desktop -c Release -r linux-x64 --self-contained   # or win-x64, osx-arm64, osx-x64
 ```
 
 For a macOS `.app` bundle, put the published output in `Inkitty.app/Contents/MacOS/` and
-`src/Inkitty.App/Info.plist` in `Inkitty.app/Contents/`. The plist registers `.ink` files so Finder
+`src/Inkitty.Desktop/Info.plist` in `Inkitty.app/Contents/`. The plist registers `.ink` files so Finder
 can open them with Inkitty.
 
 ## Keyboard shortcuts
@@ -104,10 +121,12 @@ Inkitty instead compiles **in-process** with ink's C# compiler (`external/ink`, 
   limits, so an endless loop can't freeze the IDE.
 
 ```
-src/Inkitty.Core   project model, compilation, issues, symbols, playback, file watching, settings (no UI)
-src/Inkitty.App    Avalonia app: docking shell, editor control, tools, view models
-tests/             TUnit tests for both
-samples/           example ink projects
+src/Inkitty.Core      project model, compilation, issues, symbols, playback, file watching, settings (no UI)
+src/Inkitty.App       Avalonia UI library: docking shell, editor control, tools, view models
+src/Inkitty.Desktop   desktop executable (Linux, Windows, macOS)
+src/Inkitty.Browser   browser executable (WebAssembly) and its web page
+tests/                TUnit tests for Core and App
+samples/              example ink projects
 ```
 
 ## Licence
