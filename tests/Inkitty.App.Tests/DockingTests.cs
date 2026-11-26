@@ -239,4 +239,42 @@ public class DockingTests
                 Dock.Settings.DockSettings.FloatingWindowHostMode = hostMode;
             }
         });
+
+    [Test]
+    public async Task Drop_selectors_are_drawn_in_the_theme_colours() =>
+        await HeadlessSession.Run(async () =>
+        {
+            await using var app = AppFixture.Create(configure: s => s.Update(x => x with { ColorTheme = "light-plus" }));
+            var factory = app.Shell.Factory;
+            await UiTestHelpers.WaitUntil(() =>
+            {
+                app.Window.UpdateLayout();
+                return app.Window.GetVisualDescendants().OfType<PaneGrip>().Count() == ShownTools(factory).Count;
+            });
+
+            var grip = app.Window.GetVisualDescendants().OfType<PaneGrip>().Single(g => g.Dockable == factory.PlayerTool);
+            var from = grip.TranslatePoint(new Point(grip.Bounds.Width / 2, 4), app.Window)!.Value;
+            var filesView = app.Window.GetVisualDescendants().OfType<Views.Tools.FileTreeToolView>().Single();
+            var to = filesView.TranslatePoint(new Point(filesView.Bounds.Width / 2, filesView.Bounds.Height / 2), app.Window)!.Value;
+            app.Window.MouseDown(from, MouseButton.Left);
+            for (var i = 1; i <= 10; i++)
+            {
+                app.Window.MouseMove(from + ((to - from) * (i / 10.0)), RawInputModifiers.LeftMouseButton);
+            }
+
+            app.Window.UpdateLayout();
+            Avalonia.Controls.Image[] Selectors() => [.. app.Window.GetVisualDescendants().OfType<Avalonia.Controls.Image>()
+                .Where(i => i.TemplatedParent is DockTargetBase && i.Name?.EndsWith("Selector", StringComparison.Ordinal) == true && i.IsEffectivelyVisible)];
+            var selectors = Selectors();
+            await Assert.That(selectors.Length).IsGreaterThanOrEqualTo(5);
+            await Assert.That(selectors.All(i => i.Source is Avalonia.Media.DrawingImage)).IsTrue();
+
+            // A theme switch while dragging swaps them for the new theme's.
+            var before = selectors[0].Source;
+            app.Settings.Update(s => s with { ColorTheme = "dracula" });
+            app.Window.UpdateLayout();
+            await Assert.That(Selectors()[0].Source).IsNotSameReferenceAs(before);
+
+            app.Window.MouseUp(from, MouseButton.Left, RawInputModifiers.LeftMouseButton);
+        });
 }

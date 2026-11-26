@@ -159,6 +159,12 @@ public sealed class ThemeService
         // Dock reads RegionColor (a Color, not a brush) for its pane backgrounds.
         _brushes["RegionColor"] = c.Sidebar;
 
+        // Dock drop selectors (Styles/Inkitty.axaml): replaced per theme, they're only read via DynamicResource.
+        foreach (var side in DockSelectorIcons.Sides)
+        {
+            _brushes[DockSelectorIcons.Key(side)] = DockSelectorIcons.Create(side, theme);
+        }
+
         Dictionary<string, Color> brushes = new()
         {
             ["DockThemeBackgroundBrush"] = c.Sidebar,

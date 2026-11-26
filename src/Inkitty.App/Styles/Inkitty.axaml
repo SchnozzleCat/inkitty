@@ -47,6 +47,23 @@
     <Setter Property="BorderThickness" Value="0" />
   </Style>
 
+  <!-- Dock drop selectors in the theme's colours (Theming/DockSelectorIcons, filled in by ThemeService). -->
+  <Style Selector="DockTarget /template/ Image#PART_TopSelector, GlobalDockTarget /template/ Image#PART_TopSelector">
+    <Setter Property="Source" Value="{DynamicResource InkittyDockSelectorTop}" />
+  </Style>
+  <Style Selector="DockTarget /template/ Image#PART_BottomSelector, GlobalDockTarget /template/ Image#PART_BottomSelector">
+    <Setter Property="Source" Value="{DynamicResource InkittyDockSelectorBottom}" />
+  </Style>
+  <Style Selector="DockTarget /template/ Image#PART_LeftSelector, GlobalDockTarget /template/ Image#PART_LeftSelector">
+    <Setter Property="Source" Value="{DynamicResource InkittyDockSelectorLeft}" />
+  </Style>
+  <Style Selector="DockTarget /template/ Image#PART_RightSelector, GlobalDockTarget /template/ Image#PART_RightSelector">
+    <Setter Property="Source" Value="{DynamicResource InkittyDockSelectorRight}" />
+  </Style>
+  <Style Selector="DockTarget /template/ Image#PART_CenterSelector">
+    <Setter Property="Source" Value="{DynamicResource InkittyDockSelectorCenter}" />
+  </Style>
+
   <!-- Pane grip (replaces the title bar): an invisible strip along the top, a short bar on hover. -->
   <Style Selector="controls|PaneGrip">
     <Setter Property="Height" Value="8" />
