@@ -1,5 +1,11 @@
+using Avalonia;
+using Avalonia.Headless;
+using Avalonia.Input;
+using Avalonia.VisualTree;
+using Dock.Avalonia.Controls;
 using Dock.Model.Controls;
 using Dock.Model.Core;
+using Inkitty.App.Controls;
 using Inkitty.App.Docking;
 using Inkitty.App.Tests.Infrastructure;
 
@@ -97,5 +103,42 @@ public class DockingTests
             await Assert.That(main.Document.UndoStack.CanUndo).IsTrue();
             main.Document.UndoStack.Undo();
             await Assert.That(main.Document.Text).DoesNotStartWith("// edit");
+        });
+
+    [Test]
+    public async Task Tool_panes_have_no_title_bar_and_move_by_their_grip() =>
+        await HeadlessSession.Run(async () =>
+        {
+            await using var app = AppFixture.Create();
+            var factory = app.Shell.Factory;
+            await UiTestHelpers.WaitUntil(() =>
+            {
+                app.Window.UpdateLayout();
+                return app.Window.GetVisualDescendants().OfType<PaneGrip>().Count() == 3;
+            });
+
+            // No Dock title bars are shown; each tool has a grip instead.
+            var titleBars = app.Window.GetVisualDescendants().OfType<Avalonia.Controls.Border>()
+                .Where(b => b.Name == "PART_Border" && b.TemplatedParent is ToolChromeControl && b.IsEffectivelyVisible);
+            await Assert.That(titleBars.Count()).IsEqualTo(0);
+            var grips = app.Window.GetVisualDescendants().OfType<PaneGrip>().ToList();
+            await Assert.That(grips.Select(g => g.Dockable).ToHashSet().SetEquals(factory.Tools)).IsTrue();
+
+            // Dragging the Player's grip onto the Files pane tabs Player in with Files.
+            var grip = grips.Single(g => g.Dockable == factory.PlayerTool);
+            var from = grip.TranslatePoint(new Point(grip.Bounds.Width / 2, 4), app.Window)!.Value;
+            var filesView = app.Window.GetVisualDescendants().OfType<Views.Tools.FileTreeToolView>().Single();
+            var to = filesView.TranslatePoint(new Point(filesView.Bounds.Width / 2, filesView.Bounds.Height / 2), app.Window)!.Value;
+
+            app.Window.MouseDown(from, MouseButton.Left);
+            for (var i = 1; i <= 10; i++)
+            {
+                app.Window.MouseMove(from + ((to - from) * (i / 10.0)), RawInputModifiers.LeftMouseButton);
+            }
+
+            app.Window.MouseUp(to, MouseButton.Left, RawInputModifiers.LeftMouseButton);
+            app.Window.UpdateLayout();
+
+            await Assert.That(factory.PlayerTool.Owner).IsEqualTo(factory.FilesTool.Owner);
         });
 }
