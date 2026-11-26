@@ -142,7 +142,24 @@ public sealed class InkProject
                 // Only auto-create files that look like ink files, so half-typed INCLUDE lines
                 // ("INCLUDE chap") don't spawn stray buffers.
                 var existed = _loaded.ContainsKey(relative) || _fileSystem.FileExists(ProjectPaths.ToFullPath(RootDirectory, relative));
-                if (GetOrLoad(relative, createIfMissing: ProjectPaths.IsInkFile(relative)) is { } child)
+                InkSourceFile? child;
+                try
+                {
+                    child = GetOrLoad(relative, createIfMissing: ProjectPaths.IsInkFile(relative));
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    // Leave it out (the compiler then reports it as not loaded) and try again next scan,
+                    // rather than fail every refresh and stop live compilation.
+                    issues.Add(new Issue(
+                        IssueSeverity.Error,
+                        $"INCLUDE '{include.Path}' could not be read: {ex.Message}",
+                        SourceRange.WholeLine(file.RelativePath, include.Line),
+                        IssueOrigin.Project));
+                    continue;
+                }
+
+                if (child is not null)
                 {
                     if (!existed)
                     {

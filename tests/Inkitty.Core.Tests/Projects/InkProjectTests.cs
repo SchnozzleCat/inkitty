@@ -68,6 +68,39 @@ public class InkProjectTests
     }
 
     [Test]
+    public async Task Unreadable_include_is_reported_and_retried_on_the_next_scan()
+    {
+        if (OperatingSystem.IsWindows() || Environment.UserName == "root")
+        {
+            return; // relies on Unix permissions, which root ignores
+        }
+
+        using var dir = new TempDirectory();
+        var main = dir.Write("main.ink", "INCLUDE a.ink\nINCLUDE b.ink\n");
+        var a = dir.Write("a.ink", "A");
+        dir.Write("b.ink", "B");
+        File.SetUnixFileMode(a, UnixFileMode.None);
+        try
+        {
+            var project = InkProject.Open(main);
+
+            await Assert.That(project.Files.Select(f => f.RelativePath)).IsEquivalentTo(["main.ink", "b.ink"]);
+            await Assert.That(project.IncludeIssues).Count().IsEqualTo(1);
+            await Assert.That(project.IncludeIssues[0].Line).IsEqualTo(1);
+
+            File.SetUnixFileMode(a, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+            project.RefreshIncludes();
+
+            await Assert.That(project.Find("a.ink")?.Text).IsEqualTo("A");
+            await Assert.That(project.IncludeIssues).IsEmpty();
+        }
+        finally
+        {
+            File.SetUnixFileMode(a, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+        }
+    }
+
+    [Test]
     public async Task Removing_an_include_drops_the_file()
     {
         using var dir = new TempDirectory();
