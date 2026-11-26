@@ -9,7 +9,7 @@ An IDE for [ink](https://github.com/inkle/ink), inkle's narrative scripting lang
 - **Play as you write.** The player re-runs the story after every edit and replays your choices,
   so you stay where you were. Choices are matched by text, so inserting or reordering choices
   doesn't lose your place. Restart and step back are one click away.
-- **Syntax highlighting** with inkle's own TextMate grammar.
+- **Syntax highlighting** with a TextMate grammar for ink (`tools/ink-grammar/generate.py`) that every bundled colour theme understands: knots, diverts, choices and gathers, labels, tags, glue, conditionals and sequences, and logic as real expressions.
 - **Colour themes:** 18 built-in themes (Light+/Dark+, Dracula, Monokai, Solarized, One Dark/Light,
   Visual Studio, Abyss, High Contrast, ...) that restyle the whole window, not just the editor,
   or "System" to follow the OS light/dark setting. The editor font is the bundled JetBrains Mono.
@@ -112,4 +112,4 @@ samples/           example ink projects
 
 ## Licence
 
-Inkitty's code is yours to license. ink and its Sublime syntax are MIT, © inkle Ltd.
+Inkitty's code is yours to license. ink is MIT, © inkle Ltd.
