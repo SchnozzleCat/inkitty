@@ -22,6 +22,11 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     name: test (${{ matrix.os }})
+    env:
+      # TUnit writes each suite's results here without a per-job summary; the report job below
+      # merges all three OSes into one summary block and HTML report.
+      TUNIT_AGGREGATE_REPORTS: defer
+      TUNIT_AGGREGATE_DIR: ${{ github.workspace }}/test-reports
     steps:
       - uses: actions/checkout@v4
         with:
@@ -36,6 +41,43 @@ jobs:
 
       - name: Test
         run: dotnet test --solution Inkitty.slnx -c Release --no-build
+
+      - name: Upload test results
+        if: always() # failing runs are the ones worth reading
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.os }}
+          path: test-reports/
+          if-no-files-found: ignore
+
+  # One summary for all three OSes on the run's page, plus a merged HTML report as an artifact.
+  # https://tunit.dev/docs/guides/report-aggregation
+  test-report:
+    needs: test
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-*
+          path: test-reports
+
+      - name: Merge test results
+        run: |
+          dotnet tool restore
+          touch "$GITHUB_STEP_SUMMARY"
+          dotnet tunit-report merge --directory test-reports --output test-report.html --github-summary
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: test-report.html
 
   web:
     needs: test
