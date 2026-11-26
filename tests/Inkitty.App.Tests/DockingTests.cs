@@ -14,6 +14,10 @@ namespace Inkitty.App.Tests;
 [NotInParallel("ui")]
 public class DockingTests
 {
+    /// <summary>Tools whose pane is on screen: the selected tab of each tool dock (others are behind it).</summary>
+    private static HashSet<IDockable> ShownTools(InkittyDockFactory factory) =>
+        [.. factory.Tools.Where(t => t.Owner is IDock { ActiveDockable: var active } && active == t)];
+
     private static IEnumerable<IDockable> All(IDockable dockable) =>
         dockable is IDock dock ? [dockable, .. (dock.VisibleDockables ?? []).SelectMany(All)] : [dockable];
 
@@ -114,7 +118,7 @@ public class DockingTests
             await UiTestHelpers.WaitUntil(() =>
             {
                 app.Window.UpdateLayout();
-                return app.Window.GetVisualDescendants().OfType<PaneGrip>().Count() == 3;
+                return app.Window.GetVisualDescendants().OfType<PaneGrip>().Count() == ShownTools(factory).Count;
             });
 
             // No Dock title bars are shown; each tool has a grip instead.
@@ -122,7 +126,7 @@ public class DockingTests
                 .Where(b => b.Name == "PART_Border" && b.TemplatedParent is ToolChromeControl && b.IsEffectivelyVisible);
             await Assert.That(titleBars.Count()).IsEqualTo(0);
             var grips = app.Window.GetVisualDescendants().OfType<PaneGrip>().ToList();
-            await Assert.That(grips.Select(g => g.Dockable).ToHashSet().SetEquals(factory.Tools)).IsTrue();
+            await Assert.That(grips.Select(g => g.Dockable).ToHashSet().SetEquals(ShownTools(factory))).IsTrue();
 
             // Dragging the Player's grip onto the Files pane tabs Player in with Files.
             var grip = grips.Single(g => g.Dockable == factory.PlayerTool);
