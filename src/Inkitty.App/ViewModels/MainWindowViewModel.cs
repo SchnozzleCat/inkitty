@@ -100,13 +100,16 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IRecipient<Navi
     public partial IRootDock Layout { get; private set; }
 
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(SaveCommand), nameof(SaveAllCommand), nameof(RestartStoryCommand), nameof(RevealStoryPositionCommand))]
+    [NotifyCanExecuteChangedFor(nameof(SaveCommand), nameof(SaveAllCommand), nameof(RestartStoryCommand), nameof(RevealStoryPositionCommand), nameof(ExportProjectCommand))]
     public partial ProjectViewModel? Project { get; private set; }
 
     [ObservableProperty]
     public partial EditorDocumentViewModel? ActiveDocument { get; private set; }
 
     partial void OnActiveDocumentChanged(EditorDocumentViewModel? value) => Factory.OutlineTool.Show(value);
+
+    /// <summary>Names opened projects (the browser uses the workspace folder name); null uses the main file's name.</summary>
+    public Func<InkProject, string?>? ProjectNamer { get; init; }
 
     [ObservableProperty]
     public partial string WindowTitle { get; private set; } = "Inkitty";
@@ -166,7 +169,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IRecipient<Navi
             return;
         }
 
-        var vm = new ProjectViewModel(project, _compiler, _settings, _dispatcher, _messenger, _loggerFactory, _time, _watchFiles);
+        var vm = new ProjectViewModel(project, _compiler, _settings, _dispatcher, _messenger, _loggerFactory, _time, _watchFiles)
+        {
+            Name = ProjectNamer?.Invoke(project) ?? project.Name,
+        };
         vm.Compiled += OnCompiled;
         vm.PropertyChanged += (_, e) =>
         {
@@ -197,7 +203,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IRecipient<Navi
 
         OpenDocument(project.Main);
         UpdateTitle();
-        ShowStatus($"Opened {project.Name}");
+        ShowStatus($"Opened {vm.Name}");
         vm.RequestCompileNow();
     }
 
@@ -384,6 +390,29 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IRecipient<Navi
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             await _dialogs.ShowErrorAsync("Save failed", ex.Message);
+        }
+    }
+
+    /// <summary>Saves a .zip of the project's ink files (unsaved edits included) outside the project.</summary>
+    [RelayCommand(CanExecute = nameof(HasProject))]
+    private async Task ExportProjectAsync()
+    {
+        if (Project is not { } project)
+        {
+            return;
+        }
+
+        try
+        {
+            var zip = Core.Workspace.ProjectArchive.Create(project.Project);
+            if (await _dialogs.SaveCopyAsync($"{project.Name}.zip", zip))
+            {
+                ShowStatus($"Exported {project.Name}.zip");
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            await _dialogs.ShowErrorAsync("Export failed", ex.Message);
         }
     }
 

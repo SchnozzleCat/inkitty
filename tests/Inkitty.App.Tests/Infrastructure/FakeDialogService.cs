@@ -25,6 +25,15 @@ public sealed class FakeDialogService : IDialogService
         return Task.FromResult(UnsavedChoice);
     }
 
+    /// <summary>Copies saved with <see cref="SaveCopyAsync"/> (file name, contents).</summary>
+    public List<(string Name, byte[] Contents)> SavedCopies { get; } = [];
+
+    public Task<bool> SaveCopyAsync(string suggestedFileName, byte[] contents)
+    {
+        SavedCopies.Add((suggestedFileName, contents));
+        return Task.FromResult(true);
+    }
+
     public Task ShowErrorAsync(string title, string message)
     {
         Errors.Add($"{title}: {message}");

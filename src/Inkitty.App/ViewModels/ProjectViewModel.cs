@@ -41,6 +41,7 @@ public sealed partial class ProjectViewModel : ViewModelBase, IAsyncDisposable
         bool watchFiles = true)
     {
         Project = project;
+        Name = project.Name;
         _dispatcher = dispatcher;
         _messenger = messenger;
         _logger = loggerFactory.CreateLogger<ProjectViewModel>();
@@ -68,7 +69,8 @@ public sealed partial class ProjectViewModel : ViewModelBase, IAsyncDisposable
 
     public InkProject Project { get; }
 
-    public string Name => Project.Name;
+    /// <summary>Shown in the title, the Files pane and export names. Defaults to the main file's name.</summary>
+    public string Name { get; init; } = string.Empty;
 
     /// <summary>Files in include order.</summary>
     public ObservableCollection<InkSourceFile> Files { get; } = [];

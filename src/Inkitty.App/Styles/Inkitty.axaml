@@ -1,5 +1,6 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:controls="using:Inkitty.App.Controls"
+        xmlns:views="using:Inkitty.App.Views"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <Styles.Resources>
     <ResourceDictionary>
@@ -130,6 +131,26 @@
   </Style>
   <Style Selector="Window">
     <Setter Property="Background" Value="{DynamicResource SystemRegionBrush}" />
+  </Style>
+  <Style Selector="views|MainView">
+    <Setter Property="Background" Value="{DynamicResource SystemRegionBrush}" />
+  </Style>
+
+  <!-- In-view modal dialogs (browser) -->
+  <Style Selector="Border.modal-backdrop">
+    <Setter Property="Background" Value="#66000000" />
+  </Style>
+  <Style Selector="Border.modal-card">
+    <Setter Property="Background" Value="{DynamicResource SystemRegionBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseLowBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="BoxShadow" Value="0 8 32 0 #50000000" />
+    <Setter Property="MaxWidth" Value="720" />
+  </Style>
+  <Style Selector="TextBlock.modal-title">
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Margin" Value="20,14,20,0" />
   </Style>
 
   <!-- Status bar -->

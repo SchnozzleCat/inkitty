@@ -1,11 +1,9 @@
-<Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="using:Inkitty.App.ViewModels"
-        x:Class="Inkitty.App.Views.SettingsWindow"
-        x:DataType="vm:SettingsViewModel"
-        Title="Settings"
-        Width="520" SizeToContent="Height" CanResize="False"
-        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Inkitty.App.ViewModels"
+             x:Class="Inkitty.App.Views.SettingsView"
+             x:DataType="vm:SettingsViewModel"
+             Width="520">
   <StackPanel Margin="20" Spacing="14">
     <TextBlock Classes="section" Text="Saving" />
     <Grid ColumnDefinitions="180,*" RowDefinitions="Auto,Auto" RowSpacing="8">
@@ -63,4 +61,4 @@
       <Button Content="Reset to defaults" Command="{Binding ResetToDefaultsCommand}" />
     </DockPanel>
   </StackPanel>
-</Window>
+</UserControl>

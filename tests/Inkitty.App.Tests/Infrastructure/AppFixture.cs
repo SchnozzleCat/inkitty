@@ -39,7 +39,7 @@ public sealed class AppFixture : IAsyncDisposable
 
     public ProjectViewModel Project => Shell.Project ?? throw new InvalidOperationException("No project open");
 
-    public static AppFixture Create(string? configDirectory = null, bool watchFiles = false, Action<ISettingsStore>? configure = null)
+    public static AppFixture Create(string? configDirectory = null, bool watchFiles = false, Action<ISettingsStore>? configure = null, Func<Core.Projects.InkProject, string?>? projectNamer = null)
     {
         configDirectory ??= Path.Join(Path.GetTempPath(), "inkitty-app-tests", Guid.NewGuid().ToString("N"));
         var services = App.ConfigureServices(new AppOptions
@@ -47,6 +47,7 @@ public sealed class AppFixture : IAsyncDisposable
             ConfigDirectory = configDirectory,
             WatchFiles = watchFiles,
             Dialogs = new FakeDialogService(),
+            ProjectNamer = projectNamer,
         });
         configure?.Invoke(services.GetRequiredService<ISettingsStore>());
         services.GetRequiredService<Services.ThemeService>().ApplyCurrent(); // as App startup does

@@ -6,7 +6,7 @@
         Title="{Binding WindowTitle}"
         Width="1400" Height="860" MinWidth="640" MinHeight="400"
         WindowStartupLocation="CenterScreen"
-        DragDrop.AllowDrop="True">
+        xmlns:views="using:Inkitty.App.Views">
   <NativeMenu.Menu>
     <NativeMenu>
       <NativeMenuItem Header="File">
@@ -16,6 +16,7 @@
           <NativeMenuItemSeparator />
           <NativeMenuItem Header="Save" Command="{Binding SaveCommand}" Gesture="Cmd+S" />
           <NativeMenuItem Header="Save All" Command="{Binding SaveAllCommand}" Gesture="Cmd+Shift+S" />
+          <NativeMenuItem Header="Export Project as .zip…" Command="{Binding ExportProjectCommand}" />
           <NativeMenuItemSeparator />
           <NativeMenuItem Header="Close Tab" Command="{Binding CloseDocumentCommand}" Gesture="Cmd+W" />
           <NativeMenuItem Header="Close Project" Command="{Binding CloseProjectCommandCommand}" />
@@ -55,79 +56,5 @@
     </NativeMenu>
   </NativeMenu.Menu>
 
-  <DockPanel>
-    <!-- In-window menu for Linux and Windows; macOS uses the native menu above. -->
-    <Menu DockPanel.Dock="Top" x:Name="InWindowMenu">
-      <MenuItem Header="_File">
-        <MenuItem Header="_New Project…" Command="{Binding NewProjectCommand}" InputGesture="Ctrl+N" />
-        <MenuItem Header="_Open…" Command="{Binding OpenCommand}" InputGesture="Ctrl+O" />
-        <MenuItem x:Name="RecentMenu" Header="Open _Recent" ItemsSource="{Binding RecentProjects}" IsEnabled="{Binding HasRecentProjects}">
-          <MenuItem.Styles>
-            <!-- Only the generated children: a bare "MenuItem" selector would also match this item itself. -->
-            <Style Selector="MenuItem#RecentMenu > MenuItem" x:DataType="x:String">
-              <Setter Property="Header" Value="{Binding}" />
-              <Setter Property="Command" Value="{Binding #InWindowMenu.((vm:MainWindowViewModel)DataContext).OpenRecentCommand}" />
-              <Setter Property="CommandParameter" Value="{Binding}" />
-            </Style>
-          </MenuItem.Styles>
-        </MenuItem>
-        <Separator />
-        <MenuItem Header="_Save" Command="{Binding SaveCommand}" InputGesture="Ctrl+S" />
-        <MenuItem Header="Save _All" Command="{Binding SaveAllCommand}" InputGesture="Ctrl+Shift+S" />
-        <Separator />
-        <MenuItem Header="_Close Tab" Command="{Binding CloseDocumentCommand}" InputGesture="Ctrl+W" />
-        <MenuItem Header="Close _Project" Command="{Binding CloseProjectCommandCommand}" />
-        <Separator />
-        <MenuItem Header="E_xit" Command="{Binding ExitCommand}" />
-      </MenuItem>
-      <MenuItem Header="_Edit">
-        <MenuItem Header="_Settings…" Command="{Binding OpenSettingsCommand}" InputGesture="Ctrl+OemComma" />
-      </MenuItem>
-      <MenuItem Header="_Go">
-        <MenuItem Header="Go to _Definition" Command="{Binding GoToDefinitionCommand}" InputGesture="F12" />
-        <MenuItem Header="_Back" Command="{Binding GoBackCommand}" InputGesture="Alt+Left" />
-        <MenuItem Header="_Forward" Command="{Binding GoForwardCommand}" InputGesture="Alt+Right" />
-        <Separator />
-        <MenuItem Header="_Next Issue" Command="{Binding NextIssueCommand}" InputGesture="F8" />
-        <MenuItem Header="_Previous Issue" Command="{Binding PreviousIssueCommand}" InputGesture="Shift+F8" />
-      </MenuItem>
-      <MenuItem Header="_Story">
-        <MenuItem Header="_Restart" Command="{Binding RestartStoryCommand}" InputGesture="Ctrl+R" />
-        <MenuItem Header="Step _Back" Command="{Binding StepBackStoryCommand}" />
-        <Separator />
-        <MenuItem Header="Show _Current Line" Command="{Binding RevealStoryPositionCommand}" InputGesture="Ctrl+J" />
-        <MenuItem Header="Story _Map" Command="{Binding ShowStoryMapCommand}" InputGesture="Ctrl+Shift+M" />
-      </MenuItem>
-      <MenuItem Header="_View">
-        <MenuItem Header="_Files" Command="{Binding ShowFilesCommand}" />
-        <MenuItem Header="_Outline" Command="{Binding ShowOutlineCommand}" />
-        <MenuItem Header="_Player" Command="{Binding ShowPlayerCommand}" />
-        <MenuItem Header="_Issues" Command="{Binding ShowIssuesCommand}" />
-        <MenuItem Header="Story _Map" Command="{Binding ShowStoryMapCommand}" />
-        <MenuItem Header="_Variables" Command="{Binding ShowVariablesCommand}" />
-        <Separator />
-        <MenuItem Header="_Reset Layout" Command="{Binding ResetLayoutCommand}" />
-      </MenuItem>
-    </Menu>
-
-    <!-- Status bar -->
-    <Border DockPanel.Dock="Bottom" Classes="statusbar">
-      <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
-        <ProgressBar Grid.Column="0" IsIndeterminate="True" Width="40" Height="4" Margin="0,0,8,0"
-                     IsVisible="{Binding IsCompiling}" VerticalAlignment="Center" />
-        <TextBlock Grid.Column="1" Text="{Binding CompileStatus}" Margin="0,0,16,0" />
-        <TextBlock Grid.Column="2" Text="{Binding StatusText}" TextTrimming="CharacterEllipsis" />
-        <TextBlock Grid.Column="3" Text="{Binding CaretText}" Margin="16,0" />
-        <Button Grid.Column="4" Classes="counts" Command="{Binding ShowIssuesCommand}" ToolTip.Tip="Show issues">
-          <StackPanel Orientation="Horizontal" Spacing="10">
-            <TextBlock Classes="count error" Text="{Binding ErrorCount, StringFormat='● {0}'}" />
-            <TextBlock Classes="count warning" Text="{Binding WarningCount, StringFormat='▲ {0}'}" />
-            <TextBlock Classes="count todo" Text="{Binding TodoCount, StringFormat='✎ {0}'}" />
-          </StackPanel>
-        </Button>
-      </Grid>
-    </Border>
-
-    <DockControl x:Name="DockControl" Layout="{Binding Layout}" InitializeLayout="False" InitializeFactory="False" />
-  </DockPanel>
+  <views:MainView x:Name="View" />
 </Window>

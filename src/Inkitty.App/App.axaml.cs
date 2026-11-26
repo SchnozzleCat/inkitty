@@ -45,6 +45,10 @@ public partial class App : Application
             {
                 window.Opened += async (_, _) => await shell.OpenProjectAsync(Path.GetFullPath(file));
             }
+            else if (Options.StartupProject is { } startup)
+            {
+                window.Opened += async (_, _) => await startup(shell);
+            }
 
             // Developer aid: INKITTY_SNAPSHOT=out.png renders the window to a PNG after startup.
             if (Environment.GetEnvironmentVariable("INKITTY_SNAPSHOT") is { Length: > 0 } snapshotPath)
@@ -56,6 +60,28 @@ public partial class App : Application
                     using var bitmap = new Avalonia.Media.Imaging.RenderTargetBitmap(size);
                     bitmap.Render(window);
                     bitmap.Save(snapshotPath, new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
+                };
+            }
+        }
+
+        else if (ApplicationLifetime is ISingleViewApplicationLifetime singleView)
+        {
+            // Browser: the IDE is the page. Dialogs are overlays inside the view.
+            MainView.UseDialogWindows = false;
+            var shell = services.GetRequiredService<MainWindowViewModel>();
+            var view = new MainView { DataContext = shell };
+            singleView.MainView = view;
+            Options.ShellCreated?.Invoke(shell, view);
+            if (Options.StartupProject is { } startup)
+            {
+                var started = false;
+                view.Loaded += async (_, _) =>
+                {
+                    if (!started)
+                    {
+                        started = true;
+                        await startup(shell);
+                    }
                 };
             }
         }
@@ -108,7 +134,10 @@ public partial class App : Application
             sp.GetRequiredService<ILoggerFactory>(),
             sp.GetRequiredService<TimeProvider>(),
             options.WatchFiles,
-            sp.GetRequiredService<ThemeService>()));
+            sp.GetRequiredService<ThemeService>())
+        {
+            ProjectNamer = options.ProjectNamer,
+        });
         services.AddTransient<SettingsViewModel>();
         return services.BuildServiceProvider();
     }
@@ -124,4 +153,13 @@ public sealed record AppOptions
     public IDialogService? Dialogs { get; init; }
 
     public TimeProvider? TimeProvider { get; init; }
+
+    /// <summary>Names opened projects; null (or a null result) uses the main file's name.</summary>
+    public Func<Inkitty.Core.Projects.InkProject, string?>? ProjectNamer { get; init; }
+
+    /// <summary>Runs once the shell is showing, when no project was given on the command line (e.g. reopen the last project).</summary>
+    public Func<MainWindowViewModel, Task>? StartupProject { get; init; }
+
+    /// <summary>Called after the single-view shell is created (the browser hooks page events here).</summary>
+    public Action<MainWindowViewModel, MainView>? ShellCreated { get; init; }
 }
