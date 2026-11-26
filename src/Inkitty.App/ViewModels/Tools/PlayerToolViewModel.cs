@@ -183,17 +183,29 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
             }
             catch (StoryBudgetExceededException ex)
             {
-                events.Add(new RuntimeIssue(new Issue(IssueSeverity.RuntimeError, ex.Message, null, IssueOrigin.Runtime)));
+                events.Add(RuntimeError(ex));
                 events.Add(new StoryEnded());
             }
-            catch (Exception ex) when (ex is Ink.Runtime.StoryException or InvalidOperationException or ArgumentOutOfRangeException)
+            catch (Exception ex)
             {
-                events.Add(new RuntimeIssue(new Issue(IssueSeverity.RuntimeError, ex.Message, null, IssueOrigin.Runtime)));
+                // Not only StoryException: ink's runtime also throws plain .NET exceptions.
+                events.Add(RuntimeError(ex));
+                events.Add(new StoryEnded());
             }
 
             List<StoryEvent> all = [.. previous, .. events];
-            var progress = StoryProgress.Build(graph, all, session.VisitCount);
-            var variables = session.Variables();
+            StoryProgress progress;
+            IReadOnlyList<StoryVariable> variables;
+            try
+            {
+                progress = StoryProgress.Build(graph, all, session.VisitCount);
+                variables = session.Variables();
+            }
+            catch (Exception ex)
+            {
+                PostFailure(generation, ex);
+                return;
+            }
 
             _dispatcher.Post(() =>
             {
@@ -258,20 +270,28 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
         {
             // A compiled Story can only be played by one session at a time; a fresh compile gives a
             // fresh Story per generation, so the previous session is simply abandoned.
-            var session = new PlaySession(success.Story, success.Snapshot, _time);
+            PlaySession? session = null;
             ReplayResult result;
+            StoryProgress progress;
+            IReadOnlyList<StoryVariable> variables;
             try
             {
+                session = new PlaySession(success.Story, success.Snapshot, _time);
                 result = ReplayEngine.Replay(session, history, budget, _time, cts.Token);
+                progress = StoryProgress.Build(success.Graph, result.Events, session.VisitCount);
+                variables = session.Variables();
             }
             catch (OperationCanceledException)
             {
-                session.Dispose();
+                session?.Dispose();
                 return;
             }
-
-            var progress = StoryProgress.Build(success.Graph, result.Events, session.VisitCount);
-            var variables = session.Variables();
+            catch (Exception ex)
+            {
+                session?.Dispose();
+                PostFailure(generation, ex);
+                return;
+            }
 
             _dispatcher.Post(() =>
             {
@@ -310,6 +330,25 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
             });
         });
     }
+
+    private static RuntimeIssue RuntimeError(Exception ex) =>
+        new(new Issue(IssueSeverity.RuntimeError, ex.Message, null, IssueOrigin.Runtime));
+
+    /// <summary>
+    /// A background run failed outside the story itself: report it and leave the busy state, so the
+    /// player doesn't stay stuck waiting for a result that will never come.
+    /// </summary>
+    private void PostFailure(int generation, Exception ex) =>
+        _dispatcher.Post(() =>
+        {
+            if (generation != _replayGeneration)
+            {
+                return;
+            }
+
+            ReportRuntimeIssues([RuntimeError(ex)], append: true);
+            IsBusy = false;
+        });
 
     /// <summary>Events after the last replayed choice are highlighted as new (everything, before any choice).</summary>
     private static int NewContentStart(ReplayResult result)

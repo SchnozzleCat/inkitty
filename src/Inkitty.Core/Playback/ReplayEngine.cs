@@ -58,8 +58,10 @@ public static class ReplayEngine
             events.Add(new StoryEnded());
             diverged = true;
         }
-        catch (Exception ex) when (ex is Ink.Runtime.StoryException or InvalidOperationException or ArgumentException)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            // StoryException, but also plain .NET exceptions: ink's runtime throws System.Exception
+            // from its asserts, and lets e.g. DivideByZeroException escape from story maths.
             events.Add(new RuntimeIssue(new Issue(IssueSeverity.RuntimeError, ex.Message, null, IssueOrigin.Runtime)));
             events.Add(new StoryEnded());
             diverged = true;

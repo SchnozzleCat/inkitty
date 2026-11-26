@@ -85,4 +85,25 @@ public class PlayAsYouWriteTests
             await UiTestHelpers.WaitUntil(() => !player.IsBusy && player.ChoiceCount == 0);
             await Assert.That(player.Items.OfType<PlayerChoiceEcho>()).IsEmpty();
         });
+
+    [Test]
+    public async Task Player_recovers_from_an_unexpected_runtime_exception() =>
+        await HeadlessSession.Run(async () =>
+        {
+            var main = UiTestHelpers.CopySample("multi-file", out _);
+            File.WriteAllText(main, "VAR z = 0\nBefore.\n* [Divide] {1 / z}\n-> END\n* [Safe] Fine.\n-> END\n");
+            await using var app = AppFixture.Create();
+            await app.OpenAsync(main);
+            var player = app.Shell.Factory.PlayerTool;
+            await UiTestHelpers.WaitUntil(() => !player.IsBusy && player.Choices.Count == 2);
+
+            player.ChooseCommand.Execute(player.Choices.Single(c => c.Text == "Divide"));
+
+            await Assert.That(await UiTestHelpers.WaitUntil(() => !player.IsBusy, 5000)).IsTrue();
+            await Assert.That(app.Project.Issues.Any(i => i.Message.Contains("divide", StringComparison.OrdinalIgnoreCase))).IsTrue();
+
+            // Still usable: restarting plays again.
+            player.RestartCommand.Execute(null);
+            await Assert.That(await UiTestHelpers.WaitUntil(() => !player.IsBusy && player.Choices.Count == 2, 5000)).IsTrue();
+        });
 }

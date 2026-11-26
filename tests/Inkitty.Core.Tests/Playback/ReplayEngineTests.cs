@@ -147,6 +147,20 @@ public class ReplayEngineTests
     }
 
     [Test]
+    public async Task Unexpected_runtime_exceptions_are_reported_as_issues()
+    {
+        // ink's runtime throws plain .NET exceptions for some faults (here DivideByZeroException).
+        const string ink = "VAR z = 0\nBefore.\n* [Divide] {1 / z}\n-> END\n";
+        var history = Play("VAR z = 1\nBefore.\n* [Divide] {1 / z}\n-> END\n", 0);
+
+        var result = ReplayEngine.Replay(Session(ink), history, PlaybackBudget.Default);
+
+        await Assert.That(result.Diverged).IsTrue();
+        await Assert.That(result.Events[^1].Is<StoryEnded>()).IsTrue();
+        await Assert.That(result.Events.OfCase<RuntimeIssue>().Any()).IsTrue();
+    }
+
+    [Test]
     public async Task Tags_are_captured()
     {
         var events = Session("Hello # mood: happy # loud\n-> END").ContinueUntilChoice(PlaybackBudget.Default);
