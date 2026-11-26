@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Templates;
 using Avalonia.Interactivity;
 using Dock.Avalonia.Controls;
 using Dock.Settings;
@@ -33,6 +34,22 @@ public static class DockTemplateFixes
         // header has a pin (see InkittyDockFactory.CanPinTool).
         TemplatedControl.TemplateAppliedEvent.AddClassHandler<MdiDocumentWindow>(
             (_, e) => e.NameScope.Find<Button>("PART_ToolPinButton")?.SetValue(Visual.IsVisibleProperty, false),
+            RoutingStrategies.Direct);
+
+        // The in-app floating windows: measure each at its own size (see FloatingWindowPanel).
+        TemplatedControl.TemplateAppliedEvent.AddClassHandler<ManagedWindowLayer>(
+            (layer, e) =>
+            {
+                if (e.NameScope.Find<ItemsControl>("PART_Windows") is { } windows)
+                {
+                    windows.ItemsPanel = new FuncTemplate<Panel?>(() =>
+                    {
+                        var panel = new FloatingWindowPanel();
+                        panel.Bind(MdiLayoutPanel.LayoutManagerProperty, layer.GetObservable(ManagedWindowLayer.LayoutManagerProperty));
+                        return panel;
+                    });
+                }
+            },
             RoutingStrategies.Direct);
     }
 }

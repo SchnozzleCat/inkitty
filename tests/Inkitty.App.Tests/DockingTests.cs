@@ -590,6 +590,71 @@ public class DockingTests
             await Assert.That(factory.IsInMainWindow(factory.OutlineTool)).IsTrue();
         });
 
+    /// <summary>Floats the map and the player, then drops the player below the map (as Dock's drop does).</summary>
+    private static async Task<IRootDock> SplitPlayerUnderFloatingMap(AppFixture app, Dock.Model.DockManager dockManager)
+    {
+        var factory = app.Shell.Factory;
+        factory.FloatDockable(factory.StoryMapTool);
+        factory.FloatDockable(factory.PlayerTool);
+        await UiTestHelpers.WaitUntil(() => FloatingWindows(app).Length == 2);
+
+        var playerWindow = factory.FindRoot(factory.PlayerTool, _ => true)!;
+        await Assert.That(dockManager.ValidateDockable(playerWindow.ActiveDockable!, factory.StoryMapTool, DragAction.Move, DockOperation.Bottom, bExecute: true)).IsTrue();
+        await UiTestHelpers.WaitUntil(() => FloatingWindows(app).Length == 1);
+        return factory.FindRoot(factory.StoryMapTool, _ => true)!;
+    }
+
+    [Test]
+    public async Task Pane_docked_below_another_in_a_floating_window_shows_inside_it() =>
+        await HeadlessSession.Run(async () =>
+        {
+            var hostMode = Dock.Settings.DockSettings.FloatingWindowHostMode;
+            Dock.Settings.DockSettings.FloatingWindowHostMode = DockFloatingWindowHostMode.Managed;
+            using var restore = new Restore(() => Dock.Settings.DockSettings.FloatingWindowHostMode = hostMode);
+            await using var app = AppFixture.Create();
+            var factory = app.Shell.Factory;
+            var root = await SplitPlayerUnderFloatingMap(app, new Dock.Model.DockManager(new Dock.Model.DockService()));
+            await Assert.That(factory.FindRoot(factory.PlayerTool, _ => true)).IsSameReferenceAs(root);
+
+            // Dock measured floating windows at the main window's size, so the split was laid out for that
+            // and the player ended up below the floating window's bottom edge.
+            var window = FloatingWindows(app)[0];
+            Rect BoundsIn(IDockable tool)
+            {
+                var grip = window.GetVisualDescendants().OfType<PaneGrip>().Single(g => g.Dockable == tool);
+                return new Rect(grip.TranslatePoint(default, window)!.Value, grip.Bounds.Size);
+            }
+
+            var map = BoundsIn(factory.StoryMapTool);
+            var player = BoundsIn(factory.PlayerTool);
+            var inside = new Rect(window.Bounds.Size);
+            await Assert.That(inside.Contains(map) && inside.Contains(player)).IsTrue();
+            await Assert.That(player.Top).IsGreaterThan(map.Bottom);
+        });
+
+    [Test]
+    public async Task Floating_window_holding_two_panes_docks_back_into_the_main_window() =>
+        await HeadlessSession.Run(async () =>
+        {
+            var hostMode = Dock.Settings.DockSettings.FloatingWindowHostMode;
+            Dock.Settings.DockSettings.FloatingWindowHostMode = DockFloatingWindowHostMode.Managed;
+            using var restore = new Restore(() => Dock.Settings.DockSettings.FloatingWindowHostMode = hostMode);
+            await using var app = AppFixture.Create();
+            var factory = app.Shell.Factory;
+            var dockManager = new Dock.Model.DockManager(new Dock.Model.DockService());
+            var root = await SplitPlayerUnderFloatingMap(app, dockManager);
+
+            // Dragging the window drops its whole layout; this crashed (index out of range) half-way through.
+            await Assert.That(dockManager.ValidateDockable(root.ActiveDockable!, factory.FilesTool.Owner!, DragAction.Move, DockOperation.Bottom, bExecute: true)).IsTrue();
+            await UiTestHelpers.WaitUntil(() => FloatingWindows(app).Length == 0);
+
+            await Assert.That(factory.IsInMainWindow(factory.StoryMapTool)).IsTrue();
+            await Assert.That(factory.IsInMainWindow(factory.PlayerTool)).IsTrue();
+            await Assert.That(app.Shell.Layout.Windows ?? []).IsEmpty();
+            await Assert.That(ShownTools(factory)).Contains(factory.StoryMapTool);
+            await Assert.That(ShownTools(factory)).Contains(factory.PlayerTool);
+        });
+
     private sealed class Restore(Action action) : IDisposable
     {
         public void Dispose() => action();

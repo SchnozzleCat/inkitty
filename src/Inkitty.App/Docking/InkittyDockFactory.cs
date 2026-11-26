@@ -13,7 +13,7 @@ namespace Inkitty.App.Docking;
 /// Files (with the Outline below) | Editor (with Issues and Variables tabbed below) | Player (with the Story Map below).
 /// Every tool can be moved, tabbed, floated or pinned.
 /// </summary>
-public sealed class InkittyDockFactory(FileTreeToolViewModel files, PlayerToolViewModel player, IssuesToolViewModel issues, StoryMapToolViewModel storyMap, VariablesToolViewModel variables, OutlineToolViewModel outline) : Factory
+public sealed class InkittyDockFactory(FileTreeToolViewModel files, PlayerToolViewModel player, IssuesToolViewModel issues, StoryMapToolViewModel storyMap, VariablesToolViewModel variables, OutlineToolViewModel outline) : Factory, IDockOperationObserver
 {
     private IRootDock? _root;
     private IDocumentDock? _documents;
@@ -253,6 +253,67 @@ public sealed class InkittyDockFactory(FileTreeToolViewModel files, PlayerToolVi
         }
 
         OnDockableClosed(tool);
+    }
+
+    // Dropping a floating window that holds several panes moves them one by one, looping over its layout.
+    // Each pane's dock empties as it moves and was collapsed (removed) at once, shrinking the list mid-loop:
+    // Dock then crashed with half the panes moved. Collapse emptied docks once the whole drop is done.
+    private int _operationDepth;
+    private readonly List<IDock> _deferredCollapses = [];
+
+    public IDockOperationScope? BeginDockOperation(IDockable source, IDockable target, DockOperation operation)
+    {
+        _operationDepth++;
+        return new OperationScope(this);
+    }
+
+    public override void CollapseDock(IDock dock)
+    {
+        if (_operationDepth > 0)
+        {
+            if (!_deferredCollapses.Contains(dock))
+            {
+                _deferredCollapses.Add(dock);
+            }
+
+            return;
+        }
+
+        base.CollapseDock(dock);
+    }
+
+    private void EndDockOperation()
+    {
+        if (--_operationDepth > 0)
+        {
+            return;
+        }
+
+        // Innermost first (they were deferred as the panes moved out of them), so emptied parents follow.
+        var docks = _deferredCollapses.ToList();
+        _deferredCollapses.Clear();
+        foreach (var dock in docks)
+        {
+            base.CollapseDock(dock);
+        }
+    }
+
+    private sealed class OperationScope(InkittyDockFactory factory) : IDockOperationScope
+    {
+        private bool _disposed;
+
+        public void Complete()
+        {
+        }
+
+        public void Dispose()
+        {
+            if (!_disposed)
+            {
+                _disposed = true;
+                factory.EndDockOperation();
+            }
+        }
     }
 
     private void HideInMainWindow(ITool tool, IDock? home)
