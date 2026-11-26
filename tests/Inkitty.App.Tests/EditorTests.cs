@@ -7,26 +7,89 @@ namespace Inkitty.App.Tests;
 [NotInParallel("ui")]
 public class EditorTests
 {
-    private static List<string> ScopesOf(string line)
+    private static List<List<(string Text, IReadOnlyList<string> Scopes)>> TokenizeLines(params string[] lines)
     {
         var registry = new Registry(new InkTextMateRegistry(TextMateSharp.Grammars.ThemeName.LightPlus));
         var grammar = registry.LoadGrammar(InkTextMateRegistry.InkScope);
-        var result = grammar.TokenizeLine(line);
-        return [.. result.Tokens.SelectMany(t => t.Scopes)];
+        TextMateSharp.Grammars.IStateStack? state = null;
+        List<List<(string, IReadOnlyList<string>)>> result = [];
+        foreach (var line in lines)
+        {
+            var tokens = grammar.TokenizeLine(line, state, TimeSpan.MaxValue);
+            state = tokens.RuleStack;
+            result.Add([.. tokens.Tokens.Select(t => (line[Math.Min(t.StartIndex, line.Length)..Math.Min(t.EndIndex, line.Length)], (IReadOnlyList<string>)t.Scopes))]);
+        }
+
+        return result;
+    }
+
+    /// <summary>The scopes of the token whose text is <paramref name="token"/> (trimmed), or else the first token containing it.</summary>
+    private static IReadOnlyList<string> ScopesOf(string line, string token)
+    {
+        var tokens = TokenizeLines(line)[0];
+        var match = tokens.FirstOrDefault(t => t.Text.Trim() == token);
+        if (match.Scopes is null)
+        {
+            match = tokens.FirstOrDefault(t => token.Contains(t.Text.Trim(), StringComparison.Ordinal) && t.Text.Trim().Length > 0);
+        }
+
+        return match.Scopes ?? [];
     }
 
     [Test]
-    [Arguments("=== forest ===", "entity.name.knot")]
-    [Arguments("= clearing", "entity.name.stitch")]
-    [Arguments("-> forest.clearing", "keyword.operator.divert")]
-    [Arguments("INCLUDE chapters/forest.ink", "keyword.control.include")]
-    [Arguments("// a comment", "comment.line.double-slash.js")]
-    [Arguments("TODO: fix", "comment.todo")]
-    public async Task Ink_grammar_tokenizes_core_constructs(string line, string expectedScope) =>
+    [Arguments("=== forest ===", "forest", "entity.name.function.knot.ink")]
+    [Arguments("=== function courage(ref x) ===", "function", "storage.type.function.ink")]
+    [Arguments("=== function courage(ref x) ===", "x", "variable.parameter.ink")]
+    [Arguments("= clearing", "clearing", "entity.name.function.stitch.ink")]
+    [Arguments("-> forest.clearing", "->", "keyword.control.flow.divert.ink")]
+    [Arguments("-> forest.clearing", "forest.clearing", "entity.name.function.divert-target.ink")]
+    [Arguments("-> END", "END", "constant.language.flow.ink")]
+    [Arguments("->->", "->->", "keyword.control.flow.tunnel-return.ink")]
+    [Arguments("INCLUDE chapters/forest.ink", "INCLUDE", "keyword.control.import.ink")]
+    [Arguments("// a comment", "// a comment", "comment.line.double-slash.ink")]
+    [Arguments("TODO: fix", "TODO", "keyword.other.todo.ink")]
+    [Arguments("VAR coins = 3", "coins", "variable.other.declaration.ink")]
+    [Arguments("VAR coins = 3", "3", "constant.numeric.ink")]
+    [Arguments("LIST mood = calm, (nervous)", "nervous", "variable.other.enummember.ink")]
+    [Arguments("~ temp total = coins * 2", "temp", "storage.type.temp.ink")]
+    [Arguments("~ temp total = coins * 2", "coins", "variable.other.ink")]
+    [Arguments("~ playSound(\"door\")", "playSound", "entity.name.function.call.ink")]
+    [Arguments("~ playSound(\"door\")", "door", "string.quoted.double.ink")]
+    [Arguments("* (left) {not lit} [Go left] -> forest", "*", "keyword.control.choice.ink")]
+    [Arguments("* (left) {not lit} [Go left] -> forest", "left", "entity.name.function.label.ink")]
+    [Arguments("* (left) {not lit} [Go left] -> forest", "not", "keyword.operator.word.ink")]
+    [Arguments("* (left) {not lit} [Go left] -> forest", "Go left", "markup.italic.choice-only.ink")]
+    [Arguments("- (regroup) Fine.", "-", "keyword.control.gather.ink")]
+    [Arguments("It was {lit: bright|dark}.", "lit", "variable.other.ink")]
+    [Arguments("It was {lit: bright|dark}.", "|", "keyword.operator.branch.ink")]
+    [Arguments("{&Rain|Wind}", "&", "keyword.control.sequence.ink")]
+    [Arguments("Hello # mood: calm", "mood: calm", "entity.name.tag.ink")]
+    [Arguments("Text<>", "<>", "keyword.operator.glue.ink")]
+    [Arguments("{ stopping:", "stopping", "keyword.control.sequence.ink")]
+    [Arguments("VAR café = 1", "café", "variable.other.declaration.ink")]
+    public async Task Ink_grammar_tokenizes_core_constructs(string line, string token, string expectedScope) =>
         await HeadlessSession.Run(async () =>
         {
-            var scopes = ScopesOf(line);
-            await Assert.That(scopes).Contains(expectedScope);
+            await Assert.That(ScopesOf(line, token)).Contains(expectedScope);
+        });
+
+    [Test]
+    public async Task Plain_story_text_is_left_unstyled() =>
+        await HeadlessSession.Run(async () =>
+        {
+            await Assert.That(ScopesOf("Once upon a time, you stood at a crossroads.", "Once upon a time, you stood at a crossroads.")).IsEquivalentTo(["source.ink"]);
+        });
+
+    [Test]
+    public async Task Multi_line_conditionals_highlight_their_clauses() =>
+        await HeadlessSession.Run(async () =>
+        {
+            var lines = TokenizeLines("{ coins > 3:", "    - You are rich.", "- else:", "    You are poor.", "}");
+
+            await Assert.That(lines[0].Single(t => t.Text == "coins").Scopes).Contains("variable.other.ink");
+            await Assert.That(lines[2].Single(t => t.Text == "else").Scopes).Contains("keyword.control.conditional.else.ink");
+            await Assert.That(lines[3].Single(t => t.Text.Trim() == "You are poor.").Scopes).Contains("meta.block.conditional.ink");
+            await Assert.That(lines[4].Single(t => t.Text == "}").Scopes).Contains("punctuation.section.block.end.ink");
         });
 
     [Test]
