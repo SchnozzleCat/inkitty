@@ -98,7 +98,7 @@ public sealed partial class OutlineToolViewModel : Tool
     public partial string FileName { get; private set; } = string.Empty;
 
     [ObservableProperty]
-    public partial string Placeholder { get; private set; } = "Open an ink file to see its outline.";
+    public partial string Placeholder { get; private set; } = Placeholders.NoFile;
 
     /// <summary>Show choices and gathers, not just knots, stitches and declarations.</summary>
     [ObservableProperty]
@@ -198,7 +198,7 @@ public sealed partial class OutlineToolViewModel : Tool
         FileName = _document?.Title ?? string.Empty;
         if (_document is not { } document)
         {
-            Placeholder = "Open an ink file to see its outline.";
+            Placeholder = Placeholders.NoFile;
             OnPropertyChanged(nameof(HasNodes));
             return;
         }

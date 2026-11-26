@@ -78,7 +78,7 @@ public sealed partial class VariablesToolViewModel : Tool
     public partial bool ChangedOnly { get; set; }
 
     [ObservableProperty]
-    public partial string Placeholder { get; private set; } = "Open an ink file to see its variables.";
+    public partial string Placeholder { get; private set; } = Placeholders.NoProject;
 
     public bool HasItems => Items.Count > 0;
 
@@ -156,7 +156,7 @@ public sealed partial class VariablesToolViewModel : Tool
         }
 
         SelectedItem = Items.FirstOrDefault(i => i.Name == selected);
-        Placeholder = !_player.HasProject ? "Open an ink file to see its variables."
+        Placeholder = !_player.HasProject ? Placeholders.NoProject
             : variables.Count == 0 ? "This story has no global variables (VAR or LIST)."
             : "No variables match.";
         OnPropertyChanged(nameof(HasItems));

@@ -22,7 +22,7 @@ public class VariablesTests
 
             await Assert.That(factory.VariablesTool.Owner?.Id).IsEqualTo(DockIds.BottomDock);
             await Assert.That(factory.VariablesTool.Owner).IsEqualTo(factory.IssuesTool.Owner);
-            await Assert.That(factory.VariablesTool.Placeholder).Contains("Open an ink file");
+            await Assert.That(factory.VariablesTool.Placeholder).IsEqualTo(Placeholders.NoProject);
         });
 
     [Test]

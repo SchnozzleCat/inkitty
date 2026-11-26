@@ -34,7 +34,7 @@ public sealed partial class StoryMapToolViewModel : Tool
 
     public StoryProgress Progress => _player.Progress;
 
-    public bool HasGraph => Graph.Nodes.Count > 1;
+    public bool HasProject => _player.HasProject;
 
     /// <summary>Scroll the map to keep the current knot visible as the story moves.</summary>
     [ObservableProperty]
@@ -81,8 +81,10 @@ public sealed partial class StoryMapToolViewModel : Tool
         {
             case nameof(PlayerToolViewModel.Graph):
                 OnPropertyChanged(nameof(Graph));
-                OnPropertyChanged(nameof(HasGraph));
                 OnPropertyChanged(nameof(Summary));
+                break;
+            case nameof(PlayerToolViewModel.HasProject):
+                OnPropertyChanged(nameof(HasProject));
                 break;
             case nameof(PlayerToolViewModel.Progress):
                 OnPropertyChanged(nameof(Progress));

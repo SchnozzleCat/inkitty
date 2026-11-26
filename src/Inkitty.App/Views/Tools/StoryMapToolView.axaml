@@ -32,8 +32,8 @@
                              Progress="{Binding Progress}"
                              FollowCurrent="{Binding FollowCurrent}"
                              ToolTip.ShowDelay="300" />
-        <TextBlock Classes="placeholder" IsVisible="{Binding !HasGraph}" TextWrapping="Wrap"
-                   Text="Open an ink file with some knots (=== knot ===) to see the story map." />
+        <TextBlock Classes="placeholder" IsVisible="{Binding !HasProject}"
+                   Text="{x:Static tools:Placeholders.NoProject}" />
       </Panel>
     </DockPanel>
   </Panel>

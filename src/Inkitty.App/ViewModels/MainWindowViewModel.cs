@@ -195,6 +195,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IRecipient<Navi
         Factory.FilesTool.Attach(vm);
         Factory.PlayerTool.Attach(vm);
         Factory.VariablesTool.Attach(vm);
+        Factory.IssuesTool.HasProject = true;
         Factory.IssuesTool.SetIssues([]);
         _autoSave.Attach(vm);
         _settings.Update(s => s.WithRecentProject(project.Main.FullPath));
@@ -229,6 +230,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IRecipient<Navi
         Factory.FilesTool.Attach(null);
         Factory.PlayerTool.Attach(null);
         Factory.VariablesTool.Attach(null);
+        Factory.IssuesTool.HasProject = false;
         Factory.IssuesTool.SetIssues([]);
         _autoSave.Attach(null);
         History.Clear();

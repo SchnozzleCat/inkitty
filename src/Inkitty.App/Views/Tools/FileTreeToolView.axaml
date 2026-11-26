@@ -8,7 +8,7 @@
     <DockPanel>
       <controls:PaneGrip DockPanel.Dock="Top" Dockable="{Binding}" />
       <TextBlock DockPanel.Dock="Top" Classes="pane-header" Text="{Binding ProjectName}" />
-      <TextBlock DockPanel.Dock="Top" Classes="placeholder" Text="No project open"
+      <TextBlock DockPanel.Dock="Top" Classes="placeholder" Text="{x:Static tools:Placeholders.NoProject}"
                  IsVisible="{Binding !Nodes.Count}" />
       <TreeView x:Name="Tree"
                 ItemsSource="{Binding Nodes}"

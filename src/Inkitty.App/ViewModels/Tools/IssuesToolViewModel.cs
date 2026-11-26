@@ -81,6 +81,13 @@ public sealed partial class IssuesToolViewModel : Tool
     [ObservableProperty]
     public partial int TodoCount { get; private set; }
 
+    /// <summary>Set by the shell when a project opens or closes.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Placeholder))]
+    public partial bool HasProject { get; set; }
+
+    public string Placeholder => HasProject ? "No issues" : Placeholders.NoProject;
+
     public void SetIssues(IReadOnlyList<Issue> issues)
     {
         _all = issues;

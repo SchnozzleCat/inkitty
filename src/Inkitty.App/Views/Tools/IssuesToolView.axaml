@@ -30,7 +30,7 @@
           </StackPanel>
         </ToggleButton>
       </StackPanel>
-      <TextBlock DockPanel.Dock="Top" Classes="placeholder" Text="No issues" IsVisible="{Binding !Items.Count}" />
+      <TextBlock DockPanel.Dock="Top" Classes="placeholder" Text="{Binding Placeholder}" IsVisible="{Binding !Items.Count}" />
       <ListBox x:Name="List"
                ItemsSource="{Binding Items}"
                SelectedItem="{Binding SelectedItem}"

@@ -27,7 +27,7 @@
       <Border DockPanel.Dock="Top" Classes="stale-banner" IsVisible="{Binding IsStale}">
         <TextBlock Text="{Binding StaleMessage}" TextWrapping="Wrap" />
       </Border>
-      <TextBlock DockPanel.Dock="Top" Classes="placeholder" Text="Open an ink file to play it here."
+      <TextBlock DockPanel.Dock="Top" Classes="placeholder" Text="{x:Static tools:Placeholders.NoProject}"
                  IsVisible="{Binding !HasProject}" />
       <ScrollViewer x:Name="Scroller" Classes.stale="{Binding IsStale}" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Classes="transcript">
