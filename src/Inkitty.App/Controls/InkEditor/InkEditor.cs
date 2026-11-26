@@ -33,6 +33,7 @@ public sealed class InkEditor : UserControl
     private EditorDocumentViewModel? _viewModel;
     private Point? _lastPointer;
     private DispatcherTimer? _flashTimer;
+    private AvaloniaEdit.Rendering.IBackgroundRenderer? _flash;
 
     public InkEditor()
     {
@@ -99,6 +100,9 @@ public sealed class InkEditor : UserControl
     internal IssueMarkerRenderer Markers => _markers;
 
     internal PlaythroughMargin Playthrough => _playthrough;
+
+    /// <summary>True while a navigation flash is showing (exposed for tests).</summary>
+    internal bool IsFlashing => _flash is not null;
 
     public void FocusEditor() => _editor.TextArea.Focus();
 
@@ -344,20 +348,28 @@ public sealed class InkEditor : UserControl
 
     private void FlashLine(DocumentLine line)
     {
+        // One flash at a time: a new jump replaces the previous highlight rather than stacking on it.
+        ClearFlash();
         var textView = _editor.TextArea.TextView;
-        var segment = new TextSegment { StartOffset = line.Offset, Length = line.Length };
-        var renderer = new FlashRenderer(segment);
-        textView.BackgroundRenderers.Add(renderer);
+        _flash = new FlashRenderer(new TextSegment { StartOffset = line.Offset, Length = line.Length });
+        textView.BackgroundRenderers.Add(_flash);
         textView.InvalidateLayer(AvaloniaEdit.Rendering.KnownLayer.Selection);
 
-        _flashTimer?.Stop();
-        _flashTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(600), DispatcherPriority.Background, (_, _) =>
-        {
-            textView.BackgroundRenderers.Remove(renderer);
-            textView.InvalidateLayer(AvaloniaEdit.Rendering.KnownLayer.Selection);
-            _flashTimer?.Stop();
-        });
+        _flashTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(600), DispatcherPriority.Background, (_, _) => ClearFlash());
         _flashTimer.Start();
+    }
+
+    private void ClearFlash()
+    {
+        _flashTimer?.Stop();
+        _flashTimer = null;
+        if (_flash is not null)
+        {
+            var textView = _editor.TextArea.TextView;
+            textView.BackgroundRenderers.Remove(_flash);
+            textView.InvalidateLayer(AvaloniaEdit.Rendering.KnownLayer.Selection);
+            _flash = null;
+        }
     }
 
     private void OnCaretPositionChanged(object? sender, EventArgs e)
