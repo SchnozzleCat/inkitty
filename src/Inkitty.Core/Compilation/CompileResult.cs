@@ -1,5 +1,6 @@
 using Inkitty.Core.Diagnostics;
 using Inkitty.Core.Projects;
+using Inkitty.Core.StoryMap;
 using Inkitty.Core.Symbols;
 
 namespace Inkitty.Core.Compilation;
@@ -8,6 +9,9 @@ namespace Inkitty.Core.Compilation;
 public closed record CompileResult(int Generation, ProjectSnapshot Snapshot, IReadOnlyList<Issue> Issues, SymbolIndex Symbols, TimeSpan Duration)
 {
     public bool HasErrors => Issues.Any(i => i.Severity.IsError);
+
+    /// <summary>Knot/stitch flow of the story (partial if compilation failed).</summary>
+    public StoryGraph Graph { get; init; } = StoryGraph.Empty;
 }
 
 /// <summary>Compiled successfully (possibly with warnings); <see cref="Story"/> is ready to play.</summary>

@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Inkitty.Core.Diagnostics;
 using Inkitty.Core.Projects;
+using Inkitty.Core.StoryMap;
 using Inkitty.Core.Symbols;
 
 namespace Inkitty.Core.Compilation;
@@ -71,10 +72,14 @@ public sealed class InkCompilerService : IInkCompilerService
             issues.Add(new Issue(IssueSeverity.Error, "Compilation failed.", null, IssueOrigin.Compiler));
         }
 
+        var graph = compiler.parsedStory is { } parsedStory
+            ? SafeBuildGraph(parsedStory, snapshot.MainFile, ResolveFile)
+            : StoryGraph.Empty;
+
         stopwatch.Stop();
         return story is not null
-            ? new CompileSucceeded(generation, snapshot, issues, symbols, stopwatch.Elapsed, story)
-            : new CompileFailed(generation, snapshot, issues, symbols, stopwatch.Elapsed);
+            ? new CompileSucceeded(generation, snapshot, issues, symbols, stopwatch.Elapsed, story) { Graph = graph }
+            : new CompileFailed(generation, snapshot, issues, symbols, stopwatch.Elapsed) { Graph = graph };
     }
 
     private static SymbolIndex SafeCollect(Ink.Parsed.Story parsed, Func<string?, string?> resolveFile, bool weavePointsResolved)
@@ -86,6 +91,18 @@ public sealed class InkCompilerService : IInkCompilerService
         catch (Exception)
         {
             return SymbolIndex.Empty;
+        }
+    }
+
+    private static StoryGraph SafeBuildGraph(Ink.Parsed.Story parsed, string mainFile, Func<string?, string?> resolveFile)
+    {
+        try
+        {
+            return StoryGraphBuilder.Build(parsed, mainFile, resolveFile);
+        }
+        catch (Exception)
+        {
+            return StoryGraph.Empty; // half-parsed hierarchies can throw on missing pieces
         }
     }
 
