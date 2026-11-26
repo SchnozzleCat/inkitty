@@ -311,14 +311,9 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
         });
     }
 
-    /// <summary>Events after the last replayed choice are highlighted as new (only once the player has made choices).</summary>
+    /// <summary>Events after the last replayed choice are highlighted as new (everything, before any choice).</summary>
     private static int NewContentStart(ReplayResult result)
     {
-        if (result.ReplayedChoices == 0)
-        {
-            return int.MaxValue;
-        }
-
         for (var i = result.Events.Count - 1; i >= 0; i--)
         {
             if (result.Events[i].Is<ChoiceTaken>())
@@ -327,7 +322,7 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
             }
         }
 
-        return int.MaxValue;
+        return 0;
     }
 
     public void Dispose()

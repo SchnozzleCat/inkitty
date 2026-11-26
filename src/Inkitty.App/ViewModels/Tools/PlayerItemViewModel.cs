@@ -13,6 +13,12 @@ public abstract record PlayerItem
 /// <param name="Source">Where the text was written, for "reveal in editor".</param>
 public sealed record PlayerParagraph(string Text, IReadOnlyList<string> Tags, StoryLocation? Source = null) : PlayerItem
 {
+    /// <summary>Directly follows another paragraph with the same highlight, so they draw as one block.</summary>
+    public bool JoinsAbove { get; init; }
+
+    /// <summary>Directly followed by another paragraph with the same highlight.</summary>
+    public bool JoinsBelow { get; init; }
+
     public bool HasTags => Tags.Count > 0;
 
     public bool HasSource => Source?.File is not null;
@@ -68,6 +74,25 @@ internal static class PlayerItemMapper
             }
         }
 
+        JoinParagraphs(items);
         return (items, choices);
+    }
+
+    /// <summary>Marks runs of consecutive paragraphs, so a highlighted run reads as one block.</summary>
+    private static void JoinParagraphs(List<PlayerItem> items)
+    {
+        for (var i = 0; i < items.Count; i++)
+        {
+            if (items[i] is not PlayerParagraph paragraph)
+            {
+                continue;
+            }
+
+            items[i] = paragraph with
+            {
+                JoinsAbove = i > 0 && items[i - 1] is PlayerParagraph above && above.IsNew == paragraph.IsNew,
+                JoinsBelow = i + 1 < items.Count && items[i + 1] is PlayerParagraph below && below.IsNew == paragraph.IsNew,
+            };
+        }
     }
 }

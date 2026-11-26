@@ -34,7 +34,9 @@
           <ItemsControl ItemsSource="{Binding Items}">
             <ItemsControl.DataTemplates>
               <DataTemplate DataType="tools:PlayerParagraph">
-                <StackPanel Classes="paragraph" Classes.new="{Binding IsNew}">
+                <Border Classes="paragraph" Classes.new="{Binding IsNew}"
+                        Classes.joins-above="{Binding JoinsAbove}" Classes.joins-below="{Binding JoinsBelow}">
+                <StackPanel>
                   <Grid ColumnDefinitions="*,Auto">
                     <SelectableTextBlock Text="{Binding Text}" TextWrapping="Wrap" />
                     <Button Grid.Column="1" Classes="reveal" IsVisible="{Binding HasSource}"
@@ -59,10 +61,13 @@
                     </ItemsControl.ItemTemplate>
                   </ItemsControl>
                 </StackPanel>
+                </Border>
               </DataTemplate>
               <DataTemplate DataType="tools:PlayerChoiceEcho">
-                <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Classes="echo" Classes.new="{Binding IsNew}" Text="{Binding Text}" TextWrapping="Wrap" />
+                <Grid Classes="echo-row" ColumnDefinitions="*,Auto">
+                  <TextBlock Classes="echo" Classes.new="{Binding IsNew}" TextWrapping="Wrap">
+                    <Run Text="↝ " /><Run Classes="choice-text" Text="{Binding Text}" />
+                  </TextBlock>
                   <Button Grid.Column="1" Classes="reveal" IsVisible="{Binding HasSource}"
                           Command="{Binding $parent[UserControl].((tools:PlayerToolViewModel)DataContext).RevealCommand}"
                           CommandParameter="{Binding Source}"
