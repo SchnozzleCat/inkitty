@@ -60,8 +60,7 @@ just serve          # ...and serves it on http://localhost:8080 (dotnet-serve; `
 
 The browser build needs the `wasm-tools` workload (`dotnet workload install wasm-tools`). If it isn't
 installed (the Nix SDK is read-only), the script builds in the .NET SDK container with podman or
-docker. `.github/workflows/web.yml` publishes `main` to GitHub Pages. Design notes and limitations:
-[docs/web.md](docs/web.md).
+docker. `.github/workflows/web.yml` publishes `main` to GitHub Pages.
 
 ### Tests
 
