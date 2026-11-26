@@ -6,6 +6,7 @@
   <Folder Name="/src/">
     <Project Path="src/Inkitty.App/Inkitty.App.csproj" />
     <Project Path="src/Inkitty.Core/Inkitty.Core.csproj" />
+    <Project Path="src/Inkitty.Desktop/Inkitty.Desktop.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Inkitty.App.Tests/Inkitty.App.Tests.csproj" />

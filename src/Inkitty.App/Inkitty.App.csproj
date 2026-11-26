@@ -1,12 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <!-- The IDE itself (views, view models, services). Hosted by Inkitty.Desktop and Inkitty.Browser. -->
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
     <RootNamespace>Inkitty.App</RootNamespace>
-    <AssemblyName>Inkitty</AssemblyName>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
-    <ApplicationIcon Condition="Exists('Assets\Icons\inkitty.ico')">Assets\Icons\inkitty.ico</ApplicationIcon>
-    <BuiltInComInteropSupport>false</BuiltInComInteropSupport>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,8 +11,6 @@
 
   <ItemGroup>
     <PackageReference Include="Avalonia" />
-    <PackageReference Include="Avalonia.Desktop" />
-    <PackageReference Include="Avalonia.Wayland" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="Avalonia.Fonts.Inter" />
     <PackageReference Include="Avalonia.Controls.DataGrid" />

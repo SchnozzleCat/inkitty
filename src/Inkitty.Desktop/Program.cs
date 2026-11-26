@@ -1,9 +1,9 @@
 using Avalonia;
-using Avalonia.Media.Fonts;
 using Dock.Model.Core;
 using Dock.Settings;
+using Inkitty.App;
 
-namespace Inkitty.App;
+namespace Inkitty.Desktop;
 
 public static class Program
 {
@@ -13,11 +13,7 @@ public static class Program
 
     public static AppBuilder BuildAvaloniaApp()
     {
-        var builder = AppBuilder.Configure<App>()
-            .UsePlatformDetect()
-            .WithInterFont()
-            .ConfigureFonts(ConfigureFonts)
-            .LogToTrace();
+        var builder = InkittyAppBuilder.Configure().UsePlatformDetect();
 
         if (UseManagedDockWindows())
         {
@@ -33,12 +29,6 @@ public static class Program
 
         return builder;
     }
-
-    /// <summary>Registers the bundled fonts (JetBrains Mono for the editor).</summary>
-    public static void ConfigureFonts(Avalonia.Media.FontManager fonts) =>
-        fonts.AddFontCollection(new EmbeddedFontCollection(
-            new Uri("fonts:Inkitty", UriKind.Absolute),
-            new Uri("avares://Inkitty/Assets/Fonts/JetBrainsMono", UriKind.Absolute)));
 
     /// <summary>
     /// On Linux, floating panels and the drag preview are drawn inside the main window instead of as

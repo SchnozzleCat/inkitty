@@ -34,4 +34,4 @@ jobs:
         run: dotnet test --solution Inkitty.slnx -c Release --no-build
 
       - name: Publish smoke test
-        run: dotnet publish src/Inkitty.App/Inkitty.App.csproj -c Release -r ${{ matrix.rid }} --self-contained -o artifacts/${{ matrix.rid }}
+        run: dotnet publish src/Inkitty.Desktop/Inkitty.Desktop.csproj -c Release -r ${{ matrix.rid }} --self-contained -o artifacts/${{ matrix.rid }}

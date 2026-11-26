@@ -16,7 +16,7 @@ public static class TestAppBuilder
 
         return AppBuilder.Configure<App>()
             .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = true })
-            .ConfigureFonts(Program.ConfigureFonts)
+            .ConfigureFonts(InkittyAppBuilder.ConfigureFonts)
             .LogToTextWriter(Console.Error, Avalonia.Logging.LogEventLevel.Warning);
     }
 }

@@ -24,7 +24,7 @@
     <FluentTheme />
     <DockFluentTheme DensityStyle="Compact" />
     <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
-    <StyleInclude Source="avares://Inkitty/Styles/Inkitty.axaml" />
+    <StyleInclude Source="avares://Inkitty.App/Styles/Inkitty.axaml" />
 
     <!-- Keep editor views (undo history, scroll position, highlighting) alive across tab switches and moves. -->
     <Style Selector="DockControl">

@@ -36,7 +36,7 @@ public sealed class InkTextMateRegistry : IRegistryOptions
 
     private static IRawGrammar LoadGrammar()
     {
-        using var stream = AssetLoader.Open(new Uri("avares://Inkitty/Assets/Grammars/ink.tmLanguage.json"));
+        using var stream = AssetLoader.Open(new Uri("avares://Inkitty.App/Assets/Grammars/ink.tmLanguage.json"));
         using var reader = new StreamReader(stream);
         return GrammarReader.ReadGrammarSync(reader);
     }

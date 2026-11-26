@@ -167,7 +167,7 @@ public sealed class InkittyDockFactory(FileTreeToolViewModel files, PlayerToolVi
 
         HostWindowLocator = new Dictionary<string, Func<IHostWindow?>>
         {
-            // Managed hosts live inside the main window (see Program.UseManagedDockWindows).
+            // Managed hosts live inside the main window (see Inkitty.Desktop.Program.UseManagedDockWindows; always in the browser).
             [nameof(IDockWindow)] = () => DockSettings.IsManagedWindowHostingEnabled()
                 ? new ManagedHostWindow()
                 : new HostWindow(),
