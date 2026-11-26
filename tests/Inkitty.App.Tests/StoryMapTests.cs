@@ -190,4 +190,30 @@ public class StoryMapTests
             await UiTestHelpers.WaitUntil(() => !player.IsBusy && player.ChoiceCount == 0);
             await AllLinked("restart");
         });
+
+    [Test]
+    public async Task Conditional_edges_show_their_condition_and_are_dashed() =>
+        await HeadlessSession.Run(async () =>
+        {
+            await using var app = AppFixture.Create();
+            await app.OpenAsync(UiTestHelpers.CopySample("multi-file", out _));
+            var graph = app.Shell.Factory.StoryMapTool.Graph;
+
+            // main.ink: * {has_torch} [Light the torch first] -> light_torch
+            var torch = graph.Edges.Single(e => e.To == "light_torch");
+            await Assert.That(torch.Condition).IsEqualTo("{has_torch}");
+            await Assert.That(torch.Label).IsEqualTo("Light the torch first");
+            var plain = graph.Edges.Single(e => e.From == "start" && e.To == "forest");
+            await Assert.That(plain.IsConditional).IsFalse();
+
+            var control = MapControl(app)!;
+            await Assert.That(await UiTestHelpers.WaitUntil(() => control.MapLayout.Edges.Count == graph.Edges.Count)).IsTrue();
+            var drawnTorch = control.MapLayout.Edges.Single(e => e.To == "light_torch");
+            var drawnPlain = control.MapLayout.Edges.Single(e => e.From == "start" && e.To == "forest");
+
+            await Assert.That(drawnTorch.Condition).IsEqualTo("{has_torch}");
+            await Assert.That(drawnTorch.LabelCenter).IsNotNull();
+            await Assert.That(StoryMapControl.DashFor(drawnTorch)).IsNotNull();
+            await Assert.That(StoryMapControl.DashFor(drawnPlain)).IsNull();
+        });
 }

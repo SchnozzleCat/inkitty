@@ -112,4 +112,41 @@ public class StoryGraphBuilderTests
 
         await Assert.That(graph.NodeForRuntimePath(path)).IsEqualTo(expected);
     }
+
+    [Test]
+    public async Task Conditions_are_shown_as_written()
+    {
+        var graph = Graph(("main.ink", """
+            VAR has_torch = false
+            VAR coins = 2
+            -> hub
+            === hub ===
+            * {has_torch} [Light] -> a
+            *   { not has_torch }  {coins > 1} [Both] -> b
+            * [Plain] -> c
+            - { has_torch: -> a | -> b }
+            {
+            - coins > 3: -> c
+            - else: -> a
+            }
+            { coins:
+            - 1: -> b
+            }
+            -> c
+            === a ===
+            -> END
+            === b ===
+            -> END
+            === c ===
+            -> END
+            """));
+
+        string[] ConditionsTo(string to) =>
+            [.. graph.Edges.Where(e => e.From == "hub" && e.To == to).Select(e => e.Condition ?? "(always)").Order()];
+
+        await Assert.That(ConditionsTo("a")).IsEquivalentTo(["{else}", "{has_torch}", "{has_torch}"]);
+        await Assert.That(ConditionsTo("b")).IsEquivalentTo(["{coins == 1}", "{else}", "{not has_torch} {coins > 1}"]);
+        await Assert.That(ConditionsTo("c")).IsEquivalentTo(["(always)", "(always)", "{coins > 3}"]);
+        await Assert.That(graph.Edges.Single(e => e.Label == "Plain").IsConditional).IsFalse();
+    }
 }
