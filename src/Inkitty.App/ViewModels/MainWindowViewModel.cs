@@ -106,6 +106,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IRecipient<Navi
     [ObservableProperty]
     public partial EditorDocumentViewModel? ActiveDocument { get; private set; }
 
+    partial void OnActiveDocumentChanged(EditorDocumentViewModel? value) => Factory.OutlineTool.Show(value);
+
     [ObservableProperty]
     public partial string WindowTitle { get; private set; } = "Inkitty";
 
@@ -464,6 +466,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IRecipient<Navi
 
     [RelayCommand]
     private void ShowVariables() => Factory.ShowTool(Factory.VariablesTool);
+
+    [RelayCommand]
+    private void ShowOutline() => Factory.ShowTool(Factory.OutlineTool);
 
     /// <summary>Jumps the editor to the line the story is currently at.</summary>
     [RelayCommand(CanExecute = nameof(HasProject))]

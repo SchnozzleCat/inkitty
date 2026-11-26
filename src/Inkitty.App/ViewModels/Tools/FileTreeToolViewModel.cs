@@ -7,7 +7,6 @@ using Inkitty.App.Docking;
 using Inkitty.App.Messages;
 using Inkitty.Core.Diagnostics;
 using Inkitty.Core.Projects;
-using Inkitty.Core.Symbols;
 
 namespace Inkitty.App.ViewModels.Tools;
 
@@ -15,24 +14,20 @@ public enum FileNodeKind
 {
     Folder,
     File,
-    Knot,
-    Stitch,
-    Function,
     Header,
     Unincluded,
 }
 
-/// <summary>A node in the files tree: a folder, a file, a knot/stitch outline entry, or a group header.</summary>
+/// <summary>A node in the files tree: a folder, a file, or a group header.</summary>
 public sealed partial class FileNode : ObservableObject
 {
     /// <param name="file">Project-relative file (for folders, the folder's path).</param>
-    public FileNode(string label, FileNodeKind kind, string? file, SourceRange? range = null)
+    public FileNode(string label, FileNodeKind kind, string? file)
     {
         Label = label;
         Kind = kind;
         File = kind == FileNodeKind.Folder ? null : file;
         FolderPath = kind == FileNodeKind.Folder ? file : null;
-        Range = range;
     }
 
     public string Label { get; }
@@ -45,8 +40,7 @@ public sealed partial class FileNode : ObservableObject
     {
         FileNodeKind.Folder => $"folder:{FolderPath}",
         FileNodeKind.Header => $"header:{Label}",
-        FileNodeKind.File or FileNodeKind.Unincluded => $"file:{File}",
-        _ => $"outline:{File}:{Label}:{Range?.Line}",
+        _ => $"file:{File}",
     };
 
     public FileNodeKind Kind { get; }
@@ -54,7 +48,6 @@ public sealed partial class FileNode : ObservableObject
     /// <summary>Project-relative file the node belongs to (null for headers).</summary>
     public string? File { get; }
 
-    public SourceRange? Range { get; }
 
     public ObservableCollection<FileNode> Children { get; } = [];
 
@@ -75,23 +68,14 @@ public sealed partial class FileNode : ObservableObject
 
     public bool IsUnincluded => Kind == FileNodeKind.Unincluded;
 
-    public bool IsOutline => Kind is FileNodeKind.Knot or FileNodeKind.Stitch or FileNodeKind.Function;
+    public bool HasIcon => IsFolder;
 
-    public bool HasIcon => IsOutline || IsFolder;
-
-    public string Icon => Kind switch
-    {
-        FileNodeKind.Knot => "==",
-        FileNodeKind.Stitch => "=",
-        FileNodeKind.Function => "ƒ",
-        FileNodeKind.Folder => "▤",
-        _ => string.Empty,
-    };
+    public string Icon => IsFolder ? "▤" : string.Empty;
 }
 
 /// <summary>
-/// The files tool: project files grouped by folder (folders first, then files in include order), with a
-/// knot/stitch outline under each file.
+/// The files tool: project files grouped by folder (folders first, then files in include order).
+/// The active file's structure is in the Outline pane.
 /// </summary>
 public sealed partial class FileTreeToolViewModel : Tool
 {
@@ -145,7 +129,7 @@ public sealed partial class FileTreeToolViewModel : Tool
         Rebuild();
     }
 
-    /// <summary>Opens the node's file (and jumps to the outline entry).</summary>
+    /// <summary>Opens the node's file.</summary>
     [RelayCommand]
     private void Open(FileNode? node)
     {
@@ -161,7 +145,7 @@ public sealed partial class FileTreeToolViewModel : Tool
             return;
         }
 
-        _messenger.Send(new NavigateToSourceMessage(file, node.Range));
+        _messenger.Send(new NavigateToSourceMessage(file, null));
     }
 
     private void OnStructureChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) => Rebuild();
@@ -191,7 +175,6 @@ public sealed partial class FileTreeToolViewModel : Tool
             }
         }
 
-        var expanded = all.Where(n => n.IsExpanded && !n.IsFolder).Select(n => n.Key).ToHashSet();
         var selected = SelectedNode?.Key;
         Nodes.Clear();
         if (_project is null)
@@ -199,7 +182,6 @@ public sealed partial class FileTreeToolViewModel : Tool
             return;
         }
 
-        var symbols = _project.LastResult?.Symbols;
         var errorFiles = _project.Issues.Where(i => i.Severity.IsError).Select(i => i.File).ToHashSet();
         List<FileNode> files = [];
         foreach (var file in _project.Project.Files)
@@ -211,16 +193,6 @@ public sealed partial class FileTreeToolViewModel : Tool
                 IsDirty = file.IsDirty,
                 HasErrors = errorFiles.Contains(file.RelativePath),
             };
-            node.IsExpanded = expanded.Contains(node.Key);
-
-            if (symbols is not null)
-            {
-                AddOutline(node, symbols.OutlineOf(file.RelativePath));
-                foreach (var child in Flatten(node.Children))
-                {
-                    child.IsExpanded = expanded.Contains(child.Key);
-                }
-            }
 
             files.Add(node);
         }
@@ -292,31 +264,6 @@ public sealed partial class FileTreeToolViewModel : Tool
         }
 
         return [.. root.Children];
-    }
-
-    private static void AddOutline(FileNode fileNode, IReadOnlyList<SymbolDefinition> outline)
-    {
-        FileNode? currentKnot = null;
-        foreach (var def in outline)
-        {
-            switch (def.Kind)
-            {
-                case SymbolKind.Stitch when currentKnot is not null && def.Container == currentKnot.Label:
-                    currentKnot.Children.Add(new FileNode(def.Name, FileNodeKind.Stitch, def.Range.File, def.Range));
-                    break;
-                case SymbolKind.Function:
-                    currentKnot = null;
-                    fileNode.Children.Add(new FileNode(def.Name, FileNodeKind.Function, def.Range.File, def.Range));
-                    break;
-                case SymbolKind.Stitch:
-                    fileNode.Children.Add(new FileNode(def.QualifiedName, FileNodeKind.Stitch, def.Range.File, def.Range));
-                    break;
-                default:
-                    currentKnot = new FileNode(def.Name, FileNodeKind.Knot, def.Range.File, def.Range);
-                    fileNode.Children.Add(currentKnot);
-                    break;
-            }
-        }
     }
 
     private static IEnumerable<FileNode> Flatten(IEnumerable<FileNode> nodes) =>

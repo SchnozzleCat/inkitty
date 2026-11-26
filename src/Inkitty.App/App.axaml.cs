@@ -94,6 +94,7 @@ public partial class App : Application
         services.AddSingleton(sp => new PlayerToolViewModel(sp.GetRequiredService<IUiDispatcher>(), sp.GetRequiredService<ISettingsStore>(), sp.GetRequiredService<TimeProvider>()));
         services.AddSingleton<StoryMapToolViewModel>();
         services.AddSingleton<VariablesToolViewModel>();
+        services.AddSingleton(sp => new OutlineToolViewModel(sp.GetRequiredService<IMessenger>(), sp.GetRequiredService<IUiDispatcher>(), sp.GetRequiredService<TimeProvider>()));
         services.AddSingleton<InkittyDockFactory>();
         services.AddSingleton(sp => new MainWindowViewModel(
             sp.GetRequiredService<InkittyDockFactory>(),

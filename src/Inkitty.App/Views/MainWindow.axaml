@@ -43,6 +43,7 @@
       <NativeMenuItem Header="View">
         <NativeMenu>
           <NativeMenuItem Header="Files" Command="{Binding ShowFilesCommand}" />
+          <NativeMenuItem Header="Outline" Command="{Binding ShowOutlineCommand}" />
           <NativeMenuItem Header="Player" Command="{Binding ShowPlayerCommand}" />
           <NativeMenuItem Header="Issues" Command="{Binding ShowIssuesCommand}" />
           <NativeMenuItem Header="Story Map" Command="{Binding ShowStoryMapCommand}" />
@@ -99,6 +100,7 @@
       </MenuItem>
       <MenuItem Header="_View">
         <MenuItem Header="_Files" Command="{Binding ShowFilesCommand}" />
+        <MenuItem Header="_Outline" Command="{Binding ShowOutlineCommand}" />
         <MenuItem Header="_Player" Command="{Binding ShowPlayerCommand}" />
         <MenuItem Header="_Issues" Command="{Binding ShowIssuesCommand}" />
         <MenuItem Header="Story _Map" Command="{Binding ShowStoryMapCommand}" />

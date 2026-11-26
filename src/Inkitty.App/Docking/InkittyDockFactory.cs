@@ -10,10 +10,10 @@ namespace Inkitty.App.Docking;
 
 /// <summary>
 /// Builds Inkitty's docking layout. The default is three panes, like Inky:
-/// Files | Editor (with Issues and Variables tabbed below) | Player (with the Story Map below).
+/// Files (with the Outline below) | Editor (with Issues and Variables tabbed below) | Player (with the Story Map below).
 /// Every tool can be moved, tabbed, floated or pinned.
 /// </summary>
-public sealed class InkittyDockFactory(FileTreeToolViewModel files, PlayerToolViewModel player, IssuesToolViewModel issues, StoryMapToolViewModel storyMap, VariablesToolViewModel variables) : Factory
+public sealed class InkittyDockFactory(FileTreeToolViewModel files, PlayerToolViewModel player, IssuesToolViewModel issues, StoryMapToolViewModel storyMap, VariablesToolViewModel variables, OutlineToolViewModel outline) : Factory
 {
     private IRootDock? _root;
     private IDocumentDock? _documents;
@@ -28,21 +28,41 @@ public sealed class InkittyDockFactory(FileTreeToolViewModel files, PlayerToolVi
 
     public VariablesToolViewModel VariablesTool { get; } = variables;
 
+    public OutlineToolViewModel OutlineTool { get; } = outline;
+
     public IDocumentDock? DocumentDock => _documents;
 
     public IRootDock? Root => _root;
 
-    public IEnumerable<ITool> Tools => [FilesTool, PlayerTool, IssuesTool, StoryMapTool, VariablesTool];
+    public IEnumerable<ITool> Tools => [FilesTool, PlayerTool, IssuesTool, StoryMapTool, VariablesTool, OutlineTool];
 
     public override IRootDock CreateLayout()
     {
         var filesDock = new ToolDock
         {
             Id = DockIds.LeftDock,
-            Proportion = 0.18,
+            Proportion = 0.35,
             Alignment = Alignment.Left,
             ActiveDockable = FilesTool,
             VisibleDockables = CreateList<IDockable>(FilesTool),
+        };
+
+        // The outline of the active file sits under the file list.
+        var outlineDock = new ToolDock
+        {
+            Id = DockIds.OutlineDock,
+            Proportion = 0.65,
+            Alignment = Alignment.Left,
+            ActiveDockable = OutlineTool,
+            VisibleDockables = CreateList<IDockable>(OutlineTool),
+        };
+
+        var leftColumn = new ProportionalDock
+        {
+            Id = DockIds.LeftColumn,
+            Proportion = 0.18,
+            Orientation = Orientation.Vertical,
+            VisibleDockables = CreateList<IDockable>(filesDock, new ProportionalDockSplitter(), outlineDock),
         };
 
         var documents = new DocumentDock
@@ -106,7 +126,7 @@ public sealed class InkittyDockFactory(FileTreeToolViewModel files, PlayerToolVi
             Orientation = Orientation.Horizontal,
             IsCollapsable = false,
             VisibleDockables = CreateList<IDockable>(
-                filesDock,
+                leftColumn,
                 new ProportionalDockSplitter(),
                 center,
                 new ProportionalDockSplitter(),
@@ -142,6 +162,7 @@ public sealed class InkittyDockFactory(FileTreeToolViewModel files, PlayerToolVi
             [DockIds.Issues] = () => IssuesTool,
             [DockIds.StoryMap] = () => StoryMapTool,
             [DockIds.Variables] = () => VariablesTool,
+            [DockIds.Outline] = () => OutlineTool,
         };
 
         HostWindowLocator = new Dictionary<string, Func<IHostWindow?>>

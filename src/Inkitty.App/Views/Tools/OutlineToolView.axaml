@@ -1,0 +1,46 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:tools="using:Inkitty.App.ViewModels.Tools"
+             xmlns:controls="using:Inkitty.App.Controls"
+             x:Class="Inkitty.App.Views.Tools.OutlineToolView"
+             x:DataType="tools:OutlineToolViewModel">
+  <Panel>
+    <DockPanel>
+      <!-- Wraps in a narrow pane, so the file name is never squeezed out by the buttons. -->
+      <WrapPanel DockPanel.Dock="Top" Classes="outline-toolbar">
+        <TextBlock Classes="pane-title" Text="{Binding FileName}" />
+        <StackPanel Orientation="Horizontal" Spacing="2">
+          <ToggleButton Classes="filter" IsChecked="{Binding ShowWeave}" Content="Choices"
+                        ToolTip.Tip="Show choices and labelled gathers" />
+          <Button Classes="flat" Content="⊟" Command="{Binding CollapseAllCommand}" ToolTip.Tip="Collapse all" />
+          <Button Classes="flat" Content="⊞" Command="{Binding ExpandAllCommand}" ToolTip.Tip="Expand all" />
+        </StackPanel>
+      </WrapPanel>
+      <TextBlock DockPanel.Dock="Top" Classes="placeholder" Text="{Binding Placeholder}" IsVisible="{Binding !HasNodes}" />
+      <TreeView x:Name="Tree"
+                Classes="outline"
+                ItemsSource="{Binding Nodes}"
+                SelectedItem="{Binding SelectedNode}"
+                KeyDown="OnKeyDown">
+        <TreeView.Styles>
+          <Style Selector="TreeViewItem" x:DataType="tools:OutlineNode">
+            <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+          </Style>
+        </TreeView.Styles>
+        <TreeView.ItemTemplate>
+          <TreeDataTemplate DataType="tools:OutlineNode" ItemsSource="{Binding Children}">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBlock Classes="outline-icon"
+                         Classes.flow="{Binding IsFlow}"
+                         Classes.weave="{Binding KindClass, Converter={x:Static tools:OutlineConverters.IsWeave}}"
+                         Text="{Binding Icon}" />
+              <TextBlock Classes="outline-name" Classes.flow="{Binding IsFlow}" Text="{Binding Name}" />
+              <TextBlock Classes="outline-detail" Text="{Binding Detail}" IsVisible="{Binding HasDetail}" />
+            </StackPanel>
+          </TreeDataTemplate>
+        </TreeView.ItemTemplate>
+      </TreeView>
+    </DockPanel>
+    <controls:PaneGrip Dockable="{Binding}" />
+  </Panel>
+</UserControl>
