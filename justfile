@@ -11,6 +11,10 @@ run *args:
 test:
     dotnet test --solution Inkitty.slnx
 
+# Publish the self-contained desktop app to artifacts/<rid> (e.g. linux-x64, linux-arm64, win-x64, osx-arm64).
+publish rid="linux-x64":
+    dotnet publish src/Inkitty.Desktop -c Release -r {{rid}} --self-contained -o artifacts/{{rid}}
+
 # Publish the browser version to artifacts/web.
 publish-web:
     bash scripts/publish-web.sh
