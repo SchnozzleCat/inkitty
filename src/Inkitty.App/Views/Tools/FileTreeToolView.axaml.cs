@@ -31,8 +31,15 @@ public partial class FileTreeToolView : UserControl
     {
         base.OnPointerReleased(e);
 
+        // Clicking a folder opens or closes it.
+        if (e.InitialPressMouseButton == MouseButton.Left && DataContext is FileTreeToolViewModel { SelectedNode: { IsFolder: true } folder })
+        {
+            folder.IsExpanded = !folder.IsExpanded;
+            return;
+        }
+
         // Single click on an outline entry jumps straight there; files open on single click too, like Inky.
-        if (e.InitialPressMouseButton == MouseButton.Left && DataContext is FileTreeToolViewModel { SelectedNode: { IsHeader: false } } vm)
+        if (e.InitialPressMouseButton == MouseButton.Left && DataContext is FileTreeToolViewModel { SelectedNode: { IsHeader: false, IsFolder: false } } vm)
         {
             vm.OpenCommand.Execute(vm.SelectedNode);
         }

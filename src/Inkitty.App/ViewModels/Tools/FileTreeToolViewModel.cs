@@ -13,6 +13,7 @@ namespace Inkitty.App.ViewModels.Tools;
 
 public enum FileNodeKind
 {
+    Folder,
     File,
     Knot,
     Stitch,
@@ -21,18 +22,32 @@ public enum FileNodeKind
     Unincluded,
 }
 
-/// <summary>A node in the files tree: a file, a knot/stitch outline entry, or a group header.</summary>
+/// <summary>A node in the files tree: a folder, a file, a knot/stitch outline entry, or a group header.</summary>
 public sealed partial class FileNode : ObservableObject
 {
+    /// <param name="file">Project-relative file (for folders, the folder's path).</param>
     public FileNode(string label, FileNodeKind kind, string? file, SourceRange? range = null)
     {
         Label = label;
         Kind = kind;
-        File = file;
+        File = kind == FileNodeKind.Folder ? null : file;
+        FolderPath = kind == FileNodeKind.Folder ? file : null;
         Range = range;
     }
 
     public string Label { get; }
+
+    /// <summary>Project-relative path of a folder node (e.g. <c>chapters</c>).</summary>
+    public string? FolderPath { get; }
+
+    /// <summary>Identifies the node across rebuilds, to keep it expanded or selected.</summary>
+    public string Key => Kind switch
+    {
+        FileNodeKind.Folder => $"folder:{FolderPath}",
+        FileNodeKind.Header => $"header:{Label}",
+        FileNodeKind.File or FileNodeKind.Unincluded => $"file:{File}",
+        _ => $"outline:{File}:{Label}:{Range?.Line}",
+    };
 
     public FileNodeKind Kind { get; }
 
@@ -54,26 +69,37 @@ public sealed partial class FileNode : ObservableObject
 
     public bool IsFile => Kind == FileNodeKind.File;
 
+    public bool IsFolder => Kind == FileNodeKind.Folder;
+
     public bool IsHeader => Kind == FileNodeKind.Header;
 
     public bool IsUnincluded => Kind == FileNodeKind.Unincluded;
 
     public bool IsOutline => Kind is FileNodeKind.Knot or FileNodeKind.Stitch or FileNodeKind.Function;
 
+    public bool HasIcon => IsOutline || IsFolder;
+
     public string Icon => Kind switch
     {
         FileNodeKind.Knot => "==",
         FileNodeKind.Stitch => "=",
         FileNodeKind.Function => "ƒ",
+        FileNodeKind.Folder => "▤",
         _ => string.Empty,
     };
 }
 
-/// <summary>The files tool: the include tree, with a knot/stitch outline under each file.</summary>
+/// <summary>
+/// The files tool: project files grouped by folder (folders first, then files in include order), with a
+/// knot/stitch outline under each file.
+/// </summary>
 public sealed partial class FileTreeToolViewModel : Tool
 {
     private readonly IMessenger _messenger;
     private ProjectViewModel? _project;
+
+    /// <summary>Folders start expanded; remember the ones the user collapsed.</summary>
+    private readonly HashSet<string> _collapsedFolders = [];
 
     public FileTreeToolViewModel(IMessenger messenger)
     {
@@ -107,6 +133,7 @@ public sealed partial class FileTreeToolViewModel : Tool
         }
 
         _project = project;
+        _collapsedFolders.Clear();
         ProjectName = project?.Name ?? string.Empty;
         if (project is not null)
         {
@@ -143,7 +170,7 @@ public sealed partial class FileTreeToolViewModel : Tool
 
     private void OnFileChanged(object? sender, EventArgs e)
     {
-        if (sender is InkSourceFile file && Nodes.FirstOrDefault(n => n.File == file.RelativePath) is { } node)
+        if (sender is InkSourceFile file && Flatten(Nodes).FirstOrDefault(n => n.IsFile && n.File == file.RelativePath) is { } node)
         {
             node.IsDirty = file.IsDirty;
         }
@@ -151,8 +178,21 @@ public sealed partial class FileTreeToolViewModel : Tool
 
     private void Rebuild()
     {
-        var expanded = Nodes.Where(n => n.IsExpanded).Select(n => n.File).ToHashSet();
-        var selected = SelectedNode is { } s ? (s.File, s.Label) : default;
+        var all = Flatten(Nodes).ToList();
+        foreach (var folder in all.Where(n => n.IsFolder))
+        {
+            if (folder.IsExpanded)
+            {
+                _collapsedFolders.Remove(folder.Key);
+            }
+            else
+            {
+                _collapsedFolders.Add(folder.Key);
+            }
+        }
+
+        var expanded = all.Where(n => n.IsExpanded && !n.IsFolder).Select(n => n.Key).ToHashSet();
+        var selected = SelectedNode?.Key;
         Nodes.Clear();
         if (_project is null)
         {
@@ -161,37 +201,97 @@ public sealed partial class FileTreeToolViewModel : Tool
 
         var symbols = _project.LastResult?.Symbols;
         var errorFiles = _project.Issues.Where(i => i.Severity.IsError).Select(i => i.File).ToHashSet();
+        List<FileNode> files = [];
         foreach (var file in _project.Project.Files)
         {
             file.Changed -= OnFileChanged;
             file.Changed += OnFileChanged;
-            var node = new FileNode(file.RelativePath, FileNodeKind.File, file.RelativePath)
+            var node = new FileNode(FileName(file.RelativePath), FileNodeKind.File, file.RelativePath)
             {
                 IsDirty = file.IsDirty,
                 HasErrors = errorFiles.Contains(file.RelativePath),
-                IsExpanded = expanded.Contains(file.RelativePath),
             };
+            node.IsExpanded = expanded.Contains(node.Key);
 
             if (symbols is not null)
             {
                 AddOutline(node, symbols.OutlineOf(file.RelativePath));
+                foreach (var child in Flatten(node.Children))
+                {
+                    child.IsExpanded = expanded.Contains(child.Key);
+                }
             }
 
+            files.Add(node);
+        }
+
+        foreach (var node in GroupByFolder(files))
+        {
             Nodes.Add(node);
         }
 
         if (_project.UnincludedFiles.Count > 0)
         {
             var header = new FileNode("Not included", FileNodeKind.Header, null) { IsExpanded = true };
-            foreach (var path in _project.UnincludedFiles)
+            var unincluded = _project.UnincludedFiles.Select(path => new FileNode(FileName(path), FileNodeKind.Unincluded, path));
+            foreach (var node in GroupByFolder(unincluded, keyPrefix: "unincluded/"))
             {
-                header.Children.Add(new FileNode(path, FileNodeKind.Unincluded, path));
+                header.Children.Add(node);
             }
 
             Nodes.Add(header);
         }
 
-        SelectedNode = Flatten(Nodes).FirstOrDefault(n => n.File == selected.File && n.Label == selected.Label);
+        SelectedNode = selected is null ? null : Flatten(Nodes).FirstOrDefault(n => n.Key == selected);
+    }
+
+    private static string FileName(string relativePath) => relativePath[(relativePath.LastIndexOf('/') + 1)..];
+
+    /// <summary>
+    /// Nests file nodes under folder nodes by their path. Folders come first (by name), then files in the
+    /// order given (include order, so the main file leads the root).
+    /// </summary>
+    private List<FileNode> GroupByFolder(IEnumerable<FileNode> files, string keyPrefix = "")
+    {
+        var root = new FileNode(string.Empty, FileNodeKind.Folder, keyPrefix);
+        Dictionary<string, FileNode> folders = [];
+        foreach (var file in files)
+        {
+            var parent = root;
+            var segments = file.File!.Split('/');
+            for (var i = 0; i < segments.Length - 1; i++)
+            {
+                var path = keyPrefix + string.Join('/', segments[..(i + 1)]);
+                if (!folders.TryGetValue(path, out var folder))
+                {
+                    folder = folders[path] = new FileNode(segments[i], FileNodeKind.Folder, path);
+                    folder.IsExpanded = !_collapsedFolders.Contains(folder.Key);
+                    parent.Children.Add(folder);
+                }
+
+                parent = folder;
+            }
+
+            parent.Children.Add(file);
+        }
+
+        foreach (var folder in folders.Values.Prepend(root))
+        {
+            List<FileNode> ordered = [.. folder.Children.Where(c => c.IsFolder).OrderBy(c => c.Label, StringComparer.OrdinalIgnoreCase), .. folder.Children.Where(c => !c.IsFolder)];
+            folder.Children.Clear();
+            foreach (var child in ordered)
+            {
+                folder.Children.Add(child);
+            }
+        }
+
+        // A folder shows red if any file inside it has errors.
+        foreach (var folder in folders.Values.OrderByDescending(f => f.FolderPath!.Length))
+        {
+            folder.HasErrors = folder.Children.Any(c => c.HasErrors);
+        }
+
+        return [.. root.Children];
     }
 
     private static void AddOutline(FileNode fileNode, IReadOnlyList<SymbolDefinition> outline)
