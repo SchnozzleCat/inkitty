@@ -9,8 +9,8 @@
     <DockPanel>
       <controls:PaneGrip DockPanel.Dock="Top" Dockable="{Binding}" />
       <WrapPanel DockPanel.Dock="Top" Classes="map-toolbar">
-        <Button Classes="flat" Command="{Binding CenterOnCurrentCommand}">
-          <StackPanel Orientation="Horizontal" Spacing="6"><Path Classes="icon" Data="{StaticResource IconTarget}" /><TextBlock Text="Where am I?" /></StackPanel>
+        <Button Classes="flat" Command="{Binding CenterOnCurrentCommand}" ToolTip.Tip="Centre the map on the current knot">
+          <StackPanel Orientation="Horizontal" Spacing="6"><Path Classes="icon" Data="{StaticResource IconTarget}" /><TextBlock Text="Locate" /></StackPanel>
         </Button>
         <Button Classes="flat" Content="Fit" Command="{Binding FitToViewCommand}" ToolTip.Tip="Show the whole story (0). Ctrl+wheel or +/- zooms, drag pans." />
         <ToggleButton Classes="filter" IsChecked="{Binding FollowCurrent}" Content="Follow"
