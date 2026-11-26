@@ -26,6 +26,7 @@
       <StreamGeometry x:Key="IconList">M2.5,4 L13.5,4 M2.5,8 L13.5,8 M2.5,12 L13.5,12</StreamGeometry>
       <StreamGeometry x:Key="IconDockHere">M2.5,2.5 L13.5,2.5 L13.5,13.5 L2.5,13.5 Z M2.5,9 L13.5,9</StreamGeometry>
       <StreamGeometry x:Key="IconFloat">M5.5,2.5 L13.5,2.5 L13.5,10.5 L5.5,10.5 Z M2.5,5.5 L2.5,13.5 L10.5,13.5</StreamGeometry>
+      <StreamGeometry x:Key="IconPin">M6,2.5 L10,2.5 L9.5,7 L11.5,9 L4.5,9 L6.5,7 Z M8,9 L8,13.5</StreamGeometry>
       <StreamGeometry x:Key="IconClose">M4,4 L12,12 M12,4 L4,12</StreamGeometry>
       <StreamGeometry x:Key="IconInclude">M9,2.5 L13.5,2.5 L13.5,13.5 L9,13.5 M2,8 L10,8 M7,5 L10,8 L7,11</StreamGeometry>
 
@@ -72,7 +73,8 @@
   </Style>
 
   <!-- Pane header (replaces Dock's title bar): the title in small caps-style lettering on a slightly
-       darker strip with a hairline below; the close button shows on hover. Dragging it moves the pane. -->
+       darker strip with a hairline below; pin (auto hide) and close buttons show on hover, the pin stays
+       visible (filled) while the pane is auto-hidden. Dragging it moves the pane. -->
   <Style Selector="controls|PaneGrip">
     <Setter Property="Height" Value="28" />
     <Setter Property="Background" Value="{DynamicResource InkittyPaneHeaderBackground}" />
@@ -85,6 +87,9 @@
           <Border DockPanel.Dock="Bottom" Height="1" Background="{DynamicResource DockThemeBorderLowBrush}" IsHitTestVisible="False" />
           <Button Name="PART_CloseButton" DockPanel.Dock="Right" Classes="pane-close" ToolTip.Tip="Close">
             <Path Classes="icon small" Data="{StaticResource IconClose}" />
+          </Button>
+          <Button Name="PART_PinButton" DockPanel.Dock="Right" Classes="pane-close pane-pin">
+            <Path Classes="icon small" Data="{StaticResource IconPin}" />
           </Button>
           <TextBlock Name="PART_Title" Text="{Binding Title}" Classes="pane-header-title" IsHitTestVisible="False" />
         </DockPanel>
@@ -125,6 +130,19 @@
   </Style>
   <Style Selector="controls|PaneGrip:pointerover Button.pane-close">
     <Setter Property="IsVisible" Value="{Binding $parent[controls:PaneGrip].((core:IDockable)Dockable).CanClose, FallbackValue=False}" />
+  </Style>
+  <Style Selector="controls|PaneGrip:pointerover Button.pane-pin">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+  <Style Selector="controls|PaneGrip:can-pin:pointerover Button.pane-pin, controls|PaneGrip:can-pin:pinned Button.pane-pin">
+    <Setter Property="IsVisible" Value="True" />
+  </Style>
+  <Style Selector="Button.pane-pin">
+    <Setter Property="Margin" Value="0" />
+  </Style>
+  <!-- Auto-hidden (sliding out from the edge): the pin is filled; clicking it unpins. -->
+  <Style Selector="controls|PaneGrip:pinned Button.pane-pin Path">
+    <Setter Property="Fill" Value="{Binding $self.Stroke}" />
   </Style>
   <Style Selector="Button.pane-close:pointerover /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource InkittyChoiceHover}" />

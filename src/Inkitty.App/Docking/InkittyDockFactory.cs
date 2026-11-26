@@ -275,6 +275,82 @@ public sealed class InkittyDockFactory(FileTreeToolViewModel files, PlayerToolVi
         _ => false,
     };
 
+    /// <summary>Raised whenever panes move, are added, removed, pinned, unpinned or float (headers refresh).</summary>
+    public event EventHandler? LayoutChanged;
+
+    private void RaiseLayoutChanged() => LayoutChanged?.Invoke(this, EventArgs.Empty);
+
+    public override void OnDockableAdded(IDockable? dockable) { base.OnDockableAdded(dockable); RaiseLayoutChanged(); }
+
+    public override void OnDockableRemoved(IDockable? dockable) { base.OnDockableRemoved(dockable); RaiseLayoutChanged(); }
+
+    public override void OnDockableMoved(IDockable? dockable) { base.OnDockableMoved(dockable); RaiseLayoutChanged(); }
+
+    public override void OnDockableDocked(IDockable? dockable, DockOperation operation) { base.OnDockableDocked(dockable, operation); RaiseLayoutChanged(); }
+
+    public override void OnDockableUndocked(IDockable? dockable, DockOperation operation) { base.OnDockableUndocked(dockable, operation); RaiseLayoutChanged(); }
+
+    public override void OnDockablePinned(IDockable? dockable) { base.OnDockablePinned(dockable); RaiseLayoutChanged(); }
+
+    public override void OnDockableUnpinned(IDockable? dockable) { base.OnDockableUnpinned(dockable); RaiseLayoutChanged(); }
+
+    public override void OnDockableHidden(IDockable? dockable) { base.OnDockableHidden(dockable); RaiseLayoutChanged(); }
+
+    public override void OnDockableRestored(IDockable? dockable) { base.OnDockableRestored(dockable); RaiseLayoutChanged(); }
+
+    public override void OnWindowAdded(IDockWindow? window) { base.OnWindowAdded(window); RaiseLayoutChanged(); }
+
+    public override void OnWindowRemoved(IDockWindow? window) { base.OnWindowRemoved(window); RaiseLayoutChanged(); }
+
+    /// <summary>
+    /// True if the tool can be auto-hidden (pinned to the window edge) where it is now: anywhere in the main
+    /// window, but in a floating window only while another tool stays visible there, since auto-hiding the
+    /// only one would leave an empty window. Unpinning is always possible.
+    /// </summary>
+    public bool CanPinTool(IDockable? tool)
+    {
+        if (tool is not ITool { CanPin: true } || FindRoot(tool, _ => true) is not { } root)
+        {
+            return false;
+        }
+
+        if (IsDockablePinned(tool, root))
+        {
+            return true;
+        }
+
+        return tool.Owner is IToolDock && (ReferenceEquals(root, _root) || CountVisibleTools(root) > 1);
+    }
+
+    private static int CountVisibleTools(IDockable dockable) => dockable switch
+    {
+        ITool => 1,
+        IDock dock => dock.VisibleDockables?.Sum(CountVisibleTools) ?? 0,
+        _ => 0,
+    };
+
+    public override void PinDockable(IDockable dockable)
+    {
+        if (dockable is ITool && !CanPinTool(dockable))
+        {
+            return;
+        }
+
+        base.PinDockable(dockable);
+    }
+
+    /// <summary>
+    /// True if the tool's header is its floating window's title bar: the window holds just its tool dock
+    /// (Dock then draws a tool-style title bar). Not when the window is split into several panes, nor while
+    /// the tool slides out from the edge after being auto-hidden.
+    /// </summary>
+    public bool IsInSinglePaneFloatingWindow(IDockable tool) =>
+        FindRoot(tool, _ => true) is { } root && !ReferenceEquals(root, _root)
+        && root.ActiveDockable is IToolDock paneDock && ReferenceEquals(tool.Owner, paneDock);
+
+    /// <summary>True if the dockable is in the main window's layout (not a floating window).</summary>
+    public bool IsInMainWindow(IDockable dockable) => _root is not null && ReferenceEquals(FindRoot(dockable, _ => true), _root);
+
     /// <summary>The floating window a tool is shown in, or null if it isn't in one that's open.</summary>
     private IRootDock? FloatingRootOf(ITool tool) =>
         FindRoot(tool, _ => true) is { Window: { } window } root && !ReferenceEquals(root, _root) && _root?.Windows?.Contains(window) == true
@@ -325,6 +401,13 @@ public sealed class InkittyDockFactory(FileTreeToolViewModel files, PlayerToolVi
                 dock.ActiveDockable = tool;
                 SplitToDock(_documents, dock, DockOperation.Bottom);
             }
+        }
+
+        if (IsDockablePinned(tool))
+        {
+            // Auto-hidden: slide it out.
+            PreviewPinnedDockable(tool);
+            return;
         }
 
         if (tool.Owner is IDock owner)

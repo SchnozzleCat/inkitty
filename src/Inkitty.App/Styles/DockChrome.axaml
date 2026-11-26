@@ -4,6 +4,7 @@
                     xmlns:dmc="using:Dock.Model.Controls"
                     xmlns:controls="using:Dock.Avalonia.Controls"
                     xmlns:converters="using:Dock.Avalonia.Converters"
+                    xmlns:docking="using:Inkitty.App.Docking"
                     x:CompileBindings="True">
   <!--
     Dock's drag chrome in Inkitty's look: what follows the pointer while dragging a pane, and the
@@ -48,4 +49,52 @@
       <Setter Property="Opacity" Value="1" />
     </Style>
   </ControlTheme>
+
+  <!--
+    Context menus. Panes in Inkitty only dock, tab and float, so Dock's menus are cut down to that: no
+    auto hide/pin, float all, dock as document, new document docks, cascade/tile or layout modes (most of
+    which did nothing here, or made the floating window disappear). Same keys as Dock's, so they replace them.
+  -->
+
+  <!-- A floating pane's title bar (MdiDocumentWindow). DataContext: the managed window document. -->
+  <ContextMenu x:Key="MdiDocumentWindowContextMenu" x:DataType="core:IDockable">
+    <MenuItem Header="_Close"
+              Command="{Binding Owner.Factory.CloseDockable}"
+              CommandParameter="{Binding}" />
+  </ContextMenu>
+
+  <!-- A tool's tab (when tools share a pane). DataContext: the tool. -->
+  <ContextMenu x:Key="ToolTabStripItemContextMenu" x:DataType="core:IDockable">
+    <MenuItem Header="_Float"
+              Command="{Binding Owner.Factory.FloatDockable}"
+              CommandParameter="{Binding}"
+              IsVisible="{Binding Converter={x:Static docking:DockConverters.IsInMainWindow}}" />
+    <MenuItem Header="_Auto Hide"
+              Command="{Binding Owner.Factory.PinDockable}"
+              CommandParameter="{Binding}"
+              IsVisible="{Binding Converter={x:Static docking:DockConverters.CanPin}}" />
+    <MenuItem Header="_Close"
+              Command="{Binding Owner.Factory.CloseDockable}"
+              CommandParameter="{Binding}" />
+  </ContextMenu>
+
+  <!-- The tab on the window edge of an auto-hidden tool. DataContext: the tool. -->
+  <ContextMenu x:Key="ToolPinItemControlContextMenu" x:DataType="core:IDockable">
+    <MenuItem Header="_Show"
+              Command="{Binding Owner.Factory.PreviewPinnedDockable}"
+              CommandParameter="{Binding}" />
+    <MenuItem Header="_Unpin"
+              Command="{Binding Owner.Factory.PinDockable}"
+              CommandParameter="{Binding}" />
+    <MenuItem Header="_Close"
+              Command="{Binding Owner.Factory.CloseDockable}"
+              CommandParameter="{Binding}" />
+  </ContextMenu>
+
+  <!-- The ⋯ menu on a floating pane's title bar, and Dock's tool title bars. DataContext: the tool dock. -->
+  <MenuFlyout x:Key="ToolChromeControlContextMenu" x:DataType="dmc:IToolDock">
+    <MenuItem Header="_Close"
+              Command="{Binding Owner.Factory.CloseDockable}"
+              CommandParameter="{Binding ActiveDockable}" />
+  </MenuFlyout>
 </ResourceDictionary>

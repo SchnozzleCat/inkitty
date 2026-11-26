@@ -377,6 +377,219 @@ public class DockingTests
             await Assert.That(factory.IsToolVisible(factory.StoryMapTool)).IsTrue();
         });
 
+    [Test]
+    public async Task Floating_pane_menus_only_offer_what_panes_support() =>
+        await HeadlessSession.Run(async () =>
+        {
+            var hostMode = Dock.Settings.DockSettings.FloatingWindowHostMode;
+            Dock.Settings.DockSettings.FloatingWindowHostMode = DockFloatingWindowHostMode.Managed;
+            using var restore = new Restore(() => Dock.Settings.DockSettings.FloatingWindowHostMode = hostMode);
+            await using var app = AppFixture.Create();
+            var factory = app.Shell.Factory;
+            factory.FloatDockable(factory.StoryMapTool);
+            await UiTestHelpers.WaitUntil(() => FloatingWindows(app).Length == 1);
+            var window = FloatingWindows(app)[0];
+
+            static string[] Headers(IEnumerable<object?>? items) =>
+                [.. (items ?? []).OfType<Avalonia.Controls.MenuItem>().Where(i => i.IsVisible).Select(i => i.Header?.ToString() ?? "")];
+
+            // The title bar's right-click menu.
+            var header = window.GetVisualDescendants().OfType<Avalonia.Controls.Border>().Single(b => b.Name == "PART_Header");
+            var titleMenu = header.ContextMenu!;
+            titleMenu.Open(header);
+            titleMenu.UpdateLayout();
+            await Assert.That(Headers(titleMenu.Items)).IsEquivalentTo(["_Close"]);
+            titleMenu.Close();
+
+            // The ⋯ menu on the title bar.
+            var menuButton = window.GetVisualDescendants().OfType<Avalonia.Controls.Button>().Single(b => b.Name == "PART_ToolMenuButton");
+            var flyout = (Avalonia.Controls.MenuFlyout)menuButton.Flyout!;
+            flyout.ShowAt(menuButton);
+            app.Window.UpdateLayout();
+            await Assert.That(Headers(flyout.Items)).IsEquivalentTo(["_Close"]);
+            var closeItem = (Avalonia.Controls.MenuItem)flyout.Items[0]!;
+            await Assert.That(closeItem.CommandParameter).IsSameReferenceAs(factory.StoryMapTool);
+            var closeCommand = closeItem.Command!;
+            flyout.Hide();
+
+            // No pin (auto hide) button.
+            var pin = window.GetVisualDescendants().OfType<Avalonia.Controls.Button>().Single(b => b.Name == "PART_ToolPinButton");
+            await Assert.That(pin.IsEffectivelyVisible).IsFalse();
+
+            // The menu's Close closes the tool (and its window), as the title bar's close button does.
+            closeCommand.Execute(factory.StoryMapTool);
+            await Assert.That(factory.IsToolVisible(factory.StoryMapTool)).IsFalse();
+            await Assert.That(FloatingWindows(app).Length).IsEqualTo(0);
+        });
+
+    [Test]
+    public async Task Tool_tab_menu_offers_float_auto_hide_and_close_only() =>
+        await HeadlessSession.Run(async () =>
+        {
+            await using var app = AppFixture.Create();
+            var factory = app.Shell.Factory;
+
+            // Issues and Variables share a pane, so they have tabs.
+            ToolTabStripItem? tab = null;
+            await UiTestHelpers.WaitUntil(() =>
+            {
+                app.Window.UpdateLayout();
+                tab = app.Window.GetVisualDescendants().OfType<ToolTabStripItem>().FirstOrDefault(t => ReferenceEquals(t.DataContext, factory.VariablesTool));
+                return tab is not null;
+            });
+            var host = tab!.GetVisualDescendants().OfType<Avalonia.Controls.Border>().First(b => b.ContextMenu is not null);
+            var menu = host.ContextMenu!;
+            menu.Open(host);
+            menu.UpdateLayout();
+            var headers = menu.Items.OfType<Avalonia.Controls.MenuItem>().Where(i => i.IsVisible).Select(i => i.Header?.ToString() ?? "").ToArray();
+            await Assert.That(headers).IsEquivalentTo(["_Float", "_Auto Hide", "_Close"]);
+            menu.Close();
+
+            // Once floating, Float isn't offered again.
+            factory.FloatDockable(factory.VariablesTool);
+            static bool InMain(IDockable d) => (bool)DockConverters.IsInMainWindow.Convert(d, typeof(bool), null, System.Globalization.CultureInfo.InvariantCulture)!;
+            await Assert.That(InMain(factory.VariablesTool)).IsFalse();
+            await Assert.That(InMain(factory.IssuesTool)).IsTrue();
+        });
+
+    private static PaneGrip HeaderOf(AppFixture app, IDockable tool)
+    {
+        app.Window.UpdateLayout();
+        return app.Window.GetVisualDescendants().OfType<PaneGrip>().First(g => g.Dockable == tool && g.IsEffectivelyVisible);
+    }
+
+    private static Avalonia.Controls.Button PinButtonOf(PaneGrip header) =>
+        header.GetVisualDescendants().OfType<Avalonia.Controls.Button>().Single(b => b.Name == "PART_PinButton");
+
+    private static void Click(Avalonia.Controls.Button button) =>
+        button.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Avalonia.Controls.Button.ClickEvent));
+
+    [Test]
+    public async Task Pane_header_pin_auto_hides_the_pane_and_its_header_unpins_it() =>
+        await HeadlessSession.Run(async () =>
+        {
+            await using var app = AppFixture.Create();
+            var factory = app.Shell.Factory;
+            var files = factory.FilesTool;
+            var home = files.Owner;
+            await UiTestHelpers.WaitUntil(() => { app.Window.UpdateLayout(); return app.Window.GetVisualDescendants().OfType<PaneGrip>().Any(g => g.Dockable == files); });
+
+            // Docked: the header offers pinning.
+            var header = HeaderOf(app, files);
+            await Assert.That(header.Classes.Contains(":can-pin")).IsTrue();
+            Click(PinButtonOf(header));
+            await Assert.That(factory.IsDockablePinned(files)).IsTrue();
+            await Assert.That(app.Shell.Layout.LeftPinnedDockables).Contains(files);
+
+            // It's on the window edge as a tab...
+            app.Window.UpdateLayout();
+            await Assert.That(app.Window.GetVisualDescendants().OfType<ToolPinItemControl>().Any(i => i.DataContext == files)).IsTrue();
+
+            // ...View > Files slides it out, and that header's pin (filled) unpins it back into its dock.
+            app.Shell.ShowFilesCommand.Execute(null);
+            await UiTestHelpers.WaitUntil(() => { app.Window.UpdateLayout(); return app.Window.GetVisualDescendants().OfType<PaneGrip>().Any(g => g.Dockable == files && g.IsEffectivelyVisible); });
+            header = HeaderOf(app, files);
+            await Assert.That(header.Classes.Contains(":pinned")).IsTrue();
+            await Assert.That(PinButtonOf(header).IsEffectivelyVisible).IsTrue();
+            Click(PinButtonOf(header));
+            await Assert.That(factory.IsDockablePinned(files)).IsFalse();
+            await Assert.That(files.Owner).IsSameReferenceAs(home);
+        });
+
+    [Test]
+    public async Task Edge_tab_menu_unpins_an_auto_hidden_pane() =>
+        await HeadlessSession.Run(async () =>
+        {
+            await using var app = AppFixture.Create();
+            var factory = app.Shell.Factory;
+            var issues = factory.IssuesTool;
+            var home = issues.Owner;
+            factory.PinDockable(issues);
+            ToolPinItemControl? tab = null;
+            await UiTestHelpers.WaitUntil(() =>
+            {
+                app.Window.UpdateLayout();
+                tab = app.Window.GetVisualDescendants().OfType<ToolPinItemControl>().FirstOrDefault(i => i.DataContext == issues);
+                return tab is not null;
+            });
+            await Assert.That(tab).IsNotNull();
+            var host = tab!.GetVisualDescendants().OfType<Avalonia.Controls.Control>().First(c => c.ContextMenu is not null);
+            var menu = host.ContextMenu!;
+            menu.Open(host);
+            menu.UpdateLayout();
+            var items = menu.Items.OfType<Avalonia.Controls.MenuItem>().Where(i => i.IsVisible).ToList();
+            await Assert.That(items.Select(i => i.Header?.ToString() ?? "")).IsEquivalentTo(["_Show", "_Unpin", "_Close"]);
+            var unpin = items.Single(i => i.Header?.ToString() == "_Unpin");
+            unpin.Command!.Execute(unpin.CommandParameter);
+            menu.Close();
+
+            await Assert.That(factory.IsDockablePinned(issues)).IsFalse();
+            await Assert.That(issues.Owner).IsSameReferenceAs(home);
+        });
+
+    [Test]
+    public async Task Floating_window_allows_pinning_only_with_more_than_one_pane() =>
+        await HeadlessSession.Run(async () =>
+        {
+            var hostMode = Dock.Settings.DockSettings.FloatingWindowHostMode;
+            Dock.Settings.DockSettings.FloatingWindowHostMode = DockFloatingWindowHostMode.Managed;
+            using var restore = new Restore(() => Dock.Settings.DockSettings.FloatingWindowHostMode = hostMode);
+            await using var app = AppFixture.Create();
+            var factory = app.Shell.Factory;
+            var map = factory.StoryMapTool;
+            factory.FloatDockable(map);
+            await UiTestHelpers.WaitUntil(() => FloatingWindows(app).Length == 1);
+
+            // Alone in the window: no pinning, not even through the factory.
+            await Assert.That(factory.CanPinTool(map)).IsFalse();
+            factory.PinDockable(map);
+            await Assert.That(factory.IsDockablePinned(map)).IsFalse();
+            var window = FloatingWindows(app)[0];
+            await Assert.That(window.GetVisualDescendants().OfType<Avalonia.Controls.Button>().Single(b => b.Name == "PART_ToolPinButton").IsEffectivelyVisible).IsFalse();
+
+            // Split a second pane into it: each pane gets its own header, with a pin.
+            var mapDock = (IDock)map.Owner!;
+            var playerDock = new Dock.Model.Mvvm.Controls.ToolDock { Alignment = Alignment.Right, VisibleDockables = factory.CreateList<IDockable>() };
+            factory.RemoveDockable(factory.PlayerTool, true);
+            factory.AddDockable(playerDock, factory.PlayerTool);
+            playerDock.ActiveDockable = factory.PlayerTool;
+            factory.SplitToDock(mapDock, playerDock, DockOperation.Right);
+            await Assert.That(factory.CanPinTool(map)).IsTrue();
+            await UiTestHelpers.WaitUntil(() => { app.Window.UpdateLayout(); return app.Window.GetVisualDescendants().OfType<PaneGrip>().Any(g => g.Dockable == map && g.IsEffectivelyVisible); });
+            var header = HeaderOf(app, map);
+            await Assert.That(header.Classes.Contains(":can-pin")).IsTrue();
+            Click(PinButtonOf(header));
+            await Assert.That(factory.IsDockablePinned(map)).IsTrue();
+
+            // Unpinning puts it back into the floating window.
+            var floatingRoot = factory.FindRoot(map, _ => true)!;
+            factory.PinDockable(map);
+            await Assert.That(factory.IsDockablePinned(map)).IsFalse();
+            await Assert.That(factory.FindRoot(map, _ => true)).IsSameReferenceAs(floatingRoot);
+        });
+
+    [Test]
+    public async Task Auto_hidden_pane_stays_auto_hidden_across_restarts() =>
+        await HeadlessSession.Run(async () =>
+        {
+            var config = Path.Join(Path.GetTempPath(), "inkitty-app-tests", Guid.NewGuid().ToString("N"));
+            await using (var first = AppFixture.Create(config))
+            {
+                first.Shell.Factory.PinDockable(first.Shell.Factory.OutlineTool);
+                first.Shell.Factory.PreviewPinnedDockable(first.Shell.Factory.OutlineTool); // slid out when closing
+                await first.Shell.OnClosingAsync();
+                await Assert.That(first.Get<DockLayoutService>().LastError?.ToString()).IsNull();
+            }
+
+            await using var second = AppFixture.Create(config);
+            var factory = second.Shell.Factory;
+            await Assert.That(second.Get<DockLayoutService>().LastError?.ToString()).IsNull();
+            await Assert.That(factory.IsDockablePinned(factory.OutlineTool)).IsTrue();
+            factory.PinDockable(factory.OutlineTool);
+            await Assert.That(factory.IsDockablePinned(factory.OutlineTool)).IsFalse();
+            await Assert.That(factory.IsInMainWindow(factory.OutlineTool)).IsTrue();
+        });
+
     private sealed class Restore(Action action) : IDisposable
     {
         public void Dispose() => action();

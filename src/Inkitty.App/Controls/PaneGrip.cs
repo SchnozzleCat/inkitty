@@ -3,24 +3,29 @@ using Avalonia.Controls;
 using Avalonia.Controls.Metadata;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
-using Avalonia.VisualTree;
-using Dock.Avalonia.Controls;
 using Dock.Model.Core;
+using Inkitty.App.Docking;
 
 namespace Inkitty.App.Controls;
 
 /// <summary>
-/// A tool pane's header bar, replacing Dock's title bar: shows the pane's title and a close button,
-/// drag it to move the pane, right-click it to float or close it. Styled in Styles/Inkitty.axaml.
+/// A tool pane's header bar, replacing Dock's title bar: shows the pane's title, a pin button (auto hide:
+/// the pane collapses to a tab on the window edge and slides out when that's clicked; on a slid-out pane
+/// the same button unpins it) and a close button. Drag it to move the pane, right-click it for the same
+/// actions plus float. Styled in Styles/Inkitty.axaml.
 /// </summary>
 [TemplatePart("PART_CloseButton", typeof(Button))]
-[PseudoClasses(":floating")]
+[TemplatePart("PART_PinButton", typeof(Button))]
+[PseudoClasses(":floating", ":pinned", ":can-pin")]
 public sealed class PaneGrip : TemplatedControl
 {
     public static readonly StyledProperty<IDockable?> DockableProperty =
         AvaloniaProperty.Register<PaneGrip, IDockable?>(nameof(Dockable));
 
     private Button? _closeButton;
+    private Button? _pinButton;
+    private readonly MenuItem _floatItem = new() { Header = "Float" };
+    private readonly MenuItem _pinItem = new();
 
     // Dock starts a pane drag from a rendered control marked as a drag area whose DataContext is the
     // dockable; the template's root panel is that control.
@@ -39,17 +44,69 @@ public sealed class PaneGrip : TemplatedControl
         if (change.Property == DockableProperty)
         {
             DataContext = Dockable;
+            UpdatePinState();
         }
     }
 
     /// <summary>
-    /// In a floating pane the floating window's own title bar (styled to match, see Styles/Inkitty.axaml)
-    /// is the header, so this one hides there (<c>:floating</c>).
+    /// Pinned state and whether pinning is offered, refreshed whenever the layout changes: the same
+    /// pane moves between docks, floating windows and the edge.
+    /// </summary>
+    private void UpdatePinState()
+    {
+        var factory = Dockable?.Factory as InkittyDockFactory;
+        var pinned = Dockable is { } d && factory?.IsDockablePinned(d) == true;
+        var canPin = factory?.CanPinTool(Dockable) == true;
+        PseudoClasses.Set(":pinned", pinned);
+        PseudoClasses.Set(":can-pin", canPin);
+        PseudoClasses.Set(":floating", Dockable is { } tool && factory?.IsInSinglePaneFloatingWindow(tool) == true);
+        _pinItem.Header = pinned ? "Unpin" : "Auto Hide";
+        _pinItem.IsVisible = canPin;
+        _floatItem.IsVisible = Dockable is { } t && factory?.IsInMainWindow(t) == true && !pinned;
+        if (_pinButton is not null)
+        {
+            ToolTip.SetTip(_pinButton, pinned ? "Unpin (keep the pane open)" : "Auto hide (collapse to the window edge)");
+        }
+    }
+
+    private InkittyDockFactory? _subscribed;
+
+    private void Subscribe(InkittyDockFactory? factory)
+    {
+        if (ReferenceEquals(_subscribed, factory))
+        {
+            return;
+        }
+
+        if (_subscribed is not null)
+        {
+            _subscribed.LayoutChanged -= OnLayoutChanged;
+        }
+
+        _subscribed = factory;
+        if (factory is not null)
+        {
+            factory.LayoutChanged += OnLayoutChanged;
+        }
+    }
+
+    private void OnLayoutChanged(object? sender, EventArgs e) => UpdatePinState();
+
+    /// <summary>
+    /// When a floating window holds just this pane, the window's own title bar (styled to match, see
+    /// Styles/Inkitty.axaml) is the header, so this one hides there (<c>:floating</c>).
     /// </summary>
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
-        PseudoClasses.Set(":floating", this.FindAncestorOfType<MdiDocumentWindow>() is not null);
+        Subscribe(Dockable?.Factory as InkittyDockFactory);
+        UpdatePinState();
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        Subscribe(null);
     }
 
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
@@ -58,6 +115,25 @@ public sealed class PaneGrip : TemplatedControl
         _closeButton?.Click -= OnCloseClicked;
         _closeButton = e.NameScope.Find<Button>("PART_CloseButton");
         _closeButton?.Click += OnCloseClicked;
+        _pinButton?.Click -= OnPinClicked;
+        _pinButton = e.NameScope.Find<Button>("PART_PinButton");
+        _pinButton?.Click += OnPinClicked;
+        UpdatePinState();
+    }
+
+    private void OnPinClicked(object? sender, RoutedEventArgs e)
+    {
+        e.Handled = true;
+        TogglePin();
+    }
+
+    /// <summary>Auto hides the pane, or unpins it back into its dock.</summary>
+    private void TogglePin()
+    {
+        if (Dockable is { Factory: InkittyDockFactory factory } dockable && factory.CanPinTool(dockable))
+        {
+            factory.PinDockable(dockable);
+        }
     }
 
     private void OnCloseClicked(object? sender, RoutedEventArgs e)
@@ -76,8 +152,7 @@ public sealed class PaneGrip : TemplatedControl
 
     private ContextMenu BuildMenu()
     {
-        var floatItem = new MenuItem { Header = "Float" };
-        floatItem.Click += (_, _) =>
+        _floatItem.Click += (_, _) =>
         {
             if (Dockable is { Factory: { } factory } dockable && dockable.CanFloat)
             {
@@ -85,9 +160,13 @@ public sealed class PaneGrip : TemplatedControl
             }
         };
 
+        _pinItem.Click += (_, _) => TogglePin();
+
         var closeItem = new MenuItem { Header = "Close" };
         closeItem.Click += (_, _) => Close();
 
-        return new ContextMenu { ItemsSource = new[] { floatItem, closeItem } };
+        var menu = new ContextMenu { ItemsSource = new[] { _floatItem, _pinItem, closeItem } };
+        menu.Opening += (_, _) => UpdatePinState();
+        return menu;
     }
 }

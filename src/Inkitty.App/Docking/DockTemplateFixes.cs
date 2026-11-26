@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
@@ -25,6 +26,13 @@ public static class DockTemplateFixes
         // bottom one vanished as the pointer reached it. Show the pane's full selectors there instead.
         TemplatedControl.TemplateAppliedEvent.AddClassHandler<ToolTabStrip>(
             (_, e) => e.NameScope.Find<Border>("PART_BorderFill")?.SetValue(DockProperties.ShowDockIndicatorOnlyProperty, false),
+            RoutingStrategies.Direct);
+
+        // A floating window's own pin button (Dock binds its visibility in the template): a window holding
+        // one pane is never auto-hidden, as that would leave it empty; with several panes, each pane's own
+        // header has a pin (see InkittyDockFactory.CanPinTool).
+        TemplatedControl.TemplateAppliedEvent.AddClassHandler<MdiDocumentWindow>(
+            (_, e) => e.NameScope.Find<Button>("PART_ToolPinButton")?.SetValue(Visual.IsVisibleProperty, false),
             RoutingStrategies.Direct);
     }
 }

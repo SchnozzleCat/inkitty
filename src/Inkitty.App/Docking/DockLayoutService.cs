@@ -70,6 +70,18 @@ public sealed class DockLayoutService(string configDirectory, ILogger<DockLayout
             // Tool view models need services, so they can't be deserialised. Temporarily swap each
             // live tool for a plain placeholder Tool with the same id (and documents out entirely),
             // serialise, then put everything back.
+            // An auto-hidden tool slid out from the edge sits in the root's PinnedDock, a temporary preview:
+            // leave it out (it reopens collapsed), as it holds the live tool outside the lists swapped below.
+            var previews = new List<(IRootDock Root, IToolDock Preview)>();
+            foreach (var root in (IEnumerable<IRootDock>)[layout, .. (layout.Windows ?? []).Select(w => w.Layout).OfType<IRootDock>()])
+            {
+                if (root.PinnedDock is { } preview)
+                {
+                    previews.Add((root, preview));
+                    root.PinnedDock = null;
+                }
+            }
+
             var swaps = SwapForPlaceholders(layout);
             string json;
             try
@@ -79,6 +91,10 @@ public sealed class DockLayoutService(string configDirectory, ILogger<DockLayout
             finally
             {
                 Restore(swaps);
+                foreach (var (root, preview) in previews)
+                {
+                    root.PinnedDock = preview;
+                }
             }
 
             File.WriteAllText(LayoutPath, json);
@@ -151,6 +167,27 @@ public sealed class DockLayoutService(string configDirectory, ILogger<DockLayout
                 else if (dockable is IDock dock)
                 {
                     Visit(dock.VisibleDockables, dock);
+                    SwapStrayReferences(dock);
+                }
+            }
+        }
+
+        // A dock's ActiveDockable/FocusedDockable can still name a tool that has left its list (e.g. the
+        // tool dock an auto-hidden tool came from): swap those too, or the live tool is serialised.
+        void SwapStrayReferences(IDock dock)
+        {
+            if (dock.ActiveDockable is ITool active && active.GetType() != typeof(Dock.Model.Mvvm.Controls.Tool)
+                || dock.FocusedDockable is ITool focused && focused.GetType() != typeof(Dock.Model.Mvvm.Controls.Tool))
+            {
+                swaps.Add(new Swap(Array.Empty<IDockable>(), -1, dock, dock, dock.ActiveDockable, dock.FocusedDockable));
+                if (dock.ActiveDockable is ITool a)
+                {
+                    dock.ActiveDockable = Placeholder(a);
+                }
+
+                if (dock.FocusedDockable is ITool f)
+                {
+                    dock.FocusedDockable = Placeholder(f);
                 }
             }
         }
