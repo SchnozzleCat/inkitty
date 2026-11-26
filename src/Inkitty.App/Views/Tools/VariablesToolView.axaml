@@ -1,0 +1,37 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:tools="using:Inkitty.App.ViewModels.Tools"
+             xmlns:controls="using:Inkitty.App.Controls"
+             x:Class="Inkitty.App.Views.Tools.VariablesToolView"
+             x:DataType="tools:VariablesToolViewModel">
+  <Panel>
+    <DockPanel>
+      <DockPanel DockPanel.Dock="Top" Classes="variables-toolbar">
+        <ToggleButton DockPanel.Dock="Right" Classes="filter" IsChecked="{Binding ChangedOnly}" Content="Changed" />
+        <TextBox Classes="filter-box" Text="{Binding Filter}" Watermark="Filter variables" />
+      </DockPanel>
+      <TextBlock DockPanel.Dock="Top" Classes="placeholder" Text="{Binding Placeholder}" IsVisible="{Binding !HasItems}" />
+      <ListBox x:Name="List"
+               ItemsSource="{Binding Items}"
+               SelectedItem="{Binding SelectedItem}"
+               DoubleTapped="OnDoubleTapped"
+               KeyDown="OnKeyDown"
+               Classes="variables">
+        <ListBox.ItemTemplate>
+          <DataTemplate DataType="tools:VariableItem">
+            <Grid ColumnDefinitions="Auto,*" Classes.just-changed="{Binding JustChanged}" ToolTip.Tip="{Binding Detail}">
+              <TextBlock Grid.Column="0" Classes="variable-name" Classes.changed="{Binding IsChanged}" Text="{Binding Name}" />
+              <TextBlock Grid.Column="1" Classes="variable-value" Classes.bool="{Binding KindClass, Converter={x:Static tools:VariableConverters.IsBool}}"
+                         Classes.number="{Binding KindClass, Converter={x:Static tools:VariableConverters.IsNumber}}"
+                         Classes.string="{Binding KindClass, Converter={x:Static tools:VariableConverters.IsString}}"
+                         Classes.divert="{Binding KindClass, Converter={x:Static tools:VariableConverters.IsDivert}}"
+                         Text="{Binding Value}" TextTrimming="CharacterEllipsis"
+                         controls:TrimmedToolTip.IsEnabled="True" />
+            </Grid>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </DockPanel>
+    <controls:PaneGrip Dockable="{Binding}" />
+  </Panel>
+</UserControl>

@@ -13,7 +13,7 @@ namespace Inkitty.App.Docking;
 public sealed class DockLayoutService(string configDirectory, ILogger<DockLayoutService> logger)
 {
     /// <summary>Bump when the default layout or dockable ids change incompatibly.</summary>
-    public const int LayoutVersion = 2;
+    public const int LayoutVersion = 3;
 
     private const string FileName = "layout.json";
     private const string VersionFileName = "layout.version";

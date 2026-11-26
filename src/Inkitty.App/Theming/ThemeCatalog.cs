@@ -65,6 +65,17 @@ public static class ThemeCatalog
 
     public static ThemeDefinition DarkPlus => Get(DarkPlusId);
 
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<(ThemeName, string), Color?> SyntaxColors = [];
+
+    /// <summary>The colour a TextMate theme gives a scope (e.g. <c>string.quoted</c>), or null if it leaves it unstyled.</summary>
+    public static Color? SyntaxColor(ThemeName name, string scope) => SyntaxColors.GetOrAdd((name, scope), key =>
+    {
+        var registry = new RegistryOptions(key.Item1);
+        var theme = Theme.CreateFromRawTheme(registry.LoadTheme(key.Item1), registry);
+        var rule = theme.Match([key.Item2]).FirstOrDefault();
+        return rule is { foreground: > 0 } ? ColorMath.ParseVsCode(theme.GetColor(rule.foreground)) : null;
+    });
+
     /// <summary>The theme with this id, or null if unknown.</summary>
     public static ThemeDefinition? Find(string? id) => Themes.FirstOrDefault(t => t.Id == id);
 

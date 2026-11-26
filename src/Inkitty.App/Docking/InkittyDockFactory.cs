@@ -10,10 +10,10 @@ namespace Inkitty.App.Docking;
 
 /// <summary>
 /// Builds Inkitty's docking layout. The default is three panes, like Inky:
-/// Files | Editor (with Issues below) | Player (with the Story Map below).
+/// Files | Editor (with Issues and Variables tabbed below) | Player (with the Story Map below).
 /// Every tool can be moved, tabbed, floated or pinned.
 /// </summary>
-public sealed class InkittyDockFactory(FileTreeToolViewModel files, PlayerToolViewModel player, IssuesToolViewModel issues, StoryMapToolViewModel storyMap) : Factory
+public sealed class InkittyDockFactory(FileTreeToolViewModel files, PlayerToolViewModel player, IssuesToolViewModel issues, StoryMapToolViewModel storyMap, VariablesToolViewModel variables) : Factory
 {
     private IRootDock? _root;
     private IDocumentDock? _documents;
@@ -26,11 +26,13 @@ public sealed class InkittyDockFactory(FileTreeToolViewModel files, PlayerToolVi
 
     public StoryMapToolViewModel StoryMapTool { get; } = storyMap;
 
+    public VariablesToolViewModel VariablesTool { get; } = variables;
+
     public IDocumentDock? DocumentDock => _documents;
 
     public IRootDock? Root => _root;
 
-    public IEnumerable<ITool> Tools => [FilesTool, PlayerTool, IssuesTool, StoryMapTool];
+    public IEnumerable<ITool> Tools => [FilesTool, PlayerTool, IssuesTool, StoryMapTool, VariablesTool];
 
     public override IRootDock CreateLayout()
     {
@@ -59,7 +61,7 @@ public sealed class InkittyDockFactory(FileTreeToolViewModel files, PlayerToolVi
             Proportion = 0.25,
             Alignment = Alignment.Bottom,
             ActiveDockable = IssuesTool,
-            VisibleDockables = CreateList<IDockable>(IssuesTool),
+            VisibleDockables = CreateList<IDockable>(IssuesTool, VariablesTool),
         };
 
         var center = new ProportionalDock
@@ -139,6 +141,7 @@ public sealed class InkittyDockFactory(FileTreeToolViewModel files, PlayerToolVi
             [DockIds.Player] = () => PlayerTool,
             [DockIds.Issues] = () => IssuesTool,
             [DockIds.StoryMap] = () => StoryMapTool,
+            [DockIds.Variables] = () => VariablesTool,
         };
 
         HostWindowLocator = new Dictionary<string, Func<IHostWindow?>>

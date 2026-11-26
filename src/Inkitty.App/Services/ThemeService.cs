@@ -141,6 +141,9 @@ public sealed class ThemeService
         };
     }
 
+    private static Color Syntax(ThemeDefinition theme, string scope, Color fallback) =>
+        theme.SyntaxColor(scope) is { } color ? ColorMath.Over(color, theme.Colors.Background) : fallback;
+
     /// <summary>
     /// Brushes used by Dock and Inkitty's own styles. Each key keeps one brush instance whose colour is
     /// changed in place: Dock's presets alias these keys with <c>StaticResource</c> (e.g.
@@ -180,6 +183,12 @@ public sealed class ThemeService
             ["InkittyChoiceHover"] = ColorMath.Mix(c.Background, contrast, 0.14),
             ["InkittyInfoBar"] = ColorMath.Mix(c.Background, warm, theme.IsDark ? 0.22 : 0.3),
             ["InkittyNewHighlight"] = ColorMath.WithAlpha(warm, 0x33),
+
+            // Value colours (variables pane) taken from the theme's syntax colours, so they match the editor.
+            ["InkittyValueNumber"] = Syntax(theme, "constant.numeric", c.Foreground),
+            ["InkittyValueKeyword"] = Syntax(theme, "constant.language", c.Foreground),
+            ["InkittyValueString"] = Syntax(theme, "string.quoted.double", c.Foreground),
+            ["InkittyValueFunction"] = Syntax(theme, "entity.name.function", c.Foreground),
         };
 
         foreach (var (key, color) in brushes)

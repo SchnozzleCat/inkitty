@@ -46,6 +46,7 @@
           <NativeMenuItem Header="Player" Command="{Binding ShowPlayerCommand}" />
           <NativeMenuItem Header="Issues" Command="{Binding ShowIssuesCommand}" />
           <NativeMenuItem Header="Story Map" Command="{Binding ShowStoryMapCommand}" />
+          <NativeMenuItem Header="Variables" Command="{Binding ShowVariablesCommand}" />
           <NativeMenuItemSeparator />
           <NativeMenuItem Header="Reset Layout" Command="{Binding ResetLayoutCommand}" />
         </NativeMenu>
@@ -101,6 +102,7 @@
         <MenuItem Header="_Player" Command="{Binding ShowPlayerCommand}" />
         <MenuItem Header="_Issues" Command="{Binding ShowIssuesCommand}" />
         <MenuItem Header="Story _Map" Command="{Binding ShowStoryMapCommand}" />
+        <MenuItem Header="_Variables" Command="{Binding ShowVariablesCommand}" />
         <Separator />
         <MenuItem Header="_Reset Layout" Command="{Binding ResetLayoutCommand}" />
       </MenuItem>

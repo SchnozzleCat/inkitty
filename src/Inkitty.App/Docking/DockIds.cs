@@ -16,6 +16,7 @@ public static class DockIds
     public const string Player = "Player";
     public const string Issues = "Issues";
     public const string StoryMap = "StoryMap";
+    public const string Variables = "Variables";
 
     public const string DocumentPrefix = "doc:";
 }

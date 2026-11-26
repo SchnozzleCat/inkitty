@@ -186,6 +186,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IRecipient<Navi
         Project = vm;
         Factory.FilesTool.Attach(vm);
         Factory.PlayerTool.Attach(vm);
+        Factory.VariablesTool.Attach(vm);
         Factory.IssuesTool.SetIssues([]);
         _autoSave.Attach(vm);
         _settings.Update(s => s.WithRecentProject(project.Main.FullPath));
@@ -219,6 +220,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IRecipient<Navi
 
         Factory.FilesTool.Attach(null);
         Factory.PlayerTool.Attach(null);
+        Factory.VariablesTool.Attach(null);
         Factory.IssuesTool.SetIssues([]);
         _autoSave.Attach(null);
         History.Clear();
@@ -459,6 +461,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IRecipient<Navi
 
     [RelayCommand]
     private void ShowStoryMap() => Factory.ShowTool(Factory.StoryMapTool);
+
+    [RelayCommand]
+    private void ShowVariables() => Factory.ShowTool(Factory.VariablesTool);
 
     /// <summary>Jumps the editor to the line the story is currently at.</summary>
     [RelayCommand(CanExecute = nameof(HasProject))]

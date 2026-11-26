@@ -206,6 +206,55 @@
     <Setter Property="Foreground" Value="{DynamicResource InkittyMuted}" />
     <Setter Property="FontSize" Value="12" />
   </Style>
+  <!-- Variables -->
+  <Style Selector="DockPanel.variables-toolbar">
+    <Setter Property="Margin" Value="6,6,6,2" />
+  </Style>
+  <Style Selector="TextBox.filter-box">
+    <Setter Property="MinHeight" Value="26" />
+    <Setter Property="Padding" Value="8,3" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Margin" Value="0,0,6,0" />
+  </Style>
+  <Style Selector="ListBox.variables ListBoxItem">
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="MinHeight" Value="0" />
+  </Style>
+  <Style Selector="ListBox.variables Grid">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="ListBox.variables Grid.just-changed">
+    <Setter Property="Background" Value="{DynamicResource InkittyNewHighlight}" />
+  </Style>
+  <Style Selector="TextBlock.variable-name">
+    <Setter Property="FontFamily" Value="fonts:Inkitty#JetBrains Mono, monospace" />
+    <Setter Property="FontSize" Value="12.5" />
+    <Setter Property="MinWidth" Value="140" />
+    <Setter Property="Margin" Value="10,3,16,3" />
+    <Setter Property="Foreground" Value="{DynamicResource InkittyMuted}" />
+  </Style>
+  <Style Selector="TextBlock.variable-name.changed">
+    <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="TextBlock.variable-value">
+    <Setter Property="FontFamily" Value="fonts:Inkitty#JetBrains Mono, monospace" />
+    <Setter Property="FontSize" Value="12.5" />
+    <Setter Property="Margin" Value="0,3,10,3" />
+  </Style>
+  <Style Selector="TextBlock.variable-value.number">
+    <Setter Property="Foreground" Value="{DynamicResource InkittyValueNumber}" />
+  </Style>
+  <Style Selector="TextBlock.variable-value.bool">
+    <Setter Property="Foreground" Value="{DynamicResource InkittyValueKeyword}" />
+  </Style>
+  <Style Selector="TextBlock.variable-value.string">
+    <Setter Property="Foreground" Value="{DynamicResource InkittyValueString}" />
+  </Style>
+  <Style Selector="TextBlock.variable-value.divert">
+    <Setter Property="Foreground" Value="{DynamicResource InkittyValueFunction}" />
+  </Style>
+
   <Style Selector="StackPanel.issue-filters">
     <Setter Property="Orientation" Value="Horizontal" />
     <Setter Property="Spacing" Value="2" />

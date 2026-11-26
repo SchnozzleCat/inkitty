@@ -70,6 +70,10 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
     [NotifyPropertyChangedFor(nameof(LocationText), nameof(HasLocation))]
     public partial StoryProgress Progress { get; private set; } = StoryProgress.Empty;
 
+    /// <summary>Every global variable at the current point of the playthrough.</summary>
+    [ObservableProperty]
+    public partial IReadOnlyList<StoryVariable> Variables { get; private set; } = [];
+
     /// <summary>Breadcrumb for the current knot/stitch, e.g. <c>town › square</c>.</summary>
     public string LocationText => Progress.CurrentNode switch
     {
@@ -109,6 +113,7 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
         _events = [];
         Graph = StoryGraph.Empty;
         Progress = StoryProgress.Empty;
+        Variables = [];
 
         if (project is not null)
         {
@@ -188,6 +193,7 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
 
             List<StoryEvent> all = [.. previous, .. events];
             var progress = StoryProgress.Build(graph, all, session.VisitCount);
+            var variables = session.Variables();
 
             _dispatcher.Post(() =>
             {
@@ -198,6 +204,7 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
 
                 _events = all;
                 Progress = progress;
+                Variables = variables;
                 _project?.SetProgress(progress);
                 _history = session.History;
                 ChoiceCount = _history.Count;
@@ -264,6 +271,7 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
             }
 
             var progress = StoryProgress.Build(success.Graph, result.Events, session.VisitCount);
+            var variables = session.Variables();
 
             _dispatcher.Post(() =>
             {
@@ -278,6 +286,7 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
                 _events = [.. result.Events];
                 Graph = success.Graph;
                 Progress = progress;
+                Variables = variables;
                 _project?.SetProgress(progress);
                 _history = session.History;
                 ChoiceCount = _history.Count;
