@@ -65,4 +65,25 @@ public class StoryLocationTests
         await Assert.That(session.VisitCount("forest.deeper")).IsEqualTo(1);
         await Assert.That(session.VisitCount("no_such_knot")).IsEqualTo(0);
     }
+
+    [Test]
+    public async Task Locations_survive_when_the_story_is_played_from_a_copy()
+    {
+        // A second session on a story that's still in use plays an independent copy (as happens when the
+        // player replays after Step back before the previous session has been released).
+        var snapshot = InMemoryProject.Snapshot(("main.ink", Main), ("forest.ink", Forest));
+        var compiled = (CompileSucceeded)new InkCompilerService().Compile(snapshot);
+        using var first = new PlaySession(compiled.Story, snapshot);
+        using var second = new PlaySession(compiled.Story, snapshot);
+
+        var events = second.ContinueUntilChoice(PlaybackBudget.Default);
+        await Assert.That(events.OfCase<TextOutput>().Single().Source?.Line).IsEqualTo(2);
+        await Assert.That(events.OfCase<ChoicesOffered>().Single().Choices.Single().Source?.Line).IsEqualTo(3);
+
+        await Assert.That(second.Choose(0).Source?.Line).IsEqualTo(3);
+        var texts = second.ContinueUntilChoice(PlaybackBudget.Default).OfCase<TextOutput>().ToList();
+        await Assert.That(texts.Select(t => (t.Source?.File, t.Source?.Line)))
+            .IsEquivalentTo([((string?)"forest.ink", (int?)2), ("forest.ink", 5)]);
+        await Assert.That(texts[1].Source?.RuntimePath).StartsWith("forest.deeper");
+    }
 }

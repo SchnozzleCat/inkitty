@@ -158,4 +158,36 @@ public class StoryMapTests
             await Assert.That(layout.Edges.All(e => e.Route.Count > 0 && bounds.Contains(e.ArrowTip))).IsTrue();
             await Assert.That(layout.Find(StoryGraph.StartId)!.Bounds.Top).IsLessThan(layout.Find(StoryGraph.EndId)!.Bounds.Top);
         });
+
+    [Test]
+    public async Task Transcript_links_survive_step_back_and_restart() =>
+        await HeadlessSession.Run(async () =>
+        {
+            await using var app = AppFixture.Create();
+            await app.OpenAsync(UiTestHelpers.CopySample("multi-file", out _));
+            var player = app.Shell.Factory.PlayerTool;
+
+            async Task AllLinked(string when)
+            {
+                await Assert.That(player.Items.OfType<PlayerParagraph>().All(p => p.HasSource)).IsTrue().Because($"paragraphs after {when}");
+                await Assert.That(player.Items.OfType<PlayerChoiceEcho>().All(c => c.HasSource)).IsTrue().Because($"choices after {when}");
+                await Assert.That(app.Shell.Factory.StoryMapTool.Progress.CurrentNode).IsNotNull().Because($"map after {when}");
+            }
+
+            await Choose(player, "forest");
+            await Choose(player, "Light a torch");
+            for (var i = 0; i < 3; i++)
+            {
+                // Step back straight after a choice, while the session that played it may still be in use.
+                player.StepBackCommand.Execute(null);
+                await UiTestHelpers.WaitUntil(() => !player.IsBusy && player.ChoiceCount == 1);
+                await AllLinked($"step back {i}");
+                await Choose(player, "Light a torch");
+                await AllLinked($"choosing again {i}");
+            }
+
+            player.RestartCommand.Execute(null);
+            await UiTestHelpers.WaitUntil(() => !player.IsBusy && player.ChoiceCount == 0);
+            await AllLinked("restart");
+        });
 }
