@@ -1,0 +1,94 @@
+name: Desktop builds
+
+# Called by ci.yml once the tests pass: builds the desktop app for every platform and publishes the
+# builds as a GitHub release for the tag.
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, rid: linux-x64 }
+          - { os: ubuntu-24.04-arm, rid: linux-arm64 }
+          - { os: windows-latest, rid: win-x64 }
+          - { os: windows-11-arm, rid: win-arm64 }
+          - { os: macos-15-intel, rid: osx-x64 }
+          - { os: macos-latest, rid: osx-arm64 }
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.rid }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      # One self-contained executable: no .NET install needed to run it.
+      - name: Publish
+        shell: bash
+        run: >
+          dotnet publish src/Inkitty.Desktop/Inkitty.Desktop.csproj
+          -c Release -r ${{ matrix.rid }} --self-contained
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:DebugType=none
+          -o publish
+
+      - name: Package (Linux)
+        if: startsWith(matrix.rid, 'linux')
+        run: |
+          mkdir -p dist/inkitty-${{ matrix.rid }}
+          cp publish/Inkitty LICENSE README.md dist/inkitty-${{ matrix.rid }}/
+          tar -C dist -czf dist/inkitty-${{ matrix.rid }}.tar.gz inkitty-${{ matrix.rid }}
+
+      - name: Package (Windows)
+        if: startsWith(matrix.rid, 'win')
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist/inkitty-${{ matrix.rid }} | Out-Null
+          Copy-Item publish/Inkitty.exe, LICENSE, README.md dist/inkitty-${{ matrix.rid }}/
+          Compress-Archive -Path dist/inkitty-${{ matrix.rid }}/* -DestinationPath dist/inkitty-${{ matrix.rid }}.zip
+
+      # An unsigned Inkitty.app (see the README for opening it the first time).
+      - name: Package (macOS)
+        if: startsWith(matrix.rid, 'osx')
+        run: |
+          app=dist/Inkitty.app
+          mkdir -p "$app/Contents/MacOS"
+          cp publish/Inkitty "$app/Contents/MacOS/"
+          cp src/Inkitty.Desktop/Info.plist "$app/Contents/"
+          codesign --force --deep --sign - "$app"   # ad-hoc: required to run on Apple silicon
+          ditto -c -k --keepParent "$app" dist/inkitty-${{ matrix.rid }}.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: inkitty-${{ matrix.rid }}
+          path: dist/inkitty-${{ matrix.rid }}.*
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release create "${{ github.ref_name }}" dist/*
+          --repo "${{ github.repository }}" --title "Inkitty ${{ github.ref_name }}"
+          --generate-notes --prerelease

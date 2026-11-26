@@ -1,23 +1,27 @@
 name: CI
 
+# Runs when a version tag such as v0.1.0 is pushed. The tests run first on Linux, Windows and macOS;
+# only when every test passes are the desktop apps built and released, and the web site built and
+# deployed to GitHub Pages.
+
 on:
   push:
-    branches: [main]
-  pull_request:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
 
 jobs:
-  build-and-test:
+  test:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: ubuntu-latest
-            rid: linux-x64
-          - os: windows-latest
-            rid: win-x64
-          - os: macos-latest
-            rid: osx-arm64
+        os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
+    name: test (${{ matrix.os }})
     steps:
       - uses: actions/checkout@v4
         with:
@@ -33,5 +37,16 @@ jobs:
       - name: Test
         run: dotnet test --solution Inkitty.slnx -c Release --no-build
 
-      - name: Publish smoke test
-        run: dotnet publish src/Inkitty.Desktop/Inkitty.Desktop.csproj -c Release -r ${{ matrix.rid }} --self-contained -o artifacts/${{ matrix.rid }}
+  web:
+    needs: test
+    uses: ./.github/workflows/web.yml
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+  desktop:
+    needs: test
+    uses: ./.github/workflows/release.yml
+    permissions:
+      contents: write

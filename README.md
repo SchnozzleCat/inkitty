@@ -25,6 +25,16 @@ An IDE for [ink](https://github.com/inkle/ink), inkle's narrative scripting lang
 - **File watching** with unsaved edit detection.
 - **Docking** so you can customise the experience.
 
+## Downloads
+
+Builds for Linux, Windows and macOS (x64 and Arm each) are attached to each
+[release](https://github.com/SchnozzleCat/inkitty/releases). Each is a single executable that
+needs no .NET install.
+
+The macOS app isn't signed with an Apple developer certificate, so macOS blocks it the first time.
+After unzipping, either run `xattr -dr com.apple.quarantine Inkitty.app`, or try to open it once and
+then allow it under *System Settings > Privacy & Security*.
+
 ## Building and running
 
 Requires the .NET 11 SDK (see `global.json`). The ink compiler is built from source from a git
@@ -56,7 +66,7 @@ versions, regenerate it with `nix build .#inkitty.fetch-deps && ./result deps.js
 
 ### In the browser
 
-Inkitty also runs in a browser tab using AOT-compiled WebAssembly. The `main` branch is served at
+Inkitty also runs in a browser tab using AOT-compiled WebAssembly. The latest release is served at
 <https://schnozzlecat.github.io/inkitty/>.
 Projects are kept in the browser's storage; _File > Open…_ lists them and imports a
 project folder, `.ink` files or a `.zip`, and _File > Export Project as .zip…_ downloads a copy.
