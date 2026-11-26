@@ -16,6 +16,7 @@
     <PackageVersion Include="Avalonia.AvaloniaEdit" Version="12.0.0" />
     <PackageVersion Include="AvaloniaEdit.TextMate" Version="12.0.0" />
     <PackageVersion Include="TextMateSharp.Grammars" Version="2.0.5" />
+    <PackageVersion Include="Microsoft.Msagl" Version="1.1.6" />
     <PackageVersion Include="Dock.Avalonia" Version="$(DockVersion)" />
     <PackageVersion Include="Dock.Model.Mvvm" Version="$(DockVersion)" />
     <PackageVersion Include="Dock.Avalonia.Themes.Fluent" Version="$(DockVersion)" />
