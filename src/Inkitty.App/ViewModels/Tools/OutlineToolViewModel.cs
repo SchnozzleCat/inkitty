@@ -11,10 +11,27 @@ using Inkitty.Core.Outline;
 
 namespace Inkitty.App.ViewModels.Tools;
 
-/// <summary>A row in the outline tree.</summary>
-public sealed partial class OutlineNode(OutlineItem item) : ObservableObject
+/// <summary>An element in the outline tree; shown as one row of the flat, virtualized <see cref="OutlineToolViewModel.Rows"/>.</summary>
+public sealed partial class OutlineNode(OutlineItem item, OutlineNode? parent = null) : ObservableObject
 {
+    /// <summary>Indentation per nesting level, in pixels.</summary>
+    private const double IndentStep = 14;
+
     public OutlineItem Item { get; } = item;
+
+    public OutlineNode? Parent { get; } = parent;
+
+    public int Depth { get; } = parent is null ? 0 : parent.Depth + 1;
+
+    /// <summary>Indents the row by its depth (rows are a flat list, not nested containers).</summary>
+    public Avalonia.Thickness Indent => new(Depth * IndentStep, 0, 0, 0);
+
+    public bool HasChildren => Children.Count > 0;
+
+    /// <summary>Called when <see cref="IsExpanded"/> changes, so the owner can show or hide the children's rows.</summary>
+    internal Action<OutlineNode>? ExpandedChanged { get; set; }
+
+    partial void OnIsExpandedChanged(bool value) => ExpandedChanged?.Invoke(this);
 
     public string Name => Item.Name;
 
@@ -80,6 +97,7 @@ public sealed partial class OutlineToolViewModel : Tool
     private EditorDocumentViewModel? _document;
     private ITimer? _refreshTimer;
     private bool _navigating;
+    private bool _bulkExpanding;
 
     public OutlineToolViewModel(IMessenger messenger, Services.IUiDispatcher dispatcher, TimeProvider? time = null)
     {
@@ -93,7 +111,14 @@ public sealed partial class OutlineToolViewModel : Tool
         CanFloat = true;
     }
 
+    /// <summary>The tree: top-level elements, each with its children.</summary>
     public ObservableCollection<OutlineNode> Nodes { get; } = [];
+
+    /// <summary>
+    /// The rows on show: the tree flattened, skipping the children of collapsed elements. The view lists
+    /// these virtualized, so a long file only creates the rows that fit on screen.
+    /// </summary>
+    public RangeObservableCollection<OutlineNode> Rows { get; } = [];
 
     /// <summary>The element the caret is in (kept selected as the caret moves).</summary>
     [ObservableProperty]
@@ -158,21 +183,27 @@ public sealed partial class OutlineToolViewModel : Tool
     }
 
     [RelayCommand]
-    private void CollapseAll()
-    {
-        foreach (var node in All(Nodes))
-        {
-            node.IsExpanded = false;
-        }
-    }
+    private void CollapseAll() => SetAllExpanded(false);
 
     [RelayCommand]
-    private void ExpandAll()
+    private void ExpandAll() => SetAllExpanded(true);
+
+    private void SetAllExpanded(bool expanded)
     {
-        foreach (var node in All(Nodes))
+        _bulkExpanding = true;
+        try
         {
-            node.IsExpanded = true;
+            foreach (var node in All(Nodes).Where(n => n.HasChildren))
+            {
+                node.IsExpanded = expanded;
+            }
         }
+        finally
+        {
+            _bulkExpanding = false;
+        }
+
+        Rows.ReplaceAll(Visible(Nodes));
     }
 
     partial void OnShowWeaveChanged(bool value) => Rebuild();
@@ -200,6 +231,7 @@ public sealed partial class OutlineToolViewModel : Tool
         }
 
         Nodes.Clear();
+        Rows.ReplaceAll([]);
         FileName = _document?.Title ?? string.Empty;
         if (_document is not { } document)
         {
@@ -211,28 +243,30 @@ public sealed partial class OutlineToolViewModel : Tool
         var items = OutlineScanner.Scan(document.RelativePath, document.Document.Text);
         foreach (var item in items)
         {
-            if (ToNode(item) is { } node)
+            if (ToNode(item, null) is { } node)
             {
                 Nodes.Add(node);
             }
         }
+
+        Rows.ReplaceAll(Visible(Nodes));
 
         Placeholder = "Nothing to outline yet. Knots (=== name ===), stitches, choices and VARs appear here.";
         OnPropertyChanged(nameof(HasNodes));
         SelectAtCaret();
     }
 
-    private OutlineNode? ToNode(OutlineItem item)
+    private OutlineNode? ToNode(OutlineItem item, OutlineNode? parent)
     {
         if (!ShowWeave && item.IsWeave)
         {
             return null;
         }
 
-        var node = new OutlineNode(item);
+        var node = new OutlineNode(item, parent);
         foreach (var child in item.Children)
         {
-            if (ToNode(child) is { } childNode)
+            if (ToNode(child, node) is { } childNode)
             {
                 node.Children.Add(childNode);
             }
@@ -240,7 +274,68 @@ public sealed partial class OutlineToolViewModel : Tool
 
         // Knots and stitches start open; choices start closed to keep long weaves compact.
         node.IsExpanded = node.Children.Count > 0 && _expansion.GetValueOrDefault(item.Key, item.IsFlow);
+        node.ExpandedChanged = OnNodeExpandedChanged;
         return node;
+    }
+
+    /// <summary>Shows or hides a node's descendants' rows, right below its own.</summary>
+    private void OnNodeExpandedChanged(OutlineNode node)
+    {
+        if (_bulkExpanding || !IsShown(node))
+        {
+            return; // rows are rebuilt in one go, or will appear when an ancestor opens
+        }
+
+        var index = Rows.IndexOf(node);
+        if (index < 0)
+        {
+            return;
+        }
+
+        if (node.IsExpanded)
+        {
+            Rows.InsertRange(index + 1, Visible(node.Children).ToList());
+        }
+        else
+        {
+            var end = index + 1;
+            while (end < Rows.Count && Rows[end].Depth > node.Depth)
+            {
+                end++;
+            }
+
+            Rows.RemoveRange(index + 1, end - index - 1);
+        }
+    }
+
+    /// <summary>Whether a node has a row: all its ancestors are expanded.</summary>
+    private static bool IsShown(OutlineNode node)
+    {
+        for (var parent = node.Parent; parent is not null; parent = parent.Parent)
+        {
+            if (!parent.IsExpanded)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>The nodes in row order, descending only into expanded ones.</summary>
+    private static IEnumerable<OutlineNode> Visible(IEnumerable<OutlineNode> nodes)
+    {
+        foreach (var node in nodes)
+        {
+            yield return node;
+            if (node.IsExpanded)
+            {
+                foreach (var child in Visible(node.Children))
+                {
+                    yield return child;
+                }
+            }
+        }
     }
 
     private void SelectAtCaret()
@@ -271,7 +366,7 @@ public sealed partial class OutlineToolViewModel : Tool
         Walk(Nodes, []);
         foreach (var ancestor in path)
         {
-            ancestor.IsExpanded = true; // reveal the caret's element
+            ancestor.IsExpanded = true; // reveal the caret's element (outermost first, so its row exists)
         }
 
         SelectedNode = best;

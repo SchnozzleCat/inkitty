@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.VisualTree;
 using Avalonia.Input;
 using Inkitty.App.ViewModels.Tools;
@@ -11,10 +12,27 @@ public partial class OutlineToolView : UserControl
 
     private void OnKeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Enter)
+        var node = (DataContext as OutlineToolViewModel)?.SelectedNode;
+        switch (e.Key)
         {
-            Open();
-            e.Handled = true;
+            case Key.Enter:
+                Open();
+                e.Handled = true;
+                break;
+
+            // As in a tree: Right opens (or steps into), Left closes (or steps out).
+            case Key.Right when node is { HasChildren: true, IsExpanded: false }:
+                node.IsExpanded = true;
+                e.Handled = true;
+                break;
+            case Key.Left when node is { HasChildren: true, IsExpanded: true }:
+                node.IsExpanded = false;
+                e.Handled = true;
+                break;
+            case Key.Left when node?.Parent is { } parent && DataContext is OutlineToolViewModel vm:
+                vm.SelectedNode = parent;
+                e.Handled = true;
+                break;
         }
     }
 
@@ -23,8 +41,10 @@ public partial class OutlineToolView : UserControl
         base.OnPointerReleased(e);
 
         // A click jumps to the element (selection alone also changes as the caret moves, so it can't).
+        // Clicking the chevron only folds.
         if (e.InitialPressMouseButton == MouseButton.Left && e.Source is Avalonia.Visual source
-            && source.FindAncestorOfType<TreeViewItem>(includeSelf: true) is { DataContext: OutlineNode })
+            && source.FindAncestorOfType<ToggleButton>(includeSelf: true) is null
+            && source.FindAncestorOfType<ListBoxItem>(includeSelf: true) is { DataContext: OutlineNode })
         {
             Open();
         }

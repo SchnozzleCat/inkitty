@@ -408,8 +408,48 @@
   <Style Selector="ToggleButton#PART_ExpandCollapseChevron:checked /template/ Path#ChevronPath">
     <Setter Property="RenderTransform" Value="rotate(90deg)" />
   </Style>
-  <Style Selector="TreeView.outline TreeViewItem">
+  <Style Selector="ListBox.outline">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="ListBox.outline ListBoxItem">
     <Setter Property="MinHeight" Value="24" />
+    <Setter Property="Padding" Value="4,0" />
+  </Style>
+  <!-- The outline's own fold toggle (rows are flat, so there is no TreeViewItem expander): the same chevron. -->
+  <Style Selector="ToggleButton.outline-expander">
+    <Setter Property="Width" Value="16" />
+    <Setter Property="Height" Value="20" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="{TemplateBinding Background}">
+          <ContentPresenter Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="ToggleButton.outline-expander Path.chevron">
+    <Setter Property="Width" Value="6" />
+    <Setter Property="Height" Value="9" />
+    <Setter Property="Stroke" Value="{DynamicResource InkittyMuted}" />
+    <Setter Property="StrokeThickness" Value="1.5" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+    <Setter Property="StrokeJoin" Value="Round" />
+    <Setter Property="RenderTransform" Value="rotate(0deg)" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.12" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="ToggleButton.outline-expander:checked Path.chevron">
+    <Setter Property="RenderTransform" Value="rotate(90deg)" />
+  </Style>
+  <Style Selector="Border.outline-expander-space">
+    <Setter Property="Width" Value="16" />
   </Style>
   <Style Selector="TextBlock.outline-name">
     <Setter Property="VerticalAlignment" Value="Center" />

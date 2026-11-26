@@ -18,19 +18,21 @@
         </StackPanel>
       </WrapPanel>
       <TextBlock DockPanel.Dock="Top" Classes="placeholder" Text="{Binding Placeholder}" IsVisible="{Binding !HasNodes}" />
-      <TreeView x:Name="Tree"
-                Classes="outline"
-                ItemsSource="{Binding Nodes}"
-                SelectedItem="{Binding SelectedNode}"
-                KeyDown="OnKeyDown">
-        <TreeView.Styles>
-          <Style Selector="TreeViewItem" x:DataType="tools:OutlineNode">
-            <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
-          </Style>
-        </TreeView.Styles>
-        <TreeView.ItemTemplate>
-          <TreeDataTemplate DataType="tools:OutlineNode" ItemsSource="{Binding Children}">
-            <StackPanel Orientation="Horizontal" Spacing="6">
+      <!-- A flat, virtualized list of the rows on show (see OutlineToolViewModel.Rows): long files only
+           create the rows that fit, where a TreeView creates every expanded row. -->
+      <ListBox x:Name="List"
+               Classes="outline"
+               ItemsSource="{Binding Rows}"
+               SelectedItem="{Binding SelectedNode}"
+               KeyDown="OnKeyDown">
+        <ListBox.ItemTemplate>
+          <DataTemplate DataType="tools:OutlineNode">
+            <StackPanel Orientation="Horizontal" Spacing="6" Margin="{Binding Indent}">
+              <ToggleButton Classes="outline-expander" IsChecked="{Binding IsExpanded}"
+                            IsVisible="{Binding HasChildren}" Focusable="False">
+                <Path Classes="chevron" Data="M1.25,1 L4.75,4.5 L1.25,8" />
+              </ToggleButton>
+              <Border Classes="outline-expander-space" IsVisible="{Binding !HasChildren}" />
               <TextBlock Classes="outline-icon"
                          Classes.flow="{Binding IsFlow}"
                          Classes.weave="{Binding KindClass, Converter={x:Static tools:OutlineConverters.IsWeave}}"
@@ -40,9 +42,9 @@
               <TextBlock Classes="outline-name" Classes.flow="{Binding IsFlow}" Text="{Binding Name}" />
               <TextBlock Classes="outline-detail" Text="{Binding Detail}" IsVisible="{Binding HasDetail}" />
             </StackPanel>
-          </TreeDataTemplate>
-        </TreeView.ItemTemplate>
-      </TreeView>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
     </DockPanel>
   </Panel>
 </UserControl>

@@ -13,3 +13,6 @@ artifacts/
 .envrc
 .direnv/
 docs/web.md
+
+# wrangler cache (just deploy)
+.wrangler/

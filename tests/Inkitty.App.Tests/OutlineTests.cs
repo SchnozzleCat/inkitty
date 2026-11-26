@@ -76,6 +76,60 @@ public class OutlineTests
         });
 
     [Test]
+    public async Task A_long_outline_only_creates_the_rows_on_screen() =>
+        await HeadlessSession.Run(async () =>
+        {
+            var dir = Path.Join(Path.GetTempPath(), "inkitty-app-tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(dir);
+            var main = Path.Join(dir, "TheIntercept.ink");
+            File.Copy(UiTestHelpers.FindSample("the-intercept/TheIntercept.ink"), main);
+            await using var app = AppFixture.Create();
+            await app.OpenAsync(main);
+            var outline = app.Shell.Factory.OutlineTool;
+            outline.ExpandAllCommand.Execute(null);
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+            var view = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(app.Window).OfType<Views.Tools.OutlineToolView>().Single();
+            var rows = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
+                .Count(v => v is Avalonia.Controls.Control { DataContext: OutlineNode } c && c is Avalonia.Controls.ListBoxItem or Avalonia.Controls.TreeViewItem);
+            await Assert.That(All(outline.Nodes).Count()).IsGreaterThan(300);
+            await Assert.That(rows).IsLessThan(100);
+        });
+
+    /// <summary>The rows the outline should show: the tree in order, skipping collapsed elements' children.</summary>
+    private static IEnumerable<OutlineNode> Expected(IEnumerable<OutlineNode> nodes) =>
+        nodes.SelectMany(n => (IEnumerable<OutlineNode>)[n, .. n.IsExpanded ? Expected(n.Children) : []]);
+
+    [Test]
+    public async Task Folding_shows_and_hides_rows_and_the_caret_reveals_its_row() =>
+        await HeadlessSession.Run(async () =>
+        {
+            await using var app = AppFixture.Create();
+            await app.OpenAsync(UiTestHelpers.CopySample("multi-file", out _));
+            var outline = app.Shell.Factory.OutlineTool;
+            var start = outline.Nodes.Single(n => n.Name == "start");
+            await Assert.That(outline.Rows).IsEquivalentTo(Expected(outline.Nodes), TUnit.Assertions.Enums.CollectionOrdering.Matching);
+            await Assert.That(outline.Rows).Contains(start.Children[0]);
+            await Assert.That(start.Children[0].Depth).IsEqualTo(1);
+
+            start.IsExpanded = false;
+            await Assert.That(outline.Rows).DoesNotContain(start.Children[0]);
+            await Assert.That(outline.Rows).IsEquivalentTo(Expected(outline.Nodes), TUnit.Assertions.Enums.CollectionOrdering.Matching);
+
+            outline.CollapseAllCommand.Execute(null);
+            await Assert.That(outline.Rows).IsEquivalentTo(outline.Nodes, TUnit.Assertions.Enums.CollectionOrdering.Matching);
+            outline.ExpandAllCommand.Execute(null);
+            await Assert.That(outline.Rows.Count).IsEqualTo(All(outline.Nodes).Count());
+
+            // Moving the caret into a folded knot opens it, so the selected row is on show.
+            outline.CollapseAllCommand.Execute(null);
+            app.Shell.ActiveDocument!.Caret = new Inkitty.Core.Symbols.SourcePosition(14, 3);
+            await Assert.That(outline.SelectedNode?.Name).IsEqualTo("Go right, towards the town");
+            await Assert.That(outline.Rows).Contains(outline.SelectedNode!);
+            await Assert.That(outline.Rows).IsEquivalentTo(Expected(outline.Nodes), TUnit.Assertions.Enums.CollectionOrdering.Matching);
+        });
+
+    [Test]
     public async Task Clicking_jumps_and_the_caret_selects() =>
         await HeadlessSession.Run(async () =>
         {
