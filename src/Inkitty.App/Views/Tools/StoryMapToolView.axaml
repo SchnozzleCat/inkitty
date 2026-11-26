@@ -9,7 +9,7 @@
     <DockPanel>
       <WrapPanel DockPanel.Dock="Top" Classes="map-toolbar">
         <TextBlock Classes="pane-title" Text="Story map" />
-        <Button Classes="flat" Content="◎ Where am I?" Command="{Binding CenterOnCurrentCommand}" ToolTip.Tip="Centre the map on the current knot" />
+        <Button Classes="flat" Content="◎ Where am I?" Command="{Binding CenterOnCurrentCommand}" />
         <Button Classes="flat" Content="Fit" Command="{Binding FitToViewCommand}" ToolTip.Tip="Show the whole story (0). Ctrl+wheel or +/- zooms, drag pans." />
         <ToggleButton Classes="filter" IsChecked="{Binding FollowCurrent}" Content="Follow"
                       ToolTip.Tip="Keep the current knot in view as you play" />

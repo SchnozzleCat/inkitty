@@ -7,21 +7,21 @@
   <Panel>
     <DockPanel>
       <StackPanel DockPanel.Dock="Top" Classes="issue-filters">
-        <ToggleButton Classes="filter" IsChecked="{Binding ShowErrors}" ToolTip.Tip="Show errors">
+        <ToggleButton Classes="filter" IsChecked="{Binding ShowErrors}">
           <StackPanel Orientation="Horizontal" Spacing="6">
             <Ellipse Classes="error" />
             <TextBlock Text="Errors" />
             <TextBlock Classes="count" Text="{Binding ErrorCount}" />
           </StackPanel>
         </ToggleButton>
-        <ToggleButton Classes="filter" IsChecked="{Binding ShowWarnings}" ToolTip.Tip="Show warnings">
+        <ToggleButton Classes="filter" IsChecked="{Binding ShowWarnings}">
           <StackPanel Orientation="Horizontal" Spacing="6">
             <Ellipse Classes="warning" />
             <TextBlock Text="Warnings" />
             <TextBlock Classes="count" Text="{Binding WarningCount}" />
           </StackPanel>
         </ToggleButton>
-        <ToggleButton Classes="filter" IsChecked="{Binding ShowTodos}" ToolTip.Tip="Show TODOs">
+        <ToggleButton Classes="filter" IsChecked="{Binding ShowTodos}">
           <StackPanel Orientation="Horizontal" Spacing="6">
             <Ellipse Classes="todo" />
             <TextBlock Text="TODOs" />
@@ -43,7 +43,8 @@
                        Classes.error="{Binding Severity, Converter={x:Static tools:IssueConverters.IsError}}"
                        Classes.warning="{Binding Severity, Converter={x:Static tools:IssueConverters.IsWarning}}"
                        Classes.todo="{Binding Severity, Converter={x:Static tools:IssueConverters.IsTodo}}" />
-              <TextBlock Grid.Column="1" Text="{Binding Message}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Message}" />
+              <TextBlock Grid.Column="1" Text="{Binding Message}" TextTrimming="CharacterEllipsis"
+                         ToolTip.Tip="" controls:TrimmedToolTip.IsEnabled="True" />
               <TextBlock Grid.Column="2" Classes="location" Text="{Binding Location}" Margin="12,0,4,0" />
             </Grid>
           </DataTemplate>

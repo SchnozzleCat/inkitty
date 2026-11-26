@@ -9,6 +9,7 @@ using AvaloniaEdit.Document;
 using AvaloniaEdit.TextMate;
 using TextMateSharp.Grammars;
 using Inkitty.App.ViewModels.Documents;
+using Inkitty.Core.Diagnostics;
 using Inkitty.Core.Settings;
 using Inkitty.Core.Symbols;
 
@@ -491,7 +492,7 @@ public sealed class InkEditor : UserControl
         }
 
         var offset = _editor.Document.GetOffset(p.Location);
-        var messages = _markers.MarkersAt(offset).Select(m => $"{IssueGutterMargin.Label(m.Issue.Severity)}: {m.Issue.Message}").Distinct().ToList();
+        var messages = _markers.MarkersAt(offset).Where(m => m.Issue.Severity != IssueSeverity.Todo).Select(m => $"{IssueGutterMargin.Label(m.Issue.Severity)}: {m.Issue.Message}").Distinct().ToList();
         if (messages.Count == 0)
         {
             return;

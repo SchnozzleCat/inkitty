@@ -79,7 +79,7 @@ public sealed class IssueGutterMargin : AbstractMargin
 
         var position = e.GetPosition(this);
         var line = textView.GetVisualLineFromVisualTop(position.Y + textView.VerticalOffset);
-        var messages = line is null ? [] : IssuesOn(line.FirstDocumentLine.LineNumber).Select(i => $"{Label(i.Severity)}: {i.Message}").ToList();
+        var messages = line is null ? [] : IssuesOn(line.FirstDocumentLine.LineNumber).Where(i => i.Severity != IssueSeverity.Todo).Select(i => $"{Label(i.Severity)}: {i.Message}").ToList();
         ToolTip.SetTip(this, messages.Count > 0 ? string.Join("\n", messages) : null);
         ToolTip.SetIsOpen(this, messages.Count > 0);
     }
