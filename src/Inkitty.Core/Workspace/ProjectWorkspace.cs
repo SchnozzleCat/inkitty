@@ -81,6 +81,8 @@ public sealed class ProjectWorkspace(string rootDirectory, IFileSystem? fileSyst
             ?? topLevel.Order(StringComparer.OrdinalIgnoreCase).FirstOrDefault()
             ?? throw new InvalidDataException("There are no top-level .ink files to import.");
 
+        safe = PlaceIncludedFiles(safe, main);
+
         var folder = CreateFolder(name);
         foreach (var (path, contents) in safe)
         {
@@ -88,6 +90,60 @@ public sealed class ProjectWorkspace(string rootDirectory, IFileSystem? fileSyst
         }
 
         return Path.Join(folder, main);
+    }
+
+    /// <summary>
+    /// Moves files to the paths the INCLUDE lines (followed from the main file) expect. Picking
+    /// files in a browser yields bare names, so <c>INCLUDE chapters/forest.ink</c> would otherwise
+    /// miss the imported <c>forest.ink</c>. A missing include takes a not-yet-included file with the
+    /// same name, preferring top-level ones. Include paths are relative to the project root, as in ink.
+    /// </summary>
+    private static List<(string Path, byte[] Contents)> PlaceIncludedFiles(List<(string Path, byte[] Contents)> files, string main)
+    {
+        var placed = files.ToList();
+        HashSet<string> included = [main];
+        Queue<string> pending = new([main]);
+        while (pending.TryDequeue(out var current))
+        {
+            var (text, _) = TextFileCodec.Decode(placed.First(f => f.Path == current).Contents);
+            foreach (var include in IncludeScanner.Scan(text))
+            {
+                if (ProjectArchive.SafeRelativePath(include.Path) is not { } target || included.Contains(target))
+                {
+                    continue;
+                }
+
+                var index = placed.FindIndex(f => f.Path == target);
+                if (index < 0)
+                {
+                    var fileName = Path.GetFileName(target);
+                    var candidates = placed
+                        .Select((f, i) => (f.Path, Index: i))
+                        .Where(f => !included.Contains(f.Path) && string.Equals(Path.GetFileName(f.Path), fileName, StringComparison.OrdinalIgnoreCase))
+                        .OrderBy(f => f.Path.Count(c => c == '/'))
+                        .ToList();
+                    if (candidates.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    index = candidates[0].Index;
+                    placed[index] = (target, placed[index].Contents);
+                }
+
+                included.Add(target);
+                pending.Enqueue(target);
+            }
+        }
+
+        return placed;
+    }
+
+    /// <summary>Included files (relative paths) that don't exist, following INCLUDE lines from the main file.</summary>
+    public static IReadOnlyList<string> MissingIncludes(string mainFilePath)
+    {
+        var project = InkProject.Open(mainFilePath);
+        return [.. project.Files.Where(f => !f.ExistsOnDisk).Select(f => f.RelativePath.Replace('\\', '/'))];
     }
 
     public void Delete(WorkspaceProject project)

@@ -74,6 +74,14 @@ public sealed class WorkspaceDialogService(ProjectWorkspace workspace, Func<stri
         Refresh();
         var buttons = ButtonRow(
         [
+            ("Import folder…", false, async () =>
+            {
+                if (await ImportFolderAsync() is { } imported)
+                {
+                    result = imported;
+                    host.CloseModal();
+                }
+            }),
             ("Import files…", false, async () =>
             {
                 if (await ImportAsync() is { } imported)
@@ -181,13 +189,97 @@ public sealed class WorkspaceDialogService(ProjectWorkspace workspace, Func<stri
             name ??= firstInk is { } ink && !ink.Equals(ProjectWorkspace.MainFileName, StringComparison.OrdinalIgnoreCase)
                 ? Path.GetFileNameWithoutExtension(ink)
                 : "imported story";
-            return await workspace.ImportAsync(name, files, preferredMain: firstInk);
+            var main = await workspace.ImportAsync(name, files, preferredMain: firstInk);
+            await WarnAboutMissingIncludesAsync(main);
+            return main;
         }
         catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
         {
             await ShowErrorAsync("Import failed", ex.Message);
             return null;
         }
+    }
+
+    /// <summary>
+    /// Imports a picked folder's ink files (subfolders included) as a new workspace project; returns
+    /// its main file. Picking single files can't bring in what they INCLUDE: the browser only hands
+    /// over the files picked.
+    /// </summary>
+    public async Task<string?> ImportFolderAsync()
+    {
+        if (StorageProvider is not { CanPickFolder: true } storage)
+        {
+            await ShowErrorAsync("Import folder", "This browser can't open folders. Select all of the project's .ink files with Import files… instead, or import a .zip.");
+            return null;
+        }
+
+        var picked = await storage.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = "Import a project folder" });
+        if (picked.Count == 0)
+        {
+            return null;
+        }
+
+        try
+        {
+            List<(string Path, byte[] Contents)> files = [];
+            await ReadInkFilesAsync(picked[0], "", files, depth: 0);
+            if (files.Count == 0)
+            {
+                await ShowErrorAsync("Import failed", $"There are no .ink files in '{picked[0].Name}'.");
+                return null;
+            }
+
+            var main = await workspace.ImportAsync(picked[0].Name, files);
+            await WarnAboutMissingIncludesAsync(main);
+            return main;
+        }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
+        {
+            await ShowErrorAsync("Import failed", ex.Message);
+            return null;
+        }
+    }
+
+    /// <summary>Folders deeper than this aren't read (guards against huge or cyclic trees).</summary>
+    private const int MaxFolderDepth = 8;
+
+    private static async Task ReadInkFilesAsync(IStorageFolder folder, string prefix, List<(string Path, byte[] Contents)> files, int depth)
+    {
+        await foreach (var item in folder.GetItemsAsync())
+        {
+            if (item.Name.StartsWith('.'))
+            {
+                continue;
+            }
+
+            if (item is IStorageFolder child && depth < MaxFolderDepth)
+            {
+                await ReadInkFilesAsync(child, $"{prefix}{item.Name}/", files, depth + 1);
+            }
+            else if (item is IStorageFile file && file.Name.EndsWith(".ink", StringComparison.OrdinalIgnoreCase))
+            {
+                await using var stream = await file.OpenReadAsync();
+                using var buffer = new MemoryStream();
+                await stream.CopyToAsync(buffer);
+                files.Add((prefix + file.Name, buffer.ToArray()));
+            }
+        }
+    }
+
+    /// <summary>Says which included files weren't imported (e.g. only main.ink was picked).</summary>
+    private async Task WarnAboutMissingIncludesAsync(string mainFilePath)
+    {
+        var missing = ProjectWorkspace.MissingIncludes(mainFilePath);
+        if (missing.Count == 0)
+        {
+            return;
+        }
+
+        await ShowErrorAsync(
+            "Some included files weren't imported",
+            $"The story includes {string.Join(", ", missing)}, which {(missing.Count == 1 ? "wasn't" : "weren't")} among the imported files. "
+            + "To bring them in, import the project's folder with Import folder…, or select all of its .ink files with Import files…; "
+            + "or save to create them empty.");
     }
 
     private async Task<bool> ConfirmDeleteAsync(WorkspaceProject project) =>

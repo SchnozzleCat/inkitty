@@ -49,9 +49,9 @@ it switches to Avalonia's native Wayland backend. You can force that choice with
 ### In the browser
 
 Inkitty also runs in a browser tab (WebAssembly), served as static files. Projects are kept in the
-browser's storage (IndexedDB); *File > Open…* lists them and imports `.ink` files or a `.zip`, and
-*File > Export Project as .zip…* downloads a copy. Clearing the site's data deletes the projects,
-so export regularly.
+browser's storage (IndexedDB); *File > Open…* lists them and imports a project folder, `.ink`
+files or a `.zip`, and *File > Export Project as .zip…* downloads a copy. Clearing the site's data
+deletes the projects, so export regularly.
 
 ```sh
 scripts/publish-web.sh            # writes the site to artifacts/web

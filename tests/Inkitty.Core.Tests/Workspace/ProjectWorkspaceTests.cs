@@ -105,4 +105,39 @@ public class ProjectWorkspaceTests
         await Assert.That(workspace.ProjectNameOf(dir.Path)).IsNull();
         await Assert.That(workspace.ProjectNameOf(Path.GetTempPath())).IsNull();
     }
+
+    [Test]
+    public async Task Import_moves_loose_files_to_where_the_includes_expect_them()
+    {
+        using var dir = new TempDirectory();
+        var workspace = new ProjectWorkspace(dir.Path);
+        static (string, byte[]) F(string path, string text) => (path, Encoding.UTF8.GetBytes(text));
+
+        // A file picker gives bare file names: the folders are lost.
+        var main = await workspace.ImportAsync("s",
+        [
+            F("main.ink", "INCLUDE chapters/forest.ink\nINCLUDE chapters/town.ink\n-> forest"),
+            F("forest.ink", "INCLUDE deep/cave.ink\n=== forest ===\nTrees."),
+            F("town.ink", "=== town ===\n= square\nA square."),
+            F("cave.ink", "=== cave ===\nDark."),
+            F("notes.ink", "// not included"),
+        ]);
+
+        var project = InkProject.Open(main);
+        await Assert.That(project.Files.Select(f => f.RelativePath.Replace('\\', '/')))
+            .IsEquivalentTo(["main.ink", "chapters/forest.ink", "chapters/town.ink", "deep/cave.ink"]);
+        await Assert.That(project.Files.All(f => f.ExistsOnDisk && f.Text.Length > 0)).IsTrue();
+        await Assert.That(File.Exists(Path.Join(Path.GetDirectoryName(main), "notes.ink"))).IsTrue();
+        await Assert.That(File.Exists(Path.Join(Path.GetDirectoryName(main), "forest.ink"))).IsFalse();
+    }
+
+    [Test]
+    public async Task Reports_included_files_that_were_not_imported()
+    {
+        using var dir = new TempDirectory();
+        var workspace = new ProjectWorkspace(dir.Path);
+        var main = await workspace.ImportAsync("s", [("main.ink", Encoding.UTF8.GetBytes("INCLUDE chapters/forest.ink\nINCLUDE town.ink\nHi"))]);
+
+        await Assert.That(ProjectWorkspace.MissingIncludes(main)).IsEquivalentTo(["chapters/forest.ink", "town.ink"]);
+    }
 }
