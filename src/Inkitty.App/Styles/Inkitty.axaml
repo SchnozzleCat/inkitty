@@ -322,6 +322,10 @@
     <Setter Property="FontSize" Value="12" />
     <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
+  <Style Selector="Border.statusbar TextBlock.version">
+    <Setter Property="Foreground" Value="{DynamicResource InkittyMuted}" />
+    <Setter Property="Margin" Value="0,0,16,0" />
+  </Style>
   <Style Selector="Button.counts">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="Padding" Value="6,1" />

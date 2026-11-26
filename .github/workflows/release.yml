@@ -32,7 +32,8 @@ jobs:
         with:
           global-json-file: global.json
 
-      # One self-contained executable: no .NET install needed to run it.
+      # One self-contained executable: no .NET install needed to run it. The tag (v0.1.0) is the
+      # version shown in the app (0.1.0).
       - name: Publish
         shell: bash
         run: >
@@ -40,6 +41,7 @@ jobs:
           -c Release -r ${{ matrix.rid }} --self-contained
           -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
           -p:DebugType=none
+          -p:Version=${GITHUB_REF_NAME#v}
           -o publish
 
       - name: Package (Linux)

@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Inkitty.App.ViewModels"
+             xmlns:app="using:Inkitty.App"
              x:Class="Inkitty.App.Views.MainView"
              x:DataType="vm:MainWindowViewModel"
              DragDrop.AllowDrop="True">
@@ -67,13 +68,15 @@
 
       <!-- Status bar -->
       <Border DockPanel.Dock="Bottom" Classes="statusbar">
-        <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
-          <ProgressBar Grid.Column="0" IsIndeterminate="True" Width="40" Height="4" Margin="0,0,8,0"
+        <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto">
+          <TextBlock Grid.Column="0" x:Name="VersionText" Classes="version" Text="{x:Static app:AppVersion.Display}"
+                     ToolTip.Tip="Inkitty version" />
+          <ProgressBar Grid.Column="1" IsIndeterminate="True" Width="40" Height="4" Margin="0,0,8,0"
                        IsVisible="{Binding IsCompiling}" VerticalAlignment="Center" />
-          <TextBlock Grid.Column="1" Text="{Binding CompileStatus}" Margin="0,0,16,0" />
-          <TextBlock Grid.Column="2" Text="{Binding StatusText}" TextTrimming="CharacterEllipsis" />
-          <TextBlock Grid.Column="3" Text="{Binding CaretText}" Margin="16,0" />
-          <Button Grid.Column="4" Classes="counts" Command="{Binding ShowIssuesCommand}" ToolTip.Tip="Show issues">
+          <TextBlock Grid.Column="2" Text="{Binding CompileStatus}" Margin="0,0,16,0" />
+          <TextBlock Grid.Column="3" Text="{Binding StatusText}" TextTrimming="CharacterEllipsis" />
+          <TextBlock Grid.Column="4" Text="{Binding CaretText}" Margin="16,0" />
+          <Button Grid.Column="5" Classes="counts" Command="{Binding ShowIssuesCommand}" ToolTip.Tip="Show issues">
             <StackPanel Orientation="Horizontal" Spacing="10">
               <TextBlock Classes="count error" Text="{Binding ErrorCount, StringFormat='● {0}'}" />
               <TextBlock Classes="count warning" Text="{Binding WarningCount, StringFormat='▲ {0}'}" />
