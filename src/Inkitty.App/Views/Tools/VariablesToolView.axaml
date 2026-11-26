@@ -8,7 +8,7 @@
     <DockPanel>
       <DockPanel DockPanel.Dock="Top" Classes="variables-toolbar">
         <ToggleButton DockPanel.Dock="Right" Classes="filter" IsChecked="{Binding ChangedOnly}" Content="Changed" />
-        <TextBox Classes="filter-box" Text="{Binding Filter}" Watermark="Filter variables" />
+        <TextBox Classes="filter-box" Text="{Binding Filter}" PlaceholderText="Filter variables" />
       </DockPanel>
       <TextBlock DockPanel.Dock="Top" Classes="placeholder" Text="{Binding Placeholder}" IsVisible="{Binding !HasItems}" />
       <ListBox x:Name="List"
