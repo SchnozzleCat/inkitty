@@ -51,10 +51,13 @@
         src = self;
 
         # The submodule is empty in the flake's source; put the pinned ink input in its place.
+        # dotnet-tools.json only lists dotnet-serve (for `just serve`); the app doesn't need it, and
+        # the build would otherwise try to restore it.
         postPatch = ''
           rm -rf external/ink
           cp -r ${ink} external/ink
           chmod -R u+w external/ink
+          rm dotnet-tools.json
         '';
 
         projectFile = "src/Inkitty.Desktop/Inkitty.Desktop.csproj";
