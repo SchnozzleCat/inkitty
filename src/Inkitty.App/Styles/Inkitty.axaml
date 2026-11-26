@@ -1,9 +1,13 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:controls="using:Inkitty.App.Controls"
+        xmlns:core="using:Dock.Model.Core"
         xmlns:views="using:Inkitty.App.Views"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <Styles.Resources>
     <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://Inkitty.App/Styles/DockChrome.axaml" />
+      </ResourceDictionary.MergedDictionaries>
       <!-- Theme-dependent brushes (InkittyPlayerBackground, InkittyMuted, ...) are provided at runtime
            by Services/ThemeService from the selected colour theme. -->
       <SolidColorBrush x:Key="InkittyError" Color="#FFE53935" />
@@ -20,6 +24,9 @@
       <StreamGeometry x:Key="IconFolder">M1.5,3.5 L6,3.5 L7.5,5 L14.5,5 L14.5,13 L1.5,13 Z</StreamGeometry>
       <StreamGeometry x:Key="IconPencil">M2.5,13.5 L3.2,10.5 L10.5,3.2 L12.8,5.5 L5.5,12.8 Z M9.3,4.4 L11.6,6.7</StreamGeometry>
       <StreamGeometry x:Key="IconList">M2.5,4 L13.5,4 M2.5,8 L13.5,8 M2.5,12 L13.5,12</StreamGeometry>
+      <StreamGeometry x:Key="IconDockHere">M2.5,2.5 L13.5,2.5 L13.5,13.5 L2.5,13.5 Z M2.5,9 L13.5,9</StreamGeometry>
+      <StreamGeometry x:Key="IconFloat">M5.5,2.5 L13.5,2.5 L13.5,10.5 L5.5,10.5 Z M2.5,5.5 L2.5,13.5 L10.5,13.5</StreamGeometry>
+      <StreamGeometry x:Key="IconClose">M4,4 L12,12 M12,4 L4,12</StreamGeometry>
       <StreamGeometry x:Key="IconInclude">M9,2.5 L13.5,2.5 L13.5,13.5 L9,13.5 M2,8 L10,8 M7,5 L10,8 L7,11</StreamGeometry>
 
       <!-- Dock layout: no boxes around panes or the editor, a hairline under the tab strip. -->
@@ -30,7 +37,7 @@
     </ResourceDictionary>
   </Styles.Resources>
 
-  <!-- Dock panes: no title bars (the content makes each pane obvious) and no outlines. -->
+  <!-- Dock panes: no Dock title bars (each tool view has its own PaneGrip header) and no outlines. -->
   <Style Selector="ToolChromeControl /template/ Border#PART_Border">
     <Setter Property="IsVisible" Value="False" />
   </Style>
@@ -64,25 +71,105 @@
     <Setter Property="Source" Value="{DynamicResource InkittyDockSelectorCenter}" />
   </Style>
 
-  <!-- Pane grip (replaces the title bar): an invisible strip along the top, a short bar on hover. -->
+  <!-- Pane header (replaces Dock's title bar): the title in small caps-style lettering on a slightly
+       darker strip with a hairline below; the close button shows on hover. Dragging it moves the pane. -->
   <Style Selector="controls|PaneGrip">
-    <Setter Property="Height" Value="8" />
-    <Setter Property="VerticalAlignment" Value="Top" />
-    <Setter Property="Background" Value="Transparent" />
-    <Setter Property="Cursor" Value="SizeAll" />
+    <Setter Property="Height" Value="28" />
+    <Setter Property="Background" Value="{DynamicResource InkittyPaneHeaderBackground}" />
+    <Setter Property="Foreground" Value="{DynamicResource InkittyMuted}" />
     <Setter Property="Template">
       <ControlTemplate>
-        <!-- Dock hit-tests rendered visuals, so the drag area is this panel (DataContext = the tool). -->
-        <Panel Background="{TemplateBinding Background}" DockProperties.IsDragArea="True">
-          <Border Name="PART_Bar" Width="36" Height="3" CornerRadius="1.5" IsHitTestVisible="False"
-                  HorizontalAlignment="Center" VerticalAlignment="Center"
-                  Background="{DynamicResource InkittyMuted}" Opacity="0" />
-        </Panel>
+        <!-- Dock starts a drag from a rendered drag area whose DataContext is the tool: this panel
+             (made one in the :pointerover style below). -->
+        <DockPanel Name="PART_DragArea" x:DataType="core:IDockable" Background="{TemplateBinding Background}">
+          <Border DockPanel.Dock="Bottom" Height="1" Background="{DynamicResource DockThemeBorderLowBrush}" IsHitTestVisible="False" />
+          <Button Name="PART_CloseButton" DockPanel.Dock="Right" Classes="pane-close" ToolTip.Tip="Close">
+            <Path Classes="icon small" Data="{StaticResource IconClose}" />
+          </Button>
+          <TextBlock Name="PART_Title" Text="{Binding Title}" Classes="pane-header-title" IsHitTestVisible="False" />
+        </DockPanel>
       </ControlTemplate>
     </Setter>
   </Style>
-  <Style Selector="controls|PaneGrip:pointerover /template/ Border#PART_Bar">
-    <Setter Property="Opacity" Value="0.8" />
+  <Style Selector="controls|PaneGrip TextBlock.pane-header-title">
+    <Setter Property="Foreground" Value="{Binding $parent[controls:PaneGrip].Foreground}" />
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="LetterSpacing" Value="0.6" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Margin" Value="10,0,6,0" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+  </Style>
+  <Style Selector="controls|PaneGrip:pointerover">
+    <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+  </Style>
+  <!-- Dock looks for drag areas among everything under the pointer, even what's hidden behind a floating
+       panel, so a header under a floating panel's title bar would start a second drag. Only the header the
+       pointer is actually over (never a covered one) is a drag area. -->
+  <Style Selector="controls|PaneGrip:pointerover /template/ DockPanel#PART_DragArea">
+    <Setter Property="DockProperties.IsDragArea" Value="True" />
+  </Style>
+  <Style Selector="Button.pane-close">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Width" Value="22" />
+    <Setter Property="Height" Value="22" />
+    <Setter Property="Margin" Value="0,0,4,0" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Foreground" Value="{DynamicResource InkittyMuted}" />
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+  <Style Selector="controls|PaneGrip:pointerover Button.pane-close">
+    <Setter Property="IsVisible" Value="{Binding $parent[controls:PaneGrip].((core:IDockable)Dockable).CanClose, FallbackValue=False}" />
+  </Style>
+  <Style Selector="Button.pane-close:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource InkittyChoiceHover}" />
+    <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+  </Style>
+
+  <Style Selector="controls|PaneGrip:floating">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+
+  <!-- Floating panes: the window's title bar looks like a pane header (no accent fill, no grip dots). -->
+  <Style Selector="MdiDocumentWindow /template/ Border#PART_Header">
+    <Setter Property="Background" Value="{DynamicResource InkittyPaneHeaderBackground}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource DockThemeBorderLowBrush}" />
+    <Setter Property="MinHeight" Value="28" />
+  </Style>
+  <Style Selector="MdiDocumentWindow:active /template/ Border#PART_Header">
+    <Setter Property="Background" Value="{DynamicResource InkittyPaneHeaderBackground}" />
+  </Style>
+  <Style Selector="MdiDocumentWindow /template/ Border#PART_DragHandle">
+    <Setter Property="Padding" Value="10,0,6,0" />
+    <Setter Property="VerticalAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="MdiDocumentWindow /template/ DockPanel#PART_ToolHeader TextBlock, MdiDocumentWindow /template/ Grid#PART_DocumentHeader TextBlock">
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="LetterSpacing" Value="0.6" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Foreground" Value="{DynamicResource InkittyMuted}" />
+  </Style>
+  <Style Selector="MdiDocumentWindow:active /template/ DockPanel#PART_ToolHeader TextBlock, MdiDocumentWindow:active /template/ Grid#PART_DocumentHeader TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+  </Style>
+  <Style Selector="MdiDocumentWindow /template/ Grid#PART_Grid">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+  <Style Selector="MdiDocumentWindow /template/ Path">
+    <Setter Property="Fill" Value="{DynamicResource InkittyMuted}" />
+  </Style>
+  <Style Selector="MdiDocumentWindow:active /template/ Path">
+    <Setter Property="Fill" Value="{DynamicResource InkittyMuted}" />
+  </Style>
+  <Style Selector="MdiDocumentWindow /template/ Button:pointerover Path">
+    <Setter Property="Fill" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
   </Style>
 
   <!-- Pane dividers: a hairline centred in the (wider, easy to grab) splitter. -->

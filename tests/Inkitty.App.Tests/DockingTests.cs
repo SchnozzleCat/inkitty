@@ -110,7 +110,7 @@ public class DockingTests
         });
 
     [Test]
-    public async Task Tool_panes_have_no_title_bar_and_move_by_their_grip() =>
+    public async Task Tool_panes_have_a_header_that_moves_and_closes_them() =>
         await HeadlessSession.Run(async () =>
         {
             await using var app = AppFixture.Create();
@@ -121,12 +121,22 @@ public class DockingTests
                 return app.Window.GetVisualDescendants().OfType<PaneGrip>().Count() == ShownTools(factory).Count;
             });
 
-            // No Dock title bars are shown; each tool has a grip instead.
+            // Dock's own title bars stay hidden; each shown tool has one Inkitty header showing its title,
+            // above the pane's content rather than over it.
             var titleBars = app.Window.GetVisualDescendants().OfType<Avalonia.Controls.Border>()
                 .Where(b => b.Name == "PART_Border" && b.TemplatedParent is ToolChromeControl && b.IsEffectivelyVisible);
             await Assert.That(titleBars.Count()).IsEqualTo(0);
             var grips = app.Window.GetVisualDescendants().OfType<PaneGrip>().ToList();
             await Assert.That(grips.Select(g => g.Dockable).ToHashSet().SetEquals(ShownTools(factory))).IsTrue();
+            foreach (var header in grips)
+            {
+                var title = header.GetVisualDescendants().OfType<Avalonia.Controls.TextBlock>().Single(t => t.Name == "PART_Title");
+                await Assert.That(title.Text).IsEqualTo(header.Dockable!.Title);
+                await Assert.That(header.Bounds.Height).IsGreaterThanOrEqualTo(24);
+                var content = ((Avalonia.Controls.DockPanel)header.GetVisualParent()!).Children.Skip(1)
+                    .OfType<Avalonia.Controls.Control>().First(c => c.IsVisible);
+                await Assert.That(content.Bounds.Top).IsGreaterThanOrEqualTo(header.Bounds.Bottom);
+            }
 
             // Dragging the Player's grip onto the Files pane tabs Player in with Files.
             var grip = grips.Single(g => g.Dockable == factory.PlayerTool);
@@ -144,6 +154,13 @@ public class DockingTests
             app.Window.UpdateLayout();
 
             await Assert.That(factory.PlayerTool.Owner).IsEqualTo(factory.FilesTool.Owner);
+
+            // The header's close button hides the tool.
+            app.Window.UpdateLayout();
+            var issues = app.Window.GetVisualDescendants().OfType<PaneGrip>().Single(g => g.Dockable == factory.IssuesTool);
+            var close = issues.GetVisualDescendants().OfType<Avalonia.Controls.Button>().Single(b => b.Name == "PART_CloseButton");
+            close.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Avalonia.Controls.Button.ClickEvent));
+            await Assert.That(factory.IsToolVisible(factory.IssuesTool)).IsFalse();
         });
 
     [Test]
@@ -244,6 +261,10 @@ public class DockingTests
     public async Task Drop_selectors_are_drawn_in_the_theme_colours() =>
         await HeadlessSession.Run(async () =>
         {
+            // In-window floating hosts (the Linux and browser default): the drag preview is in the window's tree.
+            var hostMode = Dock.Settings.DockSettings.FloatingWindowHostMode;
+            Dock.Settings.DockSettings.FloatingWindowHostMode = DockFloatingWindowHostMode.Managed;
+            using var restore = new Restore(() => Dock.Settings.DockSettings.FloatingWindowHostMode = hostMode);
             await using var app = AppFixture.Create(configure: s => s.Update(x => x with { ColorTheme = "light-plus" }));
             var factory = app.Shell.Factory;
             await UiTestHelpers.WaitUntil(() =>
@@ -269,6 +290,24 @@ public class DockingTests
             await Assert.That(selectors.Length).IsGreaterThanOrEqualTo(5);
             await Assert.That(selectors.All(i => i.Source is Avalonia.Media.DrawingImage)).IsTrue();
 
+            // The label following the pointer shows the pane's title in the theme's header colours, and doesn't
+            // change size when the drop status changes (Dock doesn't always re-measure it: it'd be cut off).
+            var preview = app.Window.GetVisualDescendants().OfType<DragPreviewControl>().Single(p => p.IsEffectivelyVisible);
+            await Assert.That(preview.GetVisualDescendants().OfType<Avalonia.Controls.TextBlock>().Any(t => t.Text == factory.PlayerTool.Title)).IsTrue();
+            var frame = preview.GetVisualDescendants().OfType<Avalonia.Controls.Border>().First();
+            Avalonia.Application.Current!.TryGetResource("InkittyPaneHeaderBackground", null, out var headerBrush);
+            await Assert.That(frame.Background).IsSameReferenceAs(headerBrush);
+            var sizes = new List<Size>();
+            foreach (var status in (string[])["Dock", "Float", "None"])
+            {
+                preview.Status = status;
+                preview.InvalidateMeasure();
+                preview.Measure(Size.Infinity);
+                sizes.Add(preview.DesiredSize);
+            }
+
+            await Assert.That(sizes.Distinct().Count()).IsEqualTo(1);
+
             // A theme switch while dragging swaps them for the new theme's.
             var before = selectors[0].Source;
             app.Settings.Update(s => s with { ColorTheme = "dracula" });
@@ -277,4 +316,9 @@ public class DockingTests
 
             app.Window.MouseUp(from, MouseButton.Left, RawInputModifiers.LeftMouseButton);
         });
+
+    private sealed class Restore(Action action) : IDisposable
+    {
+        public void Dispose() => action();
+    }
 }

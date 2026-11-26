@@ -6,6 +6,7 @@
              x:DataType="tools:PlayerToolViewModel">
   <Panel>
     <DockPanel>
+      <controls:PaneGrip DockPanel.Dock="Top" Dockable="{Binding}" />
       <StackPanel DockPanel.Dock="Top" Classes="player-toolbar">
         <Button Classes="flat" Command="{Binding RestartCommand}">
           <StackPanel Orientation="Horizontal" Spacing="6"><Path Classes="icon" Data="{StaticResource IconRestart}" /><TextBlock Text="Restart" /></StackPanel>
@@ -97,6 +98,5 @@
         </StackPanel>
       </ScrollViewer>
     </DockPanel>
-    <controls:PaneGrip Dockable="{Binding}" />
   </Panel>
 </UserControl>

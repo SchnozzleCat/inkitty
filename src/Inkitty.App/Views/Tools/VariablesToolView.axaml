@@ -6,6 +6,7 @@
              x:DataType="tools:VariablesToolViewModel">
   <Panel>
     <DockPanel>
+      <controls:PaneGrip DockPanel.Dock="Top" Dockable="{Binding}" />
       <DockPanel DockPanel.Dock="Top" Classes="variables-toolbar">
         <ToggleButton DockPanel.Dock="Right" Classes="filter" IsChecked="{Binding ChangedOnly}" Content="Changed" />
         <TextBox Classes="filter-box" Text="{Binding Filter}" PlaceholderText="Filter variables" />
@@ -32,6 +33,5 @@
         </ListBox.ItemTemplate>
       </ListBox>
     </DockPanel>
-    <controls:PaneGrip Dockable="{Binding}" />
   </Panel>
 </UserControl>

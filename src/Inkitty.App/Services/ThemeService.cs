@@ -181,6 +181,7 @@ public sealed class ThemeService
 
             ["InkittyEditorBackground"] = c.Background,
             ["InkittyChromeBackground"] = c.Chrome,
+            ["InkittyPaneHeaderBackground"] = ColorMath.Mix(c.Sidebar, theme.IsDark ? Colors.Black : contrast, theme.IsDark ? 0.12 : 0.035),
             ["InkittyPlayerBackground"] = c.Background,
             ["InkittyPlayerForeground"] = c.Foreground,
             ["InkittyMuted"] = ColorMath.Mix(c.Foreground, c.Background, 0.4),

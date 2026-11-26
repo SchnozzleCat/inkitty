@@ -6,6 +6,7 @@
              x:DataType="tools:IssuesToolViewModel">
   <Panel>
     <DockPanel>
+      <controls:PaneGrip DockPanel.Dock="Top" Dockable="{Binding}" />
       <StackPanel DockPanel.Dock="Top" Classes="issue-filters">
         <ToggleButton Classes="filter" IsChecked="{Binding ShowErrors}">
           <StackPanel Orientation="Horizontal" Spacing="6">
@@ -51,6 +52,5 @@
         </ListBox.ItemTemplate>
       </ListBox>
     </DockPanel>
-    <controls:PaneGrip Dockable="{Binding}" />
   </Panel>
 </UserControl>

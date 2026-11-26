@@ -1,0 +1,51 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:core="using:Dock.Model.Core"
+                    xmlns:dmc="using:Dock.Model.Controls"
+                    xmlns:controls="using:Dock.Avalonia.Controls"
+                    xmlns:converters="using:Dock.Avalonia.Converters"
+                    x:CompileBindings="True">
+  <!--
+    Dock's drag chrome in Inkitty's look: what follows the pointer while dragging a pane, and the
+    title bar of a floating pane. Colours come from ThemeService (InkittyPaneHeaderBackground etc.).
+  -->
+
+  <!--
+    The label that follows the pointer: the pane title as in its header, and where it will land.
+    Dock doesn't always re-measure it when the status changes, so its size never depends on the
+    status: a fixed icon slot (the text "Dock"/"Float" widened it and was cut off).
+  -->
+  <ControlTheme x:Key="{x:Type controls:DragPreviewControl}" TargetType="controls:DragPreviewControl">
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="{DynamicResource InkittyPaneHeaderBackground}"
+                BorderBrush="{DynamicResource DockThemeAccentBrush}"
+                BorderThickness="1"
+                CornerRadius="5"
+                Padding="10,0,8,0"
+                MinHeight="28"
+                x:DataType="core:IDockable">
+          <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+            <TextBlock Text="{Binding Title}" FontSize="11" FontWeight="SemiBold" LetterSpacing="0.6"
+                       VerticalAlignment="Center"
+                       Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+            <Path x:Name="PART_StatusIcon" Width="11" Height="11" Stretch="Uniform" StrokeThickness="1.4"
+                  StrokeLineCap="Round" StrokeJoin="Round" VerticalAlignment="Center" />
+          </StackPanel>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+    <Style Selector="^ /template/ Path#PART_StatusIcon">
+      <Setter Property="Stroke" Value="{DynamicResource DockThemeAccentBrush}" />
+      <Setter Property="Opacity" Value="0" />
+    </Style>
+    <Style Selector="^[Status=Dock] /template/ Path#PART_StatusIcon">
+      <Setter Property="Data" Value="{DynamicResource IconDockHere}" />
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="^[Status=Float] /template/ Path#PART_StatusIcon">
+      <Setter Property="Data" Value="{DynamicResource IconFloat}" />
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+  </ControlTheme>
+</ResourceDictionary>

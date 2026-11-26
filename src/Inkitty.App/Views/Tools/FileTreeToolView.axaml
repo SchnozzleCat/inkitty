@@ -6,6 +6,7 @@
              x:DataType="tools:FileTreeToolViewModel">
   <Panel>
     <DockPanel>
+      <controls:PaneGrip DockPanel.Dock="Top" Dockable="{Binding}" />
       <TextBlock DockPanel.Dock="Top" Classes="pane-header" Text="{Binding ProjectName}" />
       <TextBlock DockPanel.Dock="Top" Classes="placeholder" Text="No project open"
                  IsVisible="{Binding !Nodes.Count}" />
@@ -34,6 +35,5 @@
         </TreeView.ItemTemplate>
       </TreeView>
     </DockPanel>
-    <controls:PaneGrip Dockable="{Binding}" />
   </Panel>
 </UserControl>

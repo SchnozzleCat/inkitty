@@ -7,8 +7,8 @@
              x:DataType="tools:StoryMapToolViewModel">
   <Panel>
     <DockPanel>
+      <controls:PaneGrip DockPanel.Dock="Top" Dockable="{Binding}" />
       <WrapPanel DockPanel.Dock="Top" Classes="map-toolbar">
-        <TextBlock Classes="pane-title" Text="Map" />
         <Button Classes="flat" Command="{Binding CenterOnCurrentCommand}">
           <StackPanel Orientation="Horizontal" Spacing="6"><Path Classes="icon" Data="{StaticResource IconTarget}" /><TextBlock Text="Where am I?" /></StackPanel>
         </Button>
@@ -34,6 +34,5 @@
                    Text="Open an ink file with some knots (=== knot ===) to see the story map." />
       </Panel>
     </DockPanel>
-    <controls:PaneGrip Dockable="{Binding}" />
   </Panel>
 </UserControl>

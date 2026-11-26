@@ -6,6 +6,7 @@
              x:DataType="tools:OutlineToolViewModel">
   <Panel>
     <DockPanel>
+      <controls:PaneGrip DockPanel.Dock="Top" Dockable="{Binding}" />
       <!-- Wraps in a narrow pane, so the file name is never squeezed out by the buttons. -->
       <WrapPanel DockPanel.Dock="Top" Classes="outline-toolbar">
         <TextBlock Classes="pane-title" Text="{Binding FileName}" />
@@ -42,6 +43,5 @@
         </TreeView.ItemTemplate>
       </TreeView>
     </DockPanel>
-    <controls:PaneGrip Dockable="{Binding}" />
   </Panel>
 </UserControl>
