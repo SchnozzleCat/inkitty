@@ -84,6 +84,30 @@ public class InkProjectTests
     }
 
     [Test]
+    public async Task Dirty_file_that_is_no_longer_included_is_still_tracked_and_saved()
+    {
+        using var dir = new TempDirectory();
+        var main = dir.Write("main.ink", "INCLUDE a.ink\n");
+        dir.Write("a.ink", "A");
+        var project = InkProject.Open(main);
+        var a = project.Find("a.ink")!;
+
+        a.SetText("A edited");
+        project.Main.SetText("No includes");
+        project.RefreshIncludes();
+
+        await Assert.That(project.Find("a.ink")).IsNull();
+        await Assert.That(project.DirtyFiles.Select(f => f.RelativePath)).IsEquivalentTo(
+            ["main.ink", "a.ink"], TUnit.Assertions.Enums.CollectionOrdering.Matching);
+
+        var saved = await project.SaveAllAsync();
+
+        await Assert.That(saved).Contains(a);
+        await Assert.That(dir.Read("a.ink")).IsEqualTo("A edited");
+        await Assert.That(project.DirtyFiles).IsEmpty();
+    }
+
+    [Test]
     public async Task Save_preserves_crlf_and_bom()
     {
         using var dir = new TempDirectory();

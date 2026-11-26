@@ -110,6 +110,32 @@ public class ProjectBehaviourTests
         });
 
     [Test]
+    public async Task Closing_asks_about_unsaved_files_that_are_no_longer_included() =>
+        await HeadlessSession.Run(async () =>
+        {
+            var main = UiTestHelpers.CopySample("multi-file", out var root);
+            await using var app = AppFixture.Create();
+            await app.OpenAsync(main);
+            var forest = app.Shell.OpenDocument(app.Project.Project.Find("chapters/forest.ink")!);
+            forest.Document.Insert(0, "// unsaved forest\n");
+            await app.Shell.SaveCommand.ExecuteAsync(null); // nothing else dirty...
+            forest.Document.Insert(0, "// more\n");
+
+            // ...then drop forest's INCLUDE from main and save main.
+            var mainDoc = app.Shell.OpenDocument(app.Project.Project.Main);
+            await app.WaitForCompileAfter(() => mainDoc.Document.Text = mainDoc.Document.Text.Replace("INCLUDE chapters/forest.ink", "", StringComparison.Ordinal));
+            await app.Project.SaveAsync(app.Project.Project.Main);
+            await Assert.That(app.Project.Project.Find("chapters/forest.ink")).IsNull();
+
+            app.Dialogs.UnsavedChoice = Services.UnsavedChangesChoice.Cancel;
+            await Assert.That(await app.Shell.OnClosingAsync()).IsFalse();
+
+            app.Dialogs.UnsavedChoice = Services.UnsavedChangesChoice.Save;
+            await Assert.That(await app.Shell.OnClosingAsync()).IsTrue();
+            await Assert.That(File.ReadAllText(Path.Join(root, "chapters", "forest.ink"))).StartsWith("// more\n// unsaved forest");
+        });
+
+    [Test]
     public async Task Closing_with_unsaved_changes_asks_and_can_cancel() =>
         await HeadlessSession.Run(async () =>
         {

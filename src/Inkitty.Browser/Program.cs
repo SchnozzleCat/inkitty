@@ -96,7 +96,7 @@ internal static partial class Program
         };
 
         // The page asks (synchronously) before unloading whether there are unsaved edits.
-        Interop.SetUnsavedChangesCheck(() => shell.Project?.Project.Files.Any(f => f.IsDirty) == true);
+        Interop.SetUnsavedChangesCheck(() => shell.Project?.Project.DirtyFiles.Count > 0);
     }
 
     private static Task DownloadAsync(string fileName, byte[] contents)

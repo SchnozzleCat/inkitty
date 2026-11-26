@@ -44,6 +44,18 @@ public sealed class InkProject
 
     public InkSourceFile Main => _loaded[MainFile];
 
+    /// <summary>
+    /// Every buffer with unsaved edits, in include order, followed by dirty buffers that are no
+    /// longer included (e.g. their INCLUDE line was removed) but are kept so the edits aren't lost.
+    /// </summary>
+    public IReadOnlyList<InkSourceFile> DirtyFiles =>
+    [
+        .. _files.Where(f => f.IsDirty),
+        .. _loaded.Values
+            .Where(f => f.IsDirty && !_files.Contains(f))
+            .OrderBy(f => f.RelativePath, StringComparer.OrdinalIgnoreCase),
+    ];
+
     /// <summary>Raised when files are added to or removed from <see cref="Files"/>.</summary>
     public event EventHandler? StructureChanged;
 
@@ -193,11 +205,14 @@ public sealed class InkProject
         file.MarkSaved(text, bytes);
     }
 
-    /// <summary>Saves every dirty file. Files in conflict are skipped unless <paramref name="includeConflicted"/>.</summary>
+    /// <summary>
+    /// Saves every dirty file (see <see cref="DirtyFiles"/>), including ones no longer included.
+    /// Files in conflict are skipped unless <paramref name="includeConflicted"/>.
+    /// </summary>
     public async Task<IReadOnlyList<InkSourceFile>> SaveAllAsync(bool includeConflicted = true, CancellationToken cancellationToken = default)
     {
         List<InkSourceFile> saved = [];
-        foreach (var file in _files.Where(f => f.IsDirty && (includeConflicted || !f.IsInConflict)))
+        foreach (var file in DirtyFiles.Where(f => includeConflicted || !f.IsInConflict))
         {
             await SaveAsync(file, cancellationToken);
             saved.Add(file);

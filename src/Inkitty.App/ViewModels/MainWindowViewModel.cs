@@ -216,7 +216,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IRecipient<Navi
             return true;
         }
 
-        if (!await ConfirmUnsavedAsync(project.Project.Files.Where(f => f.IsDirty).ToList(), $"Project '{project.Name}'"))
+        if (!await ConfirmUnsavedAsync(project.Project.DirtyFiles, $"Project '{project.Name}'"))
         {
             return false;
         }
