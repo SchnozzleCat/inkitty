@@ -5,7 +5,7 @@
 # is used; otherwise (e.g. the read-only Nix SDK) the build runs in the official SDK container with
 # podman or docker. Sources are copied into the container, so it writes nothing but artifacts/web.
 #
-# Usage: scripts/publish-web.sh [--serve [port]]
+# Usage: scripts/publish-web.sh   (or `just serve` to publish and serve it)
 set -euo pipefail
 
 repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -32,9 +32,10 @@ else
 
     rm -rf "$out"
     mkdir -p "$out"
+    # The site comes back as a tar on stdout (build output goes to stderr), so the files are
+    # created by this user rather than whatever user the container maps to.
     "$engine" run --rm \
         -v "$repo:/repo:ro" \
-        -v "$out:/out" \
         -v inkitty-nuget:/root/.nuget/packages \
         --tmpfs /work:exec,size=4g \
         -e DOTNET_CLI_TELEMETRY_OPTOUT=1 -e DOTNET_NOLOGO=1 \
@@ -42,10 +43,9 @@ else
             cd /repo
             tar --exclude='./artifacts' --exclude='./.git' --exclude='./.worktrees' --exclude='*/bin' --exclude='*/obj' --exclude='./TestResults' -cf - . | tar -C /work -xf -
             cd /work
-            dotnet publish $project ${publish_args[*]} -o /work/publish
-            cp -r /work/publish/wwwroot/. /out/
-            chown -R $(id -u):$(id -g) /out
-        "
+            dotnet publish $project ${publish_args[*]} -o /work/publish >&2
+            tar -C /work/publish/wwwroot -cf - .
+        " | tar -C "$out" -xf -
 fi
 
 # Self-contained static site: GitHub Pages must not run Jekyll over _framework/.
@@ -55,9 +55,3 @@ if [[ -d "$out/wwwroot" ]]; then
 fi
 touch "$out/.nojekyll"
 echo "Published to $out"
-
-if [[ "${1:-}" == "--serve" ]]; then
-    port="${2:-8080}"
-    echo "Serving on http://localhost:$port"
-    cd "$out" && exec python3 -m http.server "$port"
-fi

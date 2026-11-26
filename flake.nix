@@ -25,6 +25,7 @@
       openssl
       zlib
       stdenv.cc.cc.lib
+      just
     ];
   in {
     devShells.${system}.default = pkgs.mkShell {

@@ -54,8 +54,8 @@ files or a `.zip`, and *File > Export Project as .zip…* downloads a copy. Clea
 deletes the projects, so export regularly.
 
 ```sh
-scripts/publish-web.sh            # writes the site to artifacts/web
-scripts/publish-web.sh --serve    # ...and serves it on http://localhost:8080
+just publish-web    # writes the site to artifacts/web (scripts/publish-web.sh)
+just serve          # ...and serves it on http://localhost:8080 (dotnet-serve; `just serve 9000` for another port)
 ```
 
 The browser build needs the `wasm-tools` workload (`dotnet workload install wasm-tools`). If it isn't
