@@ -44,7 +44,7 @@ public sealed partial class OutlineNode(OutlineItem item) : ObservableObject
         OutlineKind.Constant => "c",
         OutlineKind.List => "≡",
         OutlineKind.External => "↗",
-        OutlineKind.Include => "⇲",
+        OutlineKind.Include => "→",
         _ => string.Empty,
     };
 

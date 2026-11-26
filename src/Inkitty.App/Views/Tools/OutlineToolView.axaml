@@ -12,8 +12,8 @@
         <StackPanel Orientation="Horizontal" Spacing="2">
           <ToggleButton Classes="filter" IsChecked="{Binding ShowWeave}" Content="Choices"
                         ToolTip.Tip="Show choices and labelled gathers" />
-          <Button Classes="flat" Content="⊟" Command="{Binding CollapseAllCommand}" ToolTip.Tip="Collapse all" />
-          <Button Classes="flat" Content="⊞" Command="{Binding ExpandAllCommand}" ToolTip.Tip="Expand all" />
+          <Button Classes="flat" Command="{Binding CollapseAllCommand}" ToolTip.Tip="Collapse all"><Path Classes="icon" Data="{StaticResource IconCollapseAll}" /></Button>
+          <Button Classes="flat" Command="{Binding ExpandAllCommand}" ToolTip.Tip="Expand all"><Path Classes="icon" Data="{StaticResource IconExpandAll}" /></Button>
         </StackPanel>
       </WrapPanel>
       <TextBlock DockPanel.Dock="Top" Classes="placeholder" Text="{Binding Placeholder}" IsVisible="{Binding !HasNodes}" />

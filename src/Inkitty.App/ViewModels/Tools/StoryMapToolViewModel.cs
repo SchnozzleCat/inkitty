@@ -23,7 +23,7 @@ public sealed partial class StoryMapToolViewModel : Tool
         _player = player;
         _messenger = messenger;
         Id = DockIds.StoryMap;
-        Title = "Story Map";
+        Title = "Map";
         CanClose = true;
         CanPin = true;
         CanFloat = true;

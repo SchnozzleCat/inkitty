@@ -7,8 +7,12 @@
   <Panel>
     <DockPanel>
       <StackPanel DockPanel.Dock="Top" Classes="player-toolbar">
-        <Button Classes="flat" Content="⟲ Restart" Command="{Binding RestartCommand}" />
-        <Button Classes="flat" Content="↶ Step back" Command="{Binding StepBackCommand}" ToolTip.Tip="Undo the last choice" />
+        <Button Classes="flat" Command="{Binding RestartCommand}">
+          <StackPanel Orientation="Horizontal" Spacing="6"><Path Classes="icon" Data="{StaticResource IconRestart}" /><TextBlock Text="Restart" /></StackPanel>
+        </Button>
+        <Button Classes="flat" Command="{Binding StepBackCommand}" ToolTip.Tip="Undo the last choice">
+          <StackPanel Orientation="Horizontal" Spacing="6"><Path Classes="icon" Data="{StaticResource IconStepBack}" /><TextBlock Text="Step back" /></StackPanel>
+        </Button>
         <ProgressBar IsIndeterminate="True" Width="60" IsVisible="{Binding IsBusy}" VerticalAlignment="Center" Margin="8,0" />
       </StackPanel>
       <Button DockPanel.Dock="Top" Classes="flat location" IsVisible="{Binding HasLocation}"

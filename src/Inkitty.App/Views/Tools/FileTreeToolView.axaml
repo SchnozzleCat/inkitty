@@ -22,7 +22,7 @@
         <TreeView.ItemTemplate>
           <TreeDataTemplate DataType="tools:FileNode" ItemsSource="{Binding Children}">
             <StackPanel Orientation="Horizontal" Spacing="6">
-              <TextBlock Classes="outline-icon folder" Text="{Binding Icon}" IsVisible="{Binding HasIcon}" />
+              <Path Classes="icon small folder-icon" Data="{StaticResource IconFolder}" IsVisible="{Binding IsFolder}" />
               <TextBlock Text="{Binding Label}"
                          Classes.unincluded="{Binding IsUnincluded}"
                          Classes.header="{Binding IsHeader}"

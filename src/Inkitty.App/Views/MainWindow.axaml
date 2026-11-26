@@ -38,7 +38,7 @@
           <NativeMenuItem Header="Step Back" Command="{Binding StepBackStoryCommand}" />
           <NativeMenuItemSeparator />
           <NativeMenuItem Header="Show Current Line" Command="{Binding RevealStoryPositionCommand}" Gesture="Cmd+J" />
-          <NativeMenuItem Header="Story Map" Command="{Binding ShowStoryMapCommand}" Gesture="Cmd+Shift+M" />
+          <NativeMenuItem Header="Map" Command="{Binding ShowStoryMapCommand}" Gesture="Cmd+Shift+M" />
         </NativeMenu>
       </NativeMenuItem>
       <NativeMenuItem Header="View">
@@ -47,7 +47,7 @@
           <NativeMenuItem Header="Outline" Command="{Binding ShowOutlineCommand}" />
           <NativeMenuItem Header="Player" Command="{Binding ShowPlayerCommand}" />
           <NativeMenuItem Header="Issues" Command="{Binding ShowIssuesCommand}" />
-          <NativeMenuItem Header="Story Map" Command="{Binding ShowStoryMapCommand}" />
+          <NativeMenuItem Header="Map" Command="{Binding ShowStoryMapCommand}" />
           <NativeMenuItem Header="Variables" Command="{Binding ShowVariablesCommand}" />
           <NativeMenuItemSeparator />
           <NativeMenuItem Header="Reset Layout" Command="{Binding ResetLayoutCommand}" />

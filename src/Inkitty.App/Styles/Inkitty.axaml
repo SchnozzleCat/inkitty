@@ -10,6 +10,18 @@
       <SolidColorBrush x:Key="InkittyWarning" Color="#FFF5A623" />
       <SolidColorBrush x:Key="InkittyTodo" Color="#FF428BF5" />
 
+      <!-- Icons as 16x16 outline geometries, drawn with Path strokes (icon-stroke) or fills: text symbols
+           depend on system fonts the browser doesn't have. -->
+      <StreamGeometry x:Key="IconRestart">M3.5,8 A4.5,4.5 0 1 0 5,4.6 M5.4,1.8 L5,4.6 L7.8,5</StreamGeometry>
+      <StreamGeometry x:Key="IconStepBack">M3,6.5 L10,6.5 A3.5,3.5 0 0 1 10,13.5 L7,13.5 M5.8,3.7 L3,6.5 L5.8,9.3</StreamGeometry>
+      <StreamGeometry x:Key="IconTarget">M8,2.5 A5.5,5.5 0 1 1 7.99,2.5 Z M8,6 A2,2 0 1 1 7.99,6 Z M8,0.5 L8,2.5 M8,13.5 L8,15.5 M0.5,8 L2.5,8 M13.5,8 L15.5,8</StreamGeometry>
+      <StreamGeometry x:Key="IconCollapseAll">M2.5,2.5 L13.5,2.5 L13.5,13.5 L2.5,13.5 Z M5,8 L11,8</StreamGeometry>
+      <StreamGeometry x:Key="IconExpandAll">M2.5,2.5 L13.5,2.5 L13.5,13.5 L2.5,13.5 Z M5,8 L11,8 M8,5 L8,11</StreamGeometry>
+      <StreamGeometry x:Key="IconFolder">M1.5,3.5 L6,3.5 L7.5,5 L14.5,5 L14.5,13 L1.5,13 Z</StreamGeometry>
+      <StreamGeometry x:Key="IconPencil">M2.5,13.5 L3.2,10.5 L10.5,3.2 L12.8,5.5 L5.5,12.8 Z M9.3,4.4 L11.6,6.7</StreamGeometry>
+      <StreamGeometry x:Key="IconList">M2.5,4 L13.5,4 M2.5,8 L13.5,8 M2.5,12 L13.5,12</StreamGeometry>
+      <StreamGeometry x:Key="IconInclude">M9,2.5 L13.5,2.5 L13.5,13.5 L9,13.5 M2,8 L10,8 M7,5 L10,8 L7,11</StreamGeometry>
+
       <!-- Dock layout: no boxes around panes or the editor, a hairline under the tab strip. -->
       <Thickness x:Key="DockDocumentContentBorderThickness">0</Thickness>
       <x:Double x:Key="DockDocumentTabStripSeparatorSize">1</x:Double>
@@ -198,8 +210,9 @@
   <Style Selector="TextBlock.folder">
     <Setter Property="FontWeight" Value="SemiBold" />
   </Style>
-  <Style Selector="TextBlock.outline-icon.folder">
-    <Setter Property="FontWeight" Value="Normal" />
+  <Style Selector="Path.folder-icon">
+    <Setter Property="Stroke" Value="{DynamicResource InkittyMuted}" />
+    <Setter Property="Margin" Value="2,0,0,0" />
   </Style>
   <Style Selector="TextBlock.outline-icon">
     <Setter Property="Foreground" Value="{DynamicResource InkittyMuted}" />
@@ -359,6 +372,22 @@
     <Setter Property="Spacing" Value="2" />
     <Setter Property="Margin" Value="6,6,6,0" />
   </Style>
+  <!-- Stroked icons (see the Icon* geometries) -->
+  <Style Selector="Path.icon">
+    <Setter Property="Width" Value="14" />
+    <Setter Property="Height" Value="14" />
+    <Setter Property="Stretch" Value="Uniform" />
+    <Setter Property="Stroke" Value="{Binding $parent[ContentPresenter].Foreground}" />
+    <Setter Property="StrokeThickness" Value="1.4" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+    <Setter Property="StrokeJoin" Value="Round" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Path.icon.small">
+    <Setter Property="Width" Value="11" />
+    <Setter Property="Height" Value="11" />
+    <Setter Property="StrokeThickness" Value="1.3" />
+  </Style>
   <!-- Flat toolbar buttons: no fill until hovered. -->
   <Style Selector="Button.flat">
     <Setter Property="Background" Value="Transparent" />
@@ -402,7 +431,7 @@
 
   <!-- Story map -->
   <Style Selector="WrapPanel.map-toolbar">
-    <Setter Property="Margin" Value="6,6,6,2" />
+    <Setter Property="Margin" Value="4,2,6,2" />
     <Setter Property="ItemSpacing" Value="2" />
   </Style>
   <Style Selector="TextBlock.pane-title">

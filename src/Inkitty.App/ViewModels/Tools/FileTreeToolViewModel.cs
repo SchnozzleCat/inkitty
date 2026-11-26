@@ -68,9 +68,6 @@ public sealed partial class FileNode : ObservableObject
 
     public bool IsUnincluded => Kind == FileNodeKind.Unincluded;
 
-    public bool HasIcon => IsFolder;
-
-    public string Icon => IsFolder ? "▤" : string.Empty;
 }
 
 /// <summary>
