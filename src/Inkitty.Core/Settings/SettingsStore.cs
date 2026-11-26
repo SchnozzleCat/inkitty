@@ -28,6 +28,9 @@ public sealed class SettingsStore : ISettingsStore, IAsyncDisposable
     private readonly ILogger _logger;
     private readonly TimeSpan _debounce;
     private readonly Lock _gate = new();
+
+    /// <summary>One write at a time: a debounced save can still be running when a flush starts.</summary>
+    private readonly SemaphoreSlim _writeLock = new(1, 1);
     private ITimer? _pendingSave;
 
     public SettingsStore(string directory, TimeProvider? time = null, ILogger<SettingsStore>? logger = null, TimeSpan? debounce = null)
@@ -152,18 +155,19 @@ public sealed class SettingsStore : ISettingsStore, IAsyncDisposable
 
     private async Task SaveNowAsync()
     {
-        AppSettings snapshot;
         lock (_gate)
         {
-            snapshot = Current;
             _pendingSave?.Dispose();
             _pendingSave = null;
         }
 
+        await _writeLock.WaitAsync();
+        var temp = $"{_path}.{Guid.NewGuid():N}.tmp";
         try
         {
+            // Read Current inside the write lock, so the last write to finish is always the newest.
+            var snapshot = Current;
             Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
-            var temp = _path + ".tmp";
             await using (var stream = File.Create(temp))
             {
                 await JsonSerializer.SerializeAsync(stream, snapshot, SettingsJsonContext.Default.AppSettings);
@@ -174,6 +178,23 @@ public sealed class SettingsStore : ISettingsStore, IAsyncDisposable
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to save settings to {Path}", _path);
+            TryDelete(temp);
+        }
+        finally
+        {
+            _writeLock.Release();
+        }
+    }
+
+    private static void TryDelete(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Best effort only.
         }
     }
 }

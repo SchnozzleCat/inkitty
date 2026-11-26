@@ -1,5 +1,6 @@
 using Inkitty.Core.Settings;
 using Inkitty.Core.Tests.Infrastructure;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Inkitty.Core.Tests.Settings;
@@ -39,6 +40,47 @@ public class SettingsStoreTests
         }
 
         await Assert.That(dir.Exists(SettingsStore.FileName)).IsTrue();
+    }
+
+    [Test]
+    public async Task Concurrent_saves_dont_collide_and_the_latest_wins()
+    {
+        using var dir = new TempDirectory();
+        var logger = new ErrorCountingLogger();
+        var store = new SettingsStore(dir.Path, logger: logger, debounce: TimeSpan.Zero);
+
+        // Zero debounce: every update starts a timer save, racing the explicit flushes.
+        var flushes = Enumerable.Range(1, 40).Select(size => Task.Run(async () =>
+        {
+            store.Update(s => s with { EditorFontSize = 8 + size % 20 });
+            await store.FlushAsync();
+        }));
+        await Task.WhenAll(flushes);
+        store.Update(s => s with { EditorFontSize = 31 });
+        await store.FlushAsync();
+
+        await Assert.That(logger.Errors).IsEqualTo(0);
+        await Assert.That(new SettingsStore(dir.Path).Current.EditorFontSize).IsEqualTo(31);
+        await Assert.That(Directory.GetFiles(dir.Path, "*.tmp")).IsEmpty();
+    }
+
+    private sealed class ErrorCountingLogger : ILogger<SettingsStore>
+    {
+        private int _errors;
+
+        public int Errors => Volatile.Read(ref _errors);
+
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+        {
+            if (logLevel >= LogLevel.Error)
+            {
+                Interlocked.Increment(ref _errors);
+            }
+        }
     }
 
     [Test]
