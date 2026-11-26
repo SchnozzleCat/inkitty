@@ -27,9 +27,9 @@
     <ProjectReference Include="..\Inkitty.App\Inkitty.App.csproj" />
   </ItemGroup>
 
-  <!-- Seeded into the workspace on first visit. -->
+  <!-- Seeded into the workspace on first visit: inkle's The Intercept (MIT, see samples/the-intercept). -->
   <ItemGroup>
-    <EmbeddedResource Include="..\..\samples\multi-file\**\*.ink" LogicalName="Inkitty.Browser.Sample.%(RecursiveDir)%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\samples\the-intercept\**\*.ink" LogicalName="Inkitty.Browser.Sample.%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

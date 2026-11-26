@@ -78,7 +78,7 @@ internal static partial class Program
 
         if (files.Count > 0)
         {
-            await workspace.ImportAsync("Sample - multi-file", files);
+            await workspace.ImportAsync("The Intercept", files);
         }
 
         await File.WriteAllTextAsync(marker, DateTimeOffset.UtcNow.ToString("O"));

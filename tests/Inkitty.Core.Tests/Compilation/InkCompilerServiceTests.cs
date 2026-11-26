@@ -112,6 +112,17 @@ public class InkCompilerServiceTests
         await Assert.That(project.Files.Count).IsEqualTo(3);
     }
 
+    [Test]
+    public async Task Compiles_the_intercept_sample_without_errors()
+    {
+        var project = InkProject.Open(FindSample("the-intercept/TheIntercept.ink"));
+
+        var result = _compiler.Compile(project.CreateSnapshot());
+
+        await Assert.That(result.Issues.Where(i => i.Severity.IsError)).IsEmpty();
+        await Assert.That(result).IsTypeOf<CompileSucceeded>();
+    }
+
     internal static string FindSample(string relative)
     {
         for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null; dir = dir.Parent)
