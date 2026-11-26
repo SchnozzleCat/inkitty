@@ -42,4 +42,25 @@ public class EditorTests
             await Assert.That(editor.TextEditor.WordWrap).IsFalse();
             await Assert.That(editor.TextEditor.FontSize).IsEqualTo(20);
         });
+
+    [Test]
+    public async Task Repeated_navigation_flashes_the_line_once_instead_of_stacking() =>
+        await HeadlessSession.Run(async () =>
+        {
+            await using var app = AppFixture.Create();
+            await app.OpenAsync(UiTestHelpers.CopySample("multi-file", out _));
+            var editor = app.EditorFor(app.Shell.ActiveDocument!)!;
+            var renderers = editor.TextEditor.TextArea.TextView.BackgroundRenderers;
+            var before = renderers.Count;
+
+            for (var i = 0; i < 5; i++)
+            {
+                app.Shell.Factory.StoryMapTool.OpenNodeCommand.Execute("start");
+                await UiTestHelpers.WaitUntil(() => editor.IsFlashing);
+            }
+
+            await Assert.That(renderers.Count).IsEqualTo(before + 1);
+            await Assert.That(await UiTestHelpers.WaitUntil(() => !editor.IsFlashing, 3000)).IsTrue();
+            await Assert.That(renderers.Count).IsEqualTo(before);
+        });
 }
