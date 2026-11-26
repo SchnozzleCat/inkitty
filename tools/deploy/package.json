@@ -1,0 +1,8 @@
+{
+  "name": "inkitty-deploy",
+  "private": true,
+  "description": "Pinned wrangler for `just deploy`. Install with `npm ci` only (see .npmrc).",
+  "dependencies": {
+    "wrangler": "4.164.0"
+  }
+}

@@ -23,3 +23,24 @@ publish-web:
 serve port="8080": publish-web
     dotnet tool restore
     dotnet serve --directory artifacts/web --port {{port}}
+
+# Publish the browser version and deploy it to Cloudflare Pages (credentials from pass, or the environment).
+[script("bash")]
+deploy project="inkitty" branch="main":
+    set -euo pipefail
+    # Already-set variables win (e.g. CI); otherwise read the first line of each pass entry.
+    CLOUDFLARE_API_TOKEN="${CLOUDFLARE_API_TOKEN:-$(pass show cloudflare/pages-api-token | head -n1)}"
+    CLOUDFLARE_ACCOUNT_ID="${CLOUDFLARE_ACCOUNT_ID:-$(pass show cloudflare/account-id | head -n1)}"
+    if [[ -z "$CLOUDFLARE_API_TOKEN" || -z "$CLOUDFLARE_ACCOUNT_ID" ]]; then
+        echo "error: empty Cloudflare credentials (pass cloudflare/api-token, cloudflare/account-id)" >&2
+        exit 1
+    fi
+    export CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID
+    just publish-web
+    just wrangler pages deploy artifacts/web --project-name {{project}} --branch {{branch}} \
+        --commit-hash "$(git rev-parse HEAD)" --commit-message "$(git log -1 --format=%s)"
+
+# Run the pinned wrangler (tools/deploy), installed from its lockfile with install scripts disabled.
+wrangler *args:
+    cd tools/deploy && npm ci --ignore-scripts --no-audit --no-fund --loglevel=error
+    WRANGLER_SEND_METRICS=false node tools/deploy/node_modules/wrangler/bin/wrangler.js {{args}}

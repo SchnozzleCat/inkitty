@@ -56,11 +56,30 @@ deletes the projects, so export regularly.
 ```sh
 just publish-web    # writes the site to artifacts/web (scripts/publish-web.sh)
 just serve          # ...and serves it on http://localhost:8080 (dotnet-serve; `just serve 9000` for another port)
+just deploy         # ...and deploys it to Cloudflare Pages (project "inkitty"; `just deploy other-name` for another)
 ```
 
 The browser build needs the `wasm-tools` workload (`dotnet workload install wasm-tools`). If it isn't
 installed (the Nix SDK is read-only), the script builds in the .NET SDK container with podman or
 docker. `.github/workflows/web.yml` publishes `main` to GitHub Pages.
+
+`just deploy` uses Cloudflare's wrangler, pinned in `tools/deploy` (Node is in the dev shell). It
+authenticates with `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`; use an account API token with
+only the *Pages: Write* permission. If they aren't set, `just deploy` reads them from `pass`
+(`cloudflare/api-token` and `cloudflare/account-id`). Pages asks to create the project on the first
+deploy if it doesn't exist.
+
+The npm side is locked down against malicious packages:
+
+- wrangler and every dependency are installed with `npm ci` from `tools/deploy/package-lock.json`
+  (exact versions, integrity hashes), never `npx` or a floating version.
+- Install scripts never run (`ignore-scripts`, in `tools/deploy/.npmrc`, on the `npm ci` command
+  line and in the dev shell). wrangler doesn't need them: esbuild and workerd ship their binaries as
+  optional platform packages.
+- New versions must have been public for 7 days (`min-release-age`), and git dependencies are
+  refused (`allow-git=none`).
+
+To update wrangler: `cd tools/deploy && npm install wrangler@<version>`, then review the lockfile diff.
 
 ### Tests
 
