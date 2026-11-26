@@ -319,6 +319,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IRecipient<Navi
     [RelayCommand]
     private async Task OpenRecentAsync(string path)
     {
+        // Let the menu finish handling the click (and close) first: opening reorders the recent
+        // list, which would replace the clicked item and leave the menu stuck open.
+        await Task.Yield();
+
         if (!File.Exists(path))
         {
             _settings.Update(s => s with { RecentProjects = [.. s.RecentProjects.Where(p => p != path)] });
