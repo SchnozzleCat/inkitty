@@ -81,21 +81,12 @@ public sealed partial class IssuesToolViewModel : Tool
     [ObservableProperty]
     public partial int TodoCount { get; private set; }
 
-    public string ErrorsLabel => $"Errors ({ErrorCount})";
-
-    public string WarningsLabel => $"Warnings ({WarningCount})";
-
-    public string TodosLabel => $"TODOs ({TodoCount})";
-
     public void SetIssues(IReadOnlyList<Issue> issues)
     {
         _all = issues;
         ErrorCount = issues.Count(i => i.Severity.IsError);
         WarningCount = issues.Count(i => i.Severity.IsWarning);
         TodoCount = issues.Count(i => i.Severity == IssueSeverity.Todo);
-        OnPropertyChanged(nameof(ErrorsLabel));
-        OnPropertyChanged(nameof(WarningsLabel));
-        OnPropertyChanged(nameof(TodosLabel));
         Refilter();
     }
 
