@@ -156,8 +156,8 @@ public partial class MainView : UserControl, IModalHost
         _topLevel = TopLevel.GetTopLevel(this);
         Current = this;
 
-        // The native macOS menu (MainWindow) replaces the in-window menu there.
-        InWindowMenu.IsVisible = !(OperatingSystem.IsMacOS() && _topLevel is Window);
+        // The native macOS menu (MainWindow) replaces the in-window menu bar there.
+        MenuBar.IsVisible = !(OperatingSystem.IsMacOS() && _topLevel is Window);
 
         // A browser tab can't be quit from inside the page.
         ExitMenuItem.IsVisible = ExitSeparator.IsVisible = _topLevel is Window;

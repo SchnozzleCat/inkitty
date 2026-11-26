@@ -6,60 +6,64 @@
              DragDrop.AllowDrop="True">
   <Panel>
     <DockPanel x:Name="Shell">
-      <!-- In-window menu; hidden in a macOS window, which uses the native menu (MainWindow). -->
-      <Menu DockPanel.Dock="Top" x:Name="InWindowMenu">
-        <MenuItem Header="_File">
-          <MenuItem Header="_New Project…" Command="{Binding NewProjectCommand}" InputGesture="Ctrl+N" />
-          <MenuItem Header="_Open…" Command="{Binding OpenCommand}" InputGesture="Ctrl+O" />
-          <MenuItem x:Name="RecentMenu" Header="Open _Recent" ItemsSource="{Binding RecentProjects}" IsEnabled="{Binding HasRecentProjects}">
-            <MenuItem.Styles>
-              <!-- Only the generated children: a bare "MenuItem" selector would also match this item itself. -->
-              <Style Selector="MenuItem#RecentMenu > MenuItem" x:DataType="x:String">
-                <Setter Property="Header" Value="{Binding}" />
-                <Setter Property="Command" Value="{Binding #InWindowMenu.((vm:MainWindowViewModel)DataContext).OpenRecentCommand}" />
-                <Setter Property="CommandParameter" Value="{Binding}" />
-              </Style>
-            </MenuItem.Styles>
+      <!-- In-window menu bar (the app name, then the menu); hidden in a macOS window, which uses the native
+           menu (MainWindow). -->
+      <DockPanel DockPanel.Dock="Top" x:Name="MenuBar" Classes="menu-bar">
+        <TextBlock DockPanel.Dock="Left" Classes="app-name" Text="Inkitty" />
+        <Menu x:Name="InWindowMenu">
+          <MenuItem Header="_File">
+            <MenuItem Header="_New Project…" Command="{Binding NewProjectCommand}" InputGesture="Ctrl+N" />
+            <MenuItem Header="_Open…" Command="{Binding OpenCommand}" InputGesture="Ctrl+O" />
+            <MenuItem x:Name="RecentMenu" Header="Open _Recent" ItemsSource="{Binding RecentProjects}" IsEnabled="{Binding HasRecentProjects}">
+              <MenuItem.Styles>
+                <!-- Only the generated children: a bare "MenuItem" selector would also match this item itself. -->
+                <Style Selector="MenuItem#RecentMenu > MenuItem" x:DataType="x:String">
+                  <Setter Property="Header" Value="{Binding}" />
+                  <Setter Property="Command" Value="{Binding #InWindowMenu.((vm:MainWindowViewModel)DataContext).OpenRecentCommand}" />
+                  <Setter Property="CommandParameter" Value="{Binding}" />
+                </Style>
+              </MenuItem.Styles>
+            </MenuItem>
+            <Separator />
+            <MenuItem Header="_Save" Command="{Binding SaveCommand}" InputGesture="Ctrl+S" />
+            <MenuItem Header="Save _All" Command="{Binding SaveAllCommand}" InputGesture="Ctrl+Shift+S" />
+            <MenuItem Header="_Export Project as .zip…" Command="{Binding ExportProjectCommand}" />
+            <Separator />
+            <MenuItem Header="_Close Tab" Command="{Binding CloseDocumentCommand}" InputGesture="Ctrl+W" />
+            <MenuItem Header="Close _Project" Command="{Binding CloseProjectCommandCommand}" />
+            <Separator x:Name="ExitSeparator" />
+            <MenuItem x:Name="ExitMenuItem" Header="E_xit" Command="{Binding ExitCommand}" />
           </MenuItem>
-          <Separator />
-          <MenuItem Header="_Save" Command="{Binding SaveCommand}" InputGesture="Ctrl+S" />
-          <MenuItem Header="Save _All" Command="{Binding SaveAllCommand}" InputGesture="Ctrl+Shift+S" />
-          <MenuItem Header="_Export Project as .zip…" Command="{Binding ExportProjectCommand}" />
-          <Separator />
-          <MenuItem Header="_Close Tab" Command="{Binding CloseDocumentCommand}" InputGesture="Ctrl+W" />
-          <MenuItem Header="Close _Project" Command="{Binding CloseProjectCommandCommand}" />
-          <Separator x:Name="ExitSeparator" />
-          <MenuItem x:Name="ExitMenuItem" Header="E_xit" Command="{Binding ExitCommand}" />
-        </MenuItem>
-        <MenuItem Header="_Edit">
-          <MenuItem Header="_Settings…" Command="{Binding OpenSettingsCommand}" InputGesture="Ctrl+OemComma" />
-        </MenuItem>
-        <MenuItem Header="_Go">
-          <MenuItem Header="Go to _Definition" Command="{Binding GoToDefinitionCommand}" InputGesture="F12" />
-          <MenuItem Header="_Back" Command="{Binding GoBackCommand}" InputGesture="Alt+Left" />
-          <MenuItem Header="_Forward" Command="{Binding GoForwardCommand}" InputGesture="Alt+Right" />
-          <Separator />
-          <MenuItem Header="_Next Issue" Command="{Binding NextIssueCommand}" InputGesture="F8" />
-          <MenuItem Header="_Previous Issue" Command="{Binding PreviousIssueCommand}" InputGesture="Shift+F8" />
-        </MenuItem>
-        <MenuItem Header="_Story">
-          <MenuItem Header="_Restart" Command="{Binding RestartStoryCommand}" InputGesture="Ctrl+R" />
-          <MenuItem Header="Step _Back" Command="{Binding StepBackStoryCommand}" />
-          <Separator />
-          <MenuItem Header="Show _Current Line" Command="{Binding RevealStoryPositionCommand}" InputGesture="Ctrl+J" />
-          <MenuItem Header="_Map" Command="{Binding ShowStoryMapCommand}" InputGesture="Ctrl+Shift+M" />
-        </MenuItem>
-        <MenuItem Header="_View">
-          <MenuItem Header="_Files" Command="{Binding ShowFilesCommand}" />
-          <MenuItem Header="_Outline" Command="{Binding ShowOutlineCommand}" />
-          <MenuItem Header="_Player" Command="{Binding ShowPlayerCommand}" />
-          <MenuItem Header="_Issues" Command="{Binding ShowIssuesCommand}" />
-          <MenuItem Header="_Map" Command="{Binding ShowStoryMapCommand}" />
-          <MenuItem Header="_Variables" Command="{Binding ShowVariablesCommand}" />
-          <Separator />
-          <MenuItem Header="_Reset Layout" Command="{Binding ResetLayoutCommand}" />
-        </MenuItem>
-      </Menu>
+          <MenuItem Header="_Edit">
+            <MenuItem Header="_Settings…" Command="{Binding OpenSettingsCommand}" InputGesture="Ctrl+OemComma" />
+          </MenuItem>
+          <MenuItem Header="_Go">
+            <MenuItem Header="Go to _Definition" Command="{Binding GoToDefinitionCommand}" InputGesture="F12" />
+            <MenuItem Header="_Back" Command="{Binding GoBackCommand}" InputGesture="Alt+Left" />
+            <MenuItem Header="_Forward" Command="{Binding GoForwardCommand}" InputGesture="Alt+Right" />
+            <Separator />
+            <MenuItem Header="_Next Issue" Command="{Binding NextIssueCommand}" InputGesture="F8" />
+            <MenuItem Header="_Previous Issue" Command="{Binding PreviousIssueCommand}" InputGesture="Shift+F8" />
+          </MenuItem>
+          <MenuItem Header="_Story">
+            <MenuItem Header="_Restart" Command="{Binding RestartStoryCommand}" InputGesture="Ctrl+R" />
+            <MenuItem Header="Step _Back" Command="{Binding StepBackStoryCommand}" />
+            <Separator />
+            <MenuItem Header="Show _Current Line" Command="{Binding RevealStoryPositionCommand}" InputGesture="Ctrl+J" />
+            <MenuItem Header="_Map" Command="{Binding ShowStoryMapCommand}" InputGesture="Ctrl+Shift+M" />
+          </MenuItem>
+          <MenuItem Header="_View">
+            <MenuItem Header="_Files" Command="{Binding ShowFilesCommand}" />
+            <MenuItem Header="_Outline" Command="{Binding ShowOutlineCommand}" />
+            <MenuItem Header="_Player" Command="{Binding ShowPlayerCommand}" />
+            <MenuItem Header="_Issues" Command="{Binding ShowIssuesCommand}" />
+            <MenuItem Header="_Map" Command="{Binding ShowStoryMapCommand}" />
+            <MenuItem Header="_Variables" Command="{Binding ShowVariablesCommand}" />
+            <Separator />
+            <MenuItem Header="_Reset Layout" Command="{Binding ResetLayoutCommand}" />
+          </MenuItem>
+        </Menu>
+      </DockPanel>
 
       <!-- Status bar -->
       <Border DockPanel.Dock="Bottom" Classes="statusbar">

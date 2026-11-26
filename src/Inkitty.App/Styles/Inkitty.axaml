@@ -262,8 +262,17 @@
   </Style>
 
   <!-- Window chrome: menu bar and status bar share one colour. -->
-  <Style Selector="Menu#InWindowMenu">
+  <Style Selector="DockPanel.menu-bar">
     <Setter Property="Background" Value="{DynamicResource InkittyChromeBackground}" />
+  </Style>
+  <Style Selector="Menu#InWindowMenu">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <!-- The app name at the start of the menu bar. -->
+  <Style Selector="DockPanel.menu-bar TextBlock.app-name">
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Margin" Value="12,0,4,0" />
   </Style>
   <Style Selector="Window">
     <Setter Property="Background" Value="{DynamicResource SystemRegionBrush}" />
