@@ -6,7 +6,6 @@ using Avalonia.Styling;
 using Avalonia.Threading;
 using AvaloniaEdit;
 using AvaloniaEdit.Document;
-using AvaloniaEdit.TextMate;
 using TextMateSharp.Grammars;
 using Inkitty.App.ViewModels.Documents;
 using Inkitty.Core.Diagnostics;
@@ -19,6 +18,7 @@ namespace Inkitty.App.Controls.InkEditor;
 /// The ink editor: AvaloniaEdit with TextMate highlighting, issue squiggles and gutter, and
 /// modifier+click / F12 go-to-definition. Binds to an <see cref="EditorDocumentViewModel"/>.
 /// </summary>
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1001", Justification = "The highlighter is disposed when the editor leaves the visual tree.")]
 public sealed class InkEditor : UserControl
 {
     public static readonly StyledProperty<AppSettings?> SettingsProperty =
@@ -29,7 +29,7 @@ public sealed class InkEditor : UserControl
     private readonly IssueGutterMargin _gutter;
     private readonly PlaythroughMargin _playthrough = new();
     private readonly ReferenceUnderlineColorizer _underline = new();
-    private TextMate.Installation? _textMate;
+    private InkHighlighter? _textMate;
     private ThemeName? _textMateTheme;
     private EditorDocumentViewModel? _viewModel;
     private Point? _lastPointer;
@@ -203,12 +203,11 @@ public sealed class InkEditor : UserControl
         {
             if (_textMate is null)
             {
-                _textMate = _editor.InstallTextMate(new InkTextMateRegistry(theme));
-                _textMate.SetGrammar(InkTextMateRegistry.InkScope);
+                _textMate = new InkHighlighter(_editor, new InkTextMateRegistry(theme));
             }
             else
             {
-                _textMate.SetTheme(new InkTextMateRegistry(theme).GetDefaultTheme());
+                _textMate.SetTheme(new InkTextMateRegistry(theme));
             }
 
             _textMateTheme = theme;
@@ -230,7 +229,7 @@ public sealed class InkEditor : UserControl
         }
 
         Color? ThemeColor(string key) =>
-            _textMate.TryGetThemeColor(key, out var value) ? Theming.ColorMath.ParseVsCode(value) : null;
+            _textMate.TryGetThemeColor(key, out var value) && value is not null ? Theming.ColorMath.ParseVsCode(value) : null;
 
         var background = ThemeColor("editor.background");
         var foreground = ThemeColor("editor.foreground");
