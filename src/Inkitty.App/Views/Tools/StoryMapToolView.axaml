@@ -20,6 +20,7 @@
         <StackPanel><Border Classes="swatch visited" /><TextBlock Text="Visited" /></StackPanel>
         <StackPanel><Border Classes="swatch path" /><TextBlock Text="Path taken" /></StackPanel>
         <StackPanel><Border Classes="swatch unvisited" /><TextBlock Text="Not yet" /></StackPanel>
+        <StackPanel><Line Classes="swatch-line" StartPoint="0,5" EndPoint="18,5" StrokeDashArray="3,2" /><TextBlock Text="Conditional" /></StackPanel>
       </WrapPanel>
       <Panel>
         <map:StoryMapControl x:Name="Map"

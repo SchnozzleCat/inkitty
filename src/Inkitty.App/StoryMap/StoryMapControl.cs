@@ -256,10 +256,15 @@ public sealed class StoryMapControl : Control
         }
 
         Dictionary<string, Size> labels = [];
-        foreach (var label in graph.Edges.Select(e => e.Label).OfType<string>().Distinct())
+        foreach (var edge in graph.Edges)
         {
-            var text = Text(label, LabelFontSize, FontWeight.Normal, Brushes.Black);
-            labels[label] = new Size(text.Width + 8, text.Height + 2);
+            if (StoryMapLayoutEngine.LabelKey(edge) is not { } key || labels.ContainsKey(key))
+            {
+                continue;
+            }
+
+            var (condition, choice) = LabelLines(edge.Condition, edge.Label, Brushes.Black, Brushes.Black, FontWeight.SemiBold);
+            labels[key] = new Size(Math.Max(condition?.Width ?? 0, choice?.Width ?? 0) + 8, (condition?.Height ?? 0) + (choice?.Height ?? 0) + 2);
         }
 
         return new(nodes, labels);
@@ -276,7 +281,8 @@ public sealed class StoryMapControl : Control
         IPen NodeBorder,
         IPen Edge,
         IPen PathEdge,
-        IBrush LabelBackground);
+        IBrush LabelBackground,
+        IBrush Condition);
 
     private Palette CurrentPalette()
     {
@@ -301,7 +307,8 @@ public sealed class StoryMapControl : Control
             new Pen(new SolidColorBrush(ColorMath.Mix(text, background, 0.7)), 1),
             new Pen(new SolidColorBrush(ColorMath.Mix(text, background, 0.6)), 1.1),
             new Pen(new SolidColorBrush(accent), 2.4),
-            new SolidColorBrush(background, 0.85));
+            new SolidColorBrush(background, 0.85),
+            new SolidColorBrush(Find("InkittyValueKeyword", accent)));
     }
 
     public override void Render(DrawingContext context)
@@ -329,18 +336,24 @@ public sealed class StoryMapControl : Control
         }
     }
 
+    // Conditional ways out are dashed; tunnels/threads (which return) dash-dot; auto-entered stitches dotted.
     private static readonly IDashStyle Dashed = new Avalonia.Media.Immutable.ImmutableDashStyle([4, 3], 0);
+    private static readonly IDashStyle DashDot = new Avalonia.Media.Immutable.ImmutableDashStyle([6, 3, 1, 3], 0);
     private static readonly IDashStyle Dotted = new Avalonia.Media.Immutable.ImmutableDashStyle([1, 3], 0);
+
+    /// <summary>The dash pattern for an edge (null = solid); exposed for tests.</summary>
+    internal static IDashStyle? DashFor(MapEdge edge) => edge switch
+    {
+        { Kind: StoryEdgeKind.Tunnel or StoryEdgeKind.Thread } => DashDot,
+        { IsConditional: true } => Dashed,
+        { Kind: StoryEdgeKind.Auto } => Dotted,
+        _ => null,
+    };
 
     private static void DrawEdge(DrawingContext context, MapEdge edge, bool taken, Palette palette)
     {
         var basePen = taken ? palette.PathEdge : palette.Edge;
-        var pen = edge.Kind switch
-        {
-            StoryEdgeKind.Tunnel or StoryEdgeKind.Thread => new Pen(basePen.Brush, basePen.Thickness, Dashed),
-            StoryEdgeKind.Auto => new Pen(basePen.Brush, basePen.Thickness, Dotted),
-            _ => basePen,
-        };
+        var pen = DashFor(edge) is { } dash ? new Pen(basePen.Brush, basePen.Thickness, dash) : basePen;
 
         if (edge.Route.Count > 0)
         {
@@ -369,14 +382,38 @@ public sealed class StoryMapControl : Control
             DrawArrowhead(context, edge.Route[^1].End, edge.ArrowTip, basePen.Brush!);
         }
 
-        if (edge.Label is { } label && edge.LabelCenter is { } center)
+        if (edge.LabelCenter is { } center && (edge.Label is not null || edge.Condition is not null))
         {
-            var text = Text(label, LabelFontSize, taken ? FontWeight.SemiBold : FontWeight.Normal, taken ? palette.Text : palette.Muted);
-            var origin = new Point(center.X - text.Width / 2, center.Y - text.Height / 2);
-            context.FillRectangle(palette.LabelBackground, new Rect(origin, new Size(text.Width, text.Height)).Inflate(new Thickness(3, 0)), 3);
-            context.DrawText(text, origin);
+            var (condition, choice) = LabelLines(
+                edge.Condition,
+                edge.Label,
+                palette.Condition,
+                taken ? palette.Text : palette.Muted,
+                taken ? FontWeight.SemiBold : FontWeight.Normal);
+            var width = Math.Max(condition?.Width ?? 0, choice?.Width ?? 0);
+            var height = (condition?.Height ?? 0) + (choice?.Height ?? 0);
+            var box = new Rect(center.X - width / 2, center.Y - height / 2, width, height);
+            context.FillRectangle(palette.LabelBackground, box.Inflate(new Thickness(3, 0)), 3);
+
+            // The condition sits above the choice text, both centred.
+            var y = box.Top;
+            foreach (var line in (IEnumerable<FormattedText?>)[condition, choice])
+            {
+                if (line is not null)
+                {
+                    context.DrawText(line, new Point(center.X - line.Width / 2, y));
+                    y += line.Height;
+                }
+            }
         }
     }
+
+    /// <summary>A label's lines: the condition in a monospace code colour, then the choice text.</summary>
+    private static (FormattedText? Condition, FormattedText? Choice) LabelLines(string? condition, string? choice, IBrush conditionBrush, IBrush choiceBrush, FontWeight choiceWeight) =>
+        (condition is null ? null : new FormattedText(condition, System.Globalization.CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, ConditionTypeface, LabelFontSize - 0.5, conditionBrush),
+         choice is null ? null : Text(choice, LabelFontSize, choiceWeight, choiceBrush));
+
+    private static readonly Typeface ConditionTypeface = new(new FontFamily(Inkitty.Core.Settings.AppSettings.DefaultEditorFont));
 
     private static void DrawArrowhead(DrawingContext context, Point from, Point tip, IBrush brush)
     {

@@ -18,8 +18,12 @@ public sealed record MapLine(Point Start, Point End) : MapSegment(Start, End);
 public sealed record MapBezier(Point Start, Point Control1, Point Control2, Point End) : MapSegment(Start, End);
 
 /// <param name="ArrowTip">Where the arrowhead points (the route stops short of it).</param>
-/// <param name="LabelCenter">Centre of the choice label, if the edge has one.</param>
-public sealed record MapEdge(string From, string To, StoryEdgeKind Kind, string? Label, IReadOnlyList<MapSegment> Route, Point ArrowTip, Point? LabelCenter);
+/// <param name="LabelCenter">Centre of the label (condition and/or choice text), if the edge has one.</param>
+/// <param name="Condition">The condition guarding the edge as written, e.g. <c>{has_torch}</c>.</param>
+public sealed record MapEdge(string From, string To, StoryEdgeKind Kind, string? Label, IReadOnlyList<MapSegment> Route, Point ArrowTip, Point? LabelCenter, string? Condition = null)
+{
+    public bool IsConditional => Condition is not null;
+}
 
 /// <summary>A laid-out <see cref="StoryGraph"/>: top-to-bottom, origin at the top left.</summary>
 public sealed class StoryMapLayout
@@ -58,8 +62,12 @@ public static class StoryMapLayoutEngine
 {
     /// <summary>Text measurements, taken on the UI thread before layout.</summary>
     /// <param name="Node">Size of each node's box, by id.</param>
-    /// <param name="Label">Size of each edge label, by text.</param>
+    /// <param name="Label">Size of each edge label, by <see cref="LabelKey"/>.</param>
     public sealed record Measurements(IReadOnlyDictionary<string, Size> Node, IReadOnlyDictionary<string, Size> Label);
+
+    /// <summary>Identifies an edge's label (condition above choice text) for measuring; null if it has none.</summary>
+    public static string? LabelKey(StoryEdge edge) =>
+        edge.Label is null && edge.Condition is null ? null : $"{edge.Condition}\n{edge.Label}";
 
     public static string TitleOf(StoryNode node) => node.Kind switch
     {
@@ -93,7 +101,7 @@ public static class StoryMapLayoutEngine
         {
             var msaglEdge = new Edge(nodes[edge.From], nodes[edge.To]);
             msaglEdge.EdgeGeometry.TargetArrowhead = new Arrowhead { Length = 7 };
-            if (edge.Label is { } label && sizes.Label.TryGetValue(label, out var labelSize))
+            if (LabelKey(edge) is { } label && sizes.Label.TryGetValue(label, out var labelSize))
             {
                 msaglEdge.Label = new Label(labelSize.Width, labelSize.Height, msaglEdge);
             }
@@ -131,7 +139,7 @@ public static class StoryMapLayoutEngine
             AddCurve(route, msagl.Curve, Map);
             var tip = msagl.EdgeGeometry.TargetArrowhead?.TipPosition is { } t ? Map(t) : route.LastOrDefault()?.End ?? default;
             Point? label = msagl.Label is { } l ? Map(l.Center) : null;
-            mapEdges.Add(new MapEdge(story.From, story.To, story.Kind, story.Label, route, tip, label));
+            mapEdges.Add(new MapEdge(story.From, story.To, story.Kind, story.Label, route, tip, label, story.Condition));
         }
 
         return new StoryMapLayout(graph.StructureKey, mapNodes, mapEdges, new Size(box.Width + 2 * StoryMapLayout.Padding, box.Height + 2 * StoryMapLayout.Padding));
