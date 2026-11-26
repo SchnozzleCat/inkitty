@@ -179,6 +179,52 @@ public sealed class InkittyDockFactory(FileTreeToolViewModel files, PlayerToolVi
         _documents = FindDocumentDock(layout);
     }
 
+    // In-window (managed) floating panels are part of the main window's visual tree, so while one is being
+    // moved, Dock's drop search hits the panel itself whenever the pointer is over its body - e.g. once the
+    // panel is stopped by the window's bottom edge and the pointer slides off its header towards the bottom
+    // dock selector. Docking a panel onto itself is invalid, so every selector disappeared. Hide the moving
+    // panel from hit testing for the duration of the drag (its pointer capture still delivers the moves).
+    private readonly List<Avalonia.Controls.Control> _hiddenFromHitTest = [];
+
+    public override bool OnWindowMoveDragBegin(IDockWindow? window)
+    {
+        if (!base.OnWindowMoveDragBegin(window))
+        {
+            return false;
+        }
+
+        RestoreHitTesting();
+        if (window?.Host is ManagedHostWindow)
+        {
+            foreach (var control in DockControls.OfType<Avalonia.Visual>()
+                .SelectMany(Avalonia.VisualTree.VisualExtensions.GetVisualDescendants)
+                .OfType<MdiDocumentWindow>()
+                .Where(w => w.DataContext is ManagedDockWindowDocument document && ReferenceEquals(document.Window, window)))
+            {
+                control.IsHitTestVisible = false;
+                _hiddenFromHitTest.Add(control);
+            }
+        }
+
+        return true;
+    }
+
+    public override void OnWindowMoveDragEnd(IDockWindow? window)
+    {
+        RestoreHitTesting();
+        base.OnWindowMoveDragEnd(window);
+    }
+
+    private void RestoreHitTesting()
+    {
+        foreach (var control in _hiddenFromHitTest)
+        {
+            control.IsHitTestVisible = true;
+        }
+
+        _hiddenFromHitTest.Clear();
+    }
+
     /// <summary>Makes a hidden or closed tool visible again, restoring it to its last dock.</summary>
     public void ShowTool(ITool tool)
     {

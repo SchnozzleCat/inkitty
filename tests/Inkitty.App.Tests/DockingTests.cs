@@ -145,4 +145,98 @@ public class DockingTests
 
             await Assert.That(factory.PlayerTool.Owner).IsEqualTo(factory.FilesTool.Owner);
         });
+
+    [Test]
+    public async Task Pane_can_be_docked_at_the_bottom_window_edge() =>
+        await HeadlessSession.Run(async () =>
+        {
+            await using var app = AppFixture.Create();
+            var factory = app.Shell.Factory;
+            await UiTestHelpers.WaitUntil(() =>
+            {
+                app.Window.UpdateLayout();
+                return app.Window.GetVisualDescendants().OfType<PaneGrip>().Count() == ShownTools(factory).Count;
+            });
+
+            var grip = app.Window.GetVisualDescendants().OfType<PaneGrip>().Single(g => g.Dockable == factory.PlayerTool);
+            var from = grip.TranslatePoint(new Point(grip.Bounds.Width / 2, 4), app.Window)!.Value;
+            var dockControl = app.Window.GetVisualDescendants().OfType<DockControl>().First();
+            var middle = dockControl.TranslatePoint(new Point(dockControl.Bounds.Width / 2, dockControl.Bounds.Height / 2), app.Window)!.Value;
+
+            app.Window.MouseDown(from, MouseButton.Left);
+            for (var i = 1; i <= 10; i++)
+            {
+                app.Window.MouseMove(from + ((middle - from) * (i / 10.0)), RawInputModifiers.LeftMouseButton);
+            }
+
+            // The window-edge selector at the bottom sits over the Issues pane's tab strip; it must stay up as it's approached.
+            app.Window.UpdateLayout();
+            var selector = app.Window.GetVisualDescendants().OfType<Avalonia.Controls.Image>()
+                .Single(s => s.Name == "PART_BottomSelector" && s.TemplatedParent is GlobalDockTarget);
+            var to = selector.TranslatePoint(new Point(selector.Bounds.Width / 2, selector.Bounds.Height / 2), app.Window)!.Value;
+            for (var i = 1; i <= 10; i++)
+            {
+                app.Window.MouseMove(middle + ((to - middle) * (i / 10.0)), RawInputModifiers.LeftMouseButton);
+                app.Window.UpdateLayout();
+                await Assert.That(selector.IsEffectivelyVisible).IsTrue();
+            }
+
+            app.Window.MouseUp(to, MouseButton.Left, RawInputModifiers.LeftMouseButton);
+            app.Window.UpdateLayout();
+
+            // Docked across the whole window, below the old layout.
+            var outer = (IProportionalDock)app.Shell.Layout.ActiveDockable!;
+            await Assert.That(outer.Orientation).IsEqualTo(Orientation.Vertical);
+            await Assert.That(All(outer.VisibleDockables!.Last()).Contains(factory.PlayerTool)).IsTrue();
+        });
+
+    [Test]
+    public async Task Floating_pane_can_be_docked_at_the_bottom_edge_after_it_stops_moving() =>
+        await HeadlessSession.Run(async () =>
+        {
+            var hostMode = Dock.Settings.DockSettings.FloatingWindowHostMode;
+            Dock.Settings.DockSettings.FloatingWindowHostMode = DockFloatingWindowHostMode.Managed;
+            try
+            {
+                await using var app = AppFixture.Create();
+                var factory = app.Shell.Factory;
+                factory.FloatDockable(factory.PlayerTool);
+                MdiDocumentWindow? floating = null;
+                await UiTestHelpers.WaitUntil(() =>
+                {
+                    app.Window.UpdateLayout();
+                    floating = app.Window.GetVisualDescendants().OfType<MdiDocumentWindow>().FirstOrDefault(w => w.IsEffectivelyVisible);
+                    return floating is not null;
+                });
+
+                var header = floating!.GetVisualDescendants().OfType<Avalonia.Controls.Control>().First(c => c.Name == "PART_Header");
+                var from = header.TranslatePoint(new Point(header.Bounds.Width / 2, header.Bounds.Height / 2), app.Window)!.Value;
+                var dockControl = app.Window.GetVisualDescendants().OfType<DockControl>().First();
+                var to = dockControl.TranslatePoint(new Point(dockControl.Bounds.Width / 2, dockControl.Bounds.Height - 20), app.Window)!.Value;
+
+                // The window is stopped by the bottom edge long before the pointer gets there, so the pointer
+                // leaves its header and crosses its body on the way to the bottom selector.
+                app.Window.MouseDown(from, MouseButton.Left);
+                for (var i = 1; i <= 20; i++)
+                {
+                    app.Window.MouseMove(from + ((to - from) * (i / 20.0)), RawInputModifiers.LeftMouseButton);
+                    app.Window.UpdateLayout();
+                }
+
+                var selector = app.Window.GetVisualDescendants().OfType<Avalonia.Controls.Image>()
+                    .SingleOrDefault(s => s.Name == "PART_BottomSelector" && s.TemplatedParent is GlobalDockTarget);
+                await Assert.That(selector?.IsEffectivelyVisible).IsTrue();
+
+                app.Window.MouseUp(to, MouseButton.Left, RawInputModifiers.LeftMouseButton);
+                app.Window.UpdateLayout();
+
+                var outer = (IProportionalDock)app.Shell.Layout.ActiveDockable!;
+                await Assert.That(outer.Orientation).IsEqualTo(Orientation.Vertical);
+                await Assert.That(All(outer.VisibleDockables!.Last()).Contains(factory.PlayerTool)).IsTrue();
+            }
+            finally
+            {
+                Dock.Settings.DockSettings.FloatingWindowHostMode = hostMode;
+            }
+        });
 }

@@ -23,7 +23,11 @@ public partial class App : Application
     /// <summary>Options for tests: skip file watching, use a temp config dir, etc.</summary>
     public static AppOptions Options { get; set; } = new();
 
-    public override void Initialize() => AvaloniaXamlLoader.Load(this);
+    public override void Initialize()
+    {
+        AvaloniaXamlLoader.Load(this);
+        DockTemplateFixes.Register();
+    }
 
     public override void OnFrameworkInitializationCompleted()
     {
