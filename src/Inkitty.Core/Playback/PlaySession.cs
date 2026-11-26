@@ -103,6 +103,19 @@ public sealed class PlaySession : IDisposable
     public IReadOnlyList<ChoiceOption> CurrentChoices =>
         [.. _story.currentChoices.Select(c => new ChoiceOption(c.index, c.text ?? string.Empty, c.tags ?? [], ChoiceLocation(c)))];
 
+    /// <summary>Every global variable's current value, in name order.</summary>
+    public IReadOnlyList<StoryVariable> Variables()
+    {
+        var state = _story.variablesState;
+        List<StoryVariable> result = [];
+        foreach (var name in state)
+        {
+            result.Add(StoryVariable.From(name, state.GetVariableWithName(name), state.TryGetDefaultVariableValue(name)));
+        }
+
+        return [.. result.OrderBy(v => v.Name, StringComparer.OrdinalIgnoreCase)];
+    }
+
     /// <summary>How many times the knot or stitch at <paramref name="path"/> has been visited (0 if unknown).</summary>
     public int VisitCount(string path)
     {
