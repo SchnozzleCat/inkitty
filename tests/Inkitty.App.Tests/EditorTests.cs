@@ -126,4 +126,18 @@ public class EditorTests
             await Assert.That(await UiTestHelpers.WaitUntil(() => !editor.IsFlashing, 3000)).IsTrue();
             await Assert.That(renderers.Count).IsEqualTo(before);
         });
+
+    [Test]
+    public async Task No_separator_line_between_line_numbers_and_text() =>
+        await HeadlessSession.Run(async () =>
+        {
+            await using var app = AppFixture.Create();
+            await app.OpenAsync(UiTestHelpers.CopySample("multi-file", out _));
+            var editor = app.EditorFor(app.Shell.ActiveDocument!)!;
+            var margins = editor.TextEditor.TextArea.LeftMargins;
+
+            await Assert.That(editor.TextEditor.ShowLineNumbers).IsTrue();
+            await Assert.That(margins.Any(m => m is AvaloniaEdit.Editing.LineNumberMargin && m.IsVisible)).IsTrue();
+            await Assert.That(margins.Where(AvaloniaEdit.Editing.DottedLineMargin.IsDottedLineMargin).All(m => !m.IsVisible)).IsTrue();
+        });
 }
