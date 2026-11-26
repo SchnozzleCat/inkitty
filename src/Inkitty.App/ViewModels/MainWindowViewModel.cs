@@ -77,6 +77,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IRecipient<Navi
             themes.ThemeChanged += (_, theme) => SyntaxTheme = theme.TextMateTheme;
         }
         _autoSave.Saved += (_, count) => ShowStatus(count == 1 ? "Auto-saved" : $"Auto-saved {count} files");
+        _autoSave.Failed += (_, ex) => ShowStatus($"Auto-save failed: {ex.Message}");
         History.Changed += (_, _) =>
         {
             GoBackCommand.NotifyCanExecuteChanged();

@@ -29,6 +29,9 @@ public sealed class AutoSaveService : IDisposable
     /// <summary>Raised after an automatic save, with the number of files saved.</summary>
     public event EventHandler<int>? Saved;
 
+    /// <summary>Raised when an automatic save fails (e.g. the file is read-only).</summary>
+    public event EventHandler<Exception>? Failed;
+
     public void Attach(ProjectViewModel? project)
     {
         CancelTimers();
@@ -68,9 +71,10 @@ public sealed class AutoSaveService : IDisposable
                 Saved?.Invoke(this, count);
             }
         }
-        catch (IOException ex)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             _logger.LogWarning(ex, "Auto-save failed");
+            Failed?.Invoke(this, ex);
         }
     }
 
@@ -98,9 +102,10 @@ public sealed class AutoSaveService : IDisposable
             await _project.SaveAsync(file);
             Saved?.Invoke(this, 1);
         }
-        catch (IOException ex)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             _logger.LogWarning(ex, "Auto-save of {File} failed", file.RelativePath);
+            Failed?.Invoke(this, ex);
         }
     }
 

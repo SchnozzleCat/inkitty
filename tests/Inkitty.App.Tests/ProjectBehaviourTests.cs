@@ -87,6 +87,34 @@ public class ProjectBehaviourTests
         });
 
     [Test]
+    public async Task Auto_save_failure_on_a_read_only_folder_is_reported() =>
+        await HeadlessSession.Run(async () =>
+        {
+            if (OperatingSystem.IsWindows() || Environment.UserName == "root")
+            {
+                return; // read-only folders are a Unix permission; root ignores them
+            }
+
+            var main = UiTestHelpers.CopySample("multi-file", out var root);
+            var chapters = Path.Join(root, "chapters");
+            await using var app = AppFixture.Create(configure: s => s.Update(x => x with { AutoSave = AutoSaveMode.AfterDelay, AutoSaveDelayMs = 200 }));
+            await app.OpenAsync(main);
+            var forest = app.Shell.OpenDocument(app.Project.Project.Find("chapters/forest.ink")!);
+
+            File.SetUnixFileMode(chapters, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+            try
+            {
+                forest.Document.Insert(0, "// can't save\n");
+                await Assert.That(await UiTestHelpers.WaitUntil(() => app.Shell.StatusText.StartsWith("Auto-save failed", StringComparison.Ordinal), 5000)).IsTrue();
+                await Assert.That(forest.IsDirty).IsTrue();
+            }
+            finally
+            {
+                File.SetUnixFileMode(chapters, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            }
+        });
+
+    [Test]
     public async Task Auto_save_on_focus_lost_skips_conflicted_files() =>
         await HeadlessSession.Run(async () =>
         {
