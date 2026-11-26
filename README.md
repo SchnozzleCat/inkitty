@@ -5,6 +5,11 @@ An IDE for [ink](https://github.com/inkle/ink), inkle's narrative scripting lang
 [Inky](https://github.com/inkle/inky) and runs on **Linux, Windows and macOS**, and in the browser at
 **<https://schnozzlecat.github.io/inkitty/>**.
 
+> [!CAUTION]
+> This is alpha software that was created to fit my own needs, so your mileage may vary.
+> Please create issues for any problems you run into.
+> I don't have access to a machine running macOS, and while Avalonia should technically compile just fine, I would appreciate testing on this platform as I am sure there will be UI-related issues.
+
 ## Features
 
 - **Play as you write**, replaying your choices after every edit so you stay where you are in the story.

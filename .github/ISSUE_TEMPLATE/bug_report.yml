@@ -1,0 +1,70 @@
+name: Bug report
+description: Something in Inkitty doesn't work as it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. If it's about how ink itself behaves (the language or the
+        compiler), it may belong in [inkle/ink](https://github.com/inkle/ink/issues) instead.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What went wrong, and what did you expect to happen instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The shorter the better.
+      placeholder: |
+        1. Open …
+        2. Type …
+        3. See …
+    validations:
+      required: true
+
+  - type: textarea
+    id: ink
+    attributes:
+      label: Ink that shows the problem
+      description: If the problem depends on your story, paste the smallest piece of ink that shows it.
+      render: ink
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Where are you running Inkitty?
+      options:
+        - Browser
+        - Linux
+        - Windows
+        - macOS
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Browser or OS version
+      description: For example "Firefox 146", "Chrome 143", "Fedora 43 (Wayland)" or "Windows 11".
+    validations:
+      required: true
+
+  - type: input
+    id: build
+    attributes:
+      label: Inkitty build
+      description: For a desktop build, the commit you built from (`git rev-parse --short HEAD`). For the browser version, the date you used it.
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Errors, logs or screenshots
+      description: >
+        In the browser, open the developer tools (F12) and copy any errors from the Console tab.
+        On the desktop, copy what the terminal printed. You can also drag screenshots in here.

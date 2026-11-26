@@ -1,0 +1,26 @@
+name: Feature request
+description: Suggest something Inkitty could do, or do better.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The problem or workflow this would help with. This matters more than the solution.
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like Inkitty to do?
+      description: How you imagine it working. Mention it if Inky or another editor already does it.
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Where does this apply?
+      multiple: true
+      options:
+        - Browser
+        - Desktop (Linux, Windows, macOS)

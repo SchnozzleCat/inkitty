@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: ink language or compiler problems
+    url: https://github.com/inkle/ink/issues
+    about: If ink itself behaves unexpectedly (the same happens in Inky), report it to inkle.
+  - name: Writing with ink
+    url: https://github.com/inkle/ink/blob/master/Documentation/WritingWithInk.md
+    about: inkle's guide to the ink language.
