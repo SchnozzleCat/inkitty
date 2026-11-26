@@ -110,6 +110,48 @@ public class ProjectBehaviourTests
         });
 
     [Test]
+    public async Task Closing_a_tab_with_auto_save_saves_it() =>
+        await HeadlessSession.Run(async () =>
+        {
+            var main = UiTestHelpers.CopySample("multi-file", out var root);
+            await using var app = AppFixture.Create(configure: s => s.Update(x => x with { AutoSave = AutoSaveMode.OnFocusLost }));
+            await app.OpenAsync(main);
+            var forest = app.Shell.OpenDocument(app.Project.Project.Find("chapters/forest.ink")!);
+            forest.Document.Insert(0, "// closing saves\n");
+
+            app.Shell.CloseDocumentCommand.Execute(null);
+
+            await Assert.That(await UiTestHelpers.WaitUntil(() => !forest.IsDirty, 5000)).IsTrue();
+            await Assert.That(app.Dialogs.UnsavedPrompts).IsEqualTo(0);
+            await Assert.That(File.ReadAllText(Path.Join(root, "chapters", "forest.ink"))).StartsWith("// closing saves");
+            await Assert.That(await UiTestHelpers.WaitUntil(() => app.Shell.ActiveDocument != forest, 5000)).IsTrue();
+        });
+
+    [Test]
+    public async Task Closing_a_conflicted_tab_with_auto_save_asks_instead_of_overwriting() =>
+        await HeadlessSession.Run(async () =>
+        {
+            var main = UiTestHelpers.CopySample("multi-file", out var root);
+            await using var app = AppFixture.Create(configure: s => s.Update(x => x with { AutoSave = AutoSaveMode.OnFocusLost }));
+            await app.OpenAsync(main);
+            var forestPath = Path.Join(root, "chapters", "forest.ink");
+            var forest = app.Shell.OpenDocument(app.Project.Project.Find("chapters/forest.ink")!);
+
+            forest.Document.Insert(0, "// mine\n");
+            File.WriteAllText(forestPath, "=== forest ===\nTheirs\n-> END\n");
+            await app.Project.RescanAllAsync();
+            forest.KeepMineCommand.Execute(null);
+
+            app.Dialogs.UnsavedChoice = Services.UnsavedChangesChoice.Cancel;
+            app.Shell.CloseDocumentCommand.Execute(null);
+
+            await Assert.That(await UiTestHelpers.WaitUntil(() => app.Dialogs.UnsavedPrompts == 1, 5000)).IsTrue();
+            await Assert.That(File.ReadAllText(forestPath)).Contains("Theirs");
+            await Assert.That(forest.IsDirty).IsTrue();
+            await Assert.That(app.Shell.ActiveDocument).IsEqualTo(forest);
+        });
+
+    [Test]
     public async Task Closing_asks_about_unsaved_files_that_are_no_longer_included() =>
         await HeadlessSession.Run(async () =>
         {

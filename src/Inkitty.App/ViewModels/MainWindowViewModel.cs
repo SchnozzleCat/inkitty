@@ -588,18 +588,37 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IRecipient<Navi
     /// <summary>Dock calls this synchronously when a tab is closed. Dirty files prompt asynchronously, then close again.</summary>
     private bool GuardClose(EditorDocumentDockable dockable)
     {
-        if (!dockable.Editor.IsDirty || _settings.Current.AutoSave != AutoSaveMode.Off)
+        if (!dockable.Editor.IsDirty)
         {
-            if (dockable.Editor.IsDirty)
-            {
-                _ = Project?.SaveAsync(dockable.Editor.File);
-            }
-
             return true;
         }
 
-        _ = PromptAndCloseAsync(dockable);
+        // With auto-save on, closing saves, unless that would overwrite an unresolved change on disk.
+        _ = _settings.Current.AutoSave != AutoSaveMode.Off && !dockable.Editor.File.IsInConflict
+            ? AutoSaveAndCloseAsync(dockable)
+            : PromptAndCloseAsync(dockable);
         return false;
+    }
+
+    private async Task AutoSaveAndCloseAsync(EditorDocumentDockable dockable)
+    {
+        if (Project is not { } project)
+        {
+            return;
+        }
+
+        try
+        {
+            await project.SaveAsync(dockable.Editor.File);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Keep the tab open so the edits stay visible.
+            await _dialogs.ShowErrorAsync("Save failed", ex.Message);
+            return;
+        }
+
+        CloseWithoutGuard(dockable);
     }
 
     private async Task PromptAndCloseAsync(EditorDocumentDockable dockable)
@@ -607,7 +626,16 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IRecipient<Navi
         switch (await _dialogs.AskUnsavedChangesAsync(dockable.Editor.RelativePath))
         {
             case UnsavedChangesChoice.Save:
-                await Project!.SaveAsync(dockable.Editor.File);
+                try
+                {
+                    await Project!.SaveAsync(dockable.Editor.File);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    await _dialogs.ShowErrorAsync("Save failed", ex.Message);
+                    return;
+                }
+
                 break;
             case UnsavedChangesChoice.Discard:
                 // Keep the buffer (so INCLUDEd files still compile) but stop tracking it as an open tab.
@@ -616,6 +644,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IRecipient<Navi
                 return;
         }
 
+        CloseWithoutGuard(dockable);
+    }
+
+    private void CloseWithoutGuard(EditorDocumentDockable dockable)
+    {
         dockable.CloseGuard = null;
         Factory.CloseDockable(dockable);
     }
