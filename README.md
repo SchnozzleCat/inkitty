@@ -31,8 +31,11 @@ Builds for Linux, Windows and macOS (x64 and Arm each) are attached to each
 [release](https://github.com/SchnozzleCat/inkitty/releases). Each is a single executable that
 needs no .NET install.
 
+On Linux, make the download executable first: `chmod +x inkitty-linux-x64`.
+
 The macOS app isn't signed with an Apple developer certificate, so macOS blocks it the first time.
-After unzipping, either run `xattr -dr com.apple.quarantine Inkitty.app`, or try to open it once and
+Open the `.dmg` and drag Inkitty to Applications. Then either run
+`xattr -dr com.apple.quarantine /Applications/Inkitty.app`, or try to open it once and
 then allow it under *System Settings > Privacy & Security*.
 
 ## Building and running
