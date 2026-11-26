@@ -32,7 +32,7 @@ public sealed class PlaySession : IDisposable
             _ownsOriginal = story.asyncContinueComplete && InUse.Add(story);
         }
 
-        _story = _ownsOriginal ? story : new Ink.Runtime.Story(JsonCache.GetValue(story, s => s.ToJson()));
+        _story = _ownsOriginal ? story : CopyOf(story);
         _snapshot = snapshot;
         _time = time ?? TimeProvider.System;
         _story.ResetState(); // always play from the beginning, even when reusing a compiled story
@@ -40,6 +40,49 @@ public sealed class PlaySession : IDisposable
     }
 
     public ProjectSnapshot Snapshot => _snapshot;
+
+    /// <summary>
+    /// An independent copy of a compiled story. The JSON round trip drops ink's debug metadata (source
+    /// file and line of each piece of content), so it is copied across from the original's identical tree;
+    /// without it, output from the copy can't be traced back to the source.
+    /// </summary>
+    private static Ink.Runtime.Story CopyOf(Ink.Runtime.Story original)
+    {
+        var copy = new Ink.Runtime.Story(JsonCache.GetValue(original, s => s.ToJson()));
+        CopyDebugMetadata(original.mainContentContainer, copy.mainContentContainer);
+        return copy;
+    }
+
+    private static void CopyDebugMetadata(Ink.Runtime.Container from, Ink.Runtime.Container to)
+    {
+        if (from.ownDebugMetadata is { } metadata)
+        {
+            to.debugMetadata = metadata;
+        }
+
+        var count = Math.Min(from.content.Count, to.content.Count);
+        for (var i = 0; i < count; i++)
+        {
+            if (from.content[i] is Ink.Runtime.Container fromChild && to.content[i] is Ink.Runtime.Container toChild)
+            {
+                CopyDebugMetadata(fromChild, toChild);
+            }
+            else if (from.content[i].ownDebugMetadata is { } childMetadata)
+            {
+                to.content[i].debugMetadata = childMetadata;
+            }
+        }
+
+        // Knots, stitches and labelled weave points that only exist by name (not in the content list).
+        foreach (var (name, fromNamed) in from.namedOnlyContent ?? [])
+        {
+            if (fromNamed is Ink.Runtime.Container fromChild
+                && to.namedContent.TryGetValue(name, out var toNamed) && toNamed is Ink.Runtime.Container toChild)
+            {
+                CopyDebugMetadata(fromChild, toChild);
+            }
+        }
+    }
 
     public void Dispose()
     {
