@@ -2,7 +2,8 @@
 
 An IDE for [ink](https://github.com/inkle/ink), inkle's narrative scripting language, built with
 [Avalonia](https://avaloniaui.net/) and modern C#. It's a prototype alternative to
-[Inky](https://github.com/inkle/inky) and runs on **Linux, Windows and macOS**.
+[Inky](https://github.com/inkle/inky) and runs on **Linux, Windows and macOS**, and in the browser at
+**https://schnozzlecat.github.io/inkitty/**.
 
 ## Features
 
@@ -10,6 +11,12 @@ An IDE for [ink](https://github.com/inkle/ink), inkle's narrative scripting lang
   so you stay where you were. Choices are matched by text, so inserting or reordering choices
   doesn't lose your place. Restart and step back are one click away.
 - **Syntax highlighting** with a TextMate grammar for ink (`tools/ink-grammar/generate.py`) that every bundled colour theme understands: knots, diverts, choices and gathers, labels, tags, glue, conditionals and sequences, and logic as real expressions.
+- **Outline** of the current file: knots, stitches, functions, declarations, and choices and labelled
+  gathers with their labels and conditions. It follows the caret; click an entry to jump to it.
+- **Story map** drawing the story as a flow chart: knots and stitches, the choices and diverts between
+  them, and their conditions. It shows where the playthrough has been and where it is now; click a
+  knot to open it.
+- **Variables** pane listing the story's global variables and their current values in the playthrough.
 - **Colour themes:** 18 built-in themes (Light+/Dark+, Dracula, Monokai, Solarized, One Dark/Light,
   Visual Studio, Abyss, High Contrast, ...) that restyle the whole window, not just the editor,
   or "System" to follow the OS light/dark setting. The editor font is the bundled JetBrains Mono.
@@ -24,7 +31,8 @@ An IDE for [ink](https://github.com/inkle/ink), inkle's narrative scripting lang
   `INCLUDE`s. Typing `INCLUDE new.ink` creates the file.
 - **File watching.** Files changed on disk are reloaded. If you have unsaved edits, an info bar
   lets you reload or keep yours.
-- **Docking.** The default layout is three panes (Files | Editor + Issues | Player). Every pane
+- **Docking.** The default layout has three columns: Files and Outline on the left, the editor
+  above Issues and Variables in the middle, and the Player above the Map on the right. Every pane
   can be moved, tabbed, floated or pinned, and the layout is remembered.
 - **Settings** for auto-save (off / on focus lost / after a delay), colour theme, editor font, word wrap,
   recompile delay and replay time limit.
@@ -48,10 +56,12 @@ it switches to Avalonia's native Wayland backend. You can force that choice with
 
 ### In the browser
 
-Inkitty also runs in a browser tab (WebAssembly), served as static files. Projects are kept in the
-browser's storage (IndexedDB); *File > Open…* lists them and imports a project folder, `.ink`
-files or a `.zip`, and *File > Export Project as .zip…* downloads a copy. Clearing the site's data
-deletes the projects, so export regularly.
+Inkitty also runs in a browser tab (WebAssembly), served as static files, at
+<https://schnozzlecat.github.io/inkitty/>. On the first visit it opens inkle's
+[*The Intercept*](https://github.com/inkle/the-intercept) as a sample project (`samples/the-intercept`).
+Projects are kept in the browser's storage (IndexedDB); *File > Open…* lists them and imports a
+project folder, `.ink` files or a `.zip`, and *File > Export Project as .zip…* downloads a copy.
+Clearing the site's data deletes the projects, so export regularly.
 
 ```sh
 just publish-web    # writes the site to artifacts/web (scripts/publish-web.sh)
@@ -63,9 +73,10 @@ installed (the Nix SDK is read-only), the script builds in the .NET SDK containe
 docker. Release builds compile everything to WebAssembly ahead of time, so the first publish takes
 a few minutes.
 
-`.github/workflows/web.yml` publishes `main` to GitHub Pages (repository *Settings > Pages >
-Source: GitHub Actions*). The runtime file `dotnet.native.wasm` is about 61 MB (12 MB with Brotli),
-so the site needs a host without a small per-file limit: Cloudflare Pages, for one, stops at 25 MiB.
+Each push to `main` publishes the site to GitHub Pages (`.github/workflows/web.yml`; in the
+repository settings, *Pages > Source* must be *GitHub Actions*). Any static host works, as long as it
+allows large files: the runtime file `dotnet.native.wasm` is about 61 MB (12 MB with Brotli), which
+rules out hosts with a small per-file limit, such as Cloudflare Pages (25 MiB).
 
 ### Tests
 
@@ -75,15 +86,16 @@ dotnet test
 
 All tests use [TUnit](https://tunit.dev/):
 
-- `tests/Inkitty.Core.Tests` covers the compiler service, replay, symbols, include scanning,
-  file watching and settings.
+- `tests/Inkitty.Core.Tests` covers the compiler service, replay, symbols, include scanning, the
+  outline, the story graph, file watching, settings and the browser's project storage.
 - `tests/Inkitty.App.Tests` drives the real UI with Avalonia's headless platform. It covers
-  play-as-you-write, navigation, file watching, auto-save and docking.
+  play-as-you-write, navigation, the outline, story map and variables, highlighting, themes,
+  menus, file watching, auto-save and docking.
 
 ### Publishing
 
 ```sh
-dotnet publish src/Inkitty.Desktop -c Release -r linux-x64 --self-contained   # or win-x64, osx-arm64, osx-x64
+just publish linux-x64   # or win-x64, osx-arm64, osx-x64; writes artifacts/<rid>
 ```
 
 For a macOS `.app` bundle, put the published output in `Inkitty.app/Contents/MacOS/` and
@@ -101,6 +113,8 @@ can open them with Inkitty.
 | Back / Forward | Alt+← / Alt+→ | Ctrl+- / Ctrl+Shift+- |
 | Next / previous issue | F8 / Shift+F8 | F8 / Shift+F8 |
 | Restart story | Ctrl+R | Cmd+R |
+| Show the story's current line | Ctrl+J | Cmd+J |
+| Show the map | Ctrl+Shift+M | Cmd+Shift+M |
 | Settings | Ctrl+, | Cmd+, |
 
 ## Where things are stored
@@ -111,7 +125,8 @@ Settings (`settings.json`) and the dock layout (`layout.json`) are stored in:
 - Windows: `%APPDATA%\Inkitty`
 - macOS: `~/Library/Application Support/Inkitty`
 
-Set `INKITTY_CONFIG_DIR` to use a different directory.
+Set `INKITTY_CONFIG_DIR` to use a different directory. In the browser, settings and projects live in
+the site's IndexedDB storage.
 
 ## How it works
 
@@ -130,9 +145,11 @@ src/Inkitty.App       Avalonia UI library: docking shell, editor control, tools,
 src/Inkitty.Desktop   desktop executable (Linux, Windows, macOS)
 src/Inkitty.Browser   browser executable (WebAssembly) and its web page
 tests/                TUnit tests for Core and App
-samples/              example ink projects
+samples/              example ink projects (multi-file; The Intercept, the browser's sample)
 ```
 
 ## Licence
 
-Inkitty's code is yours to license. ink is MIT, © inkle Ltd.
+Inkitty is released under the [MIT License](LICENSE). ink and *The Intercept* (`samples/the-intercept`)
+are also MIT, © inkle Ltd; their notices are in `external/ink/LICENSE.txt` and
+`samples/the-intercept/README.md`.
