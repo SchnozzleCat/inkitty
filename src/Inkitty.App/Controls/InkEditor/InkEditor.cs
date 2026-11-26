@@ -26,6 +26,7 @@ public sealed class InkEditor : UserControl
     private readonly TextEditor _editor;
     private readonly IssueMarkerRenderer _markers = new();
     private readonly IssueGutterMargin _gutter;
+    private readonly PlaythroughMargin _playthrough = new();
     private readonly ReferenceUnderlineColorizer _underline = new();
     private TextMate.Installation? _textMate;
     private ThemeName? _textMateTheme;
@@ -51,6 +52,8 @@ public sealed class InkEditor : UserControl
 
         _gutter = new IssueGutterMargin(_markers);
         _editor.TextArea.LeftMargins.Insert(0, _gutter);
+        _editor.TextArea.LeftMargins.Add(_playthrough);
+        _editor.TextArea.TextView.BackgroundRenderers.Add(_playthrough);
         _editor.TextArea.TextView.BackgroundRenderers.Add(_markers);
         _editor.TextArea.TextView.LineTransformers.Add(_underline);
         _editor.TextArea.Caret.PositionChanged += OnCaretPositionChanged;
@@ -94,6 +97,8 @@ public sealed class InkEditor : UserControl
     public TextEditor TextEditor => _editor;
 
     internal IssueMarkerRenderer Markers => _markers;
+
+    internal PlaythroughMargin Playthrough => _playthrough;
 
     public void FocusEditor() => _editor.TextArea.Focus();
 
@@ -149,6 +154,7 @@ public sealed class InkEditor : UserControl
             viewModel.PropertyChanged += OnViewModelPropertyChanged;
             viewModel.NavigationRequested += OnNavigationRequested;
             UpdateMarkers();
+            UpdatePlaythrough();
             if (viewModel.PendingNavigation is { } pending)
             {
                 Dispatcher.UIThread.Post(() => NavigateTo(pending), DispatcherPriority.Loaded);
@@ -267,6 +273,7 @@ public sealed class InkEditor : UserControl
         _editor.FontFamily = new FontFamily(settings.EditorFontFamily);
         _editor.FontSize = settings.EditorFontSize;
         _editor.WordWrap = settings.WordWrap;
+        UpdatePlaythrough();
         _editor.HorizontalScrollBarVisibility = settings.WordWrap
             ? Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled
             : Avalonia.Controls.Primitives.ScrollBarVisibility.Auto;
@@ -277,6 +284,10 @@ public sealed class InkEditor : UserControl
         if (e.PropertyName == nameof(EditorDocumentViewModel.Issues))
         {
             UpdateMarkers();
+        }
+        else if (e.PropertyName == nameof(EditorDocumentViewModel.Playthrough))
+        {
+            UpdatePlaythrough();
         }
     }
 
@@ -291,6 +302,11 @@ public sealed class InkEditor : UserControl
         _editor.TextArea.TextView.InvalidateLayer(AvaloniaEdit.Rendering.KnownLayer.Selection);
         _gutter.InvalidateVisual();
     }
+
+    private void UpdatePlaythrough() =>
+        _playthrough.Progress = _viewModel is not null && Settings?.ShowPlaythroughInEditor != false
+            ? _viewModel.Playthrough
+            : Inkitty.Core.StoryMap.FileProgress.None;
 
     private void OnNavigationRequested(object? sender, SourceRange range) =>
         Dispatcher.UIThread.Post(() => NavigateTo(range), DispatcherPriority.Loaded);

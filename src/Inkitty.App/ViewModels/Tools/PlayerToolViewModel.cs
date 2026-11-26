@@ -8,6 +8,7 @@ using Inkitty.Core.Compilation;
 using Inkitty.Core.Diagnostics;
 using Inkitty.Core.Playback;
 using Inkitty.Core.Settings;
+using Inkitty.Core.StoryMap;
 
 namespace Inkitty.App.ViewModels.Tools;
 
@@ -27,6 +28,7 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
     private List<Issue> _runtimeIssues = [];
     private CancellationTokenSource? _replayCts;
     private int _replayGeneration;
+    private List<StoryEvent> _events = [];
 
     public PlayerToolViewModel(IUiDispatcher dispatcher, ISettingsStore settings, TimeProvider? time = null)
     {
@@ -59,6 +61,29 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
     [ObservableProperty]
     public partial bool HasProject { get; private set; }
 
+    /// <summary>The graph of the story being played (from the same compile as the session).</summary>
+    [ObservableProperty]
+    public partial StoryGraph Graph { get; private set; } = StoryGraph.Empty;
+
+    /// <summary>Where the playthrough is and how it got there.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(LocationText), nameof(HasLocation))]
+    public partial StoryProgress Progress { get; private set; } = StoryProgress.Empty;
+
+    /// <summary>Breadcrumb for the current knot/stitch, e.g. <c>town › square</c>.</summary>
+    public string LocationText => Progress.CurrentNode switch
+    {
+        null => string.Empty,
+        StoryGraph.StartId => "Beginning",
+        StoryGraph.EndId => "The end",
+        var id => id.Replace(".", " › ", StringComparison.Ordinal),
+    };
+
+    public bool HasLocation => Progress.CurrentNode is not null;
+
+    /// <summary>Raised when the user asks to see where a transcript line was written.</summary>
+    public event EventHandler<StoryLocation>? RevealRequested;
+
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(StepBackCommand))]
     public partial int ChoiceCount { get; private set; }
@@ -81,6 +106,9 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
         Items.Clear();
         Choices.Clear();
         IsStale = false;
+        _events = [];
+        Graph = StoryGraph.Empty;
+        Progress = StoryProgress.Empty;
 
         if (project is not null)
         {
@@ -116,6 +144,16 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
 
     private bool CanStepBack() => ChoiceCount > 0;
 
+    /// <summary>Jumps the editor to where a transcript line (or, without a parameter, the current position) was written.</summary>
+    [RelayCommand]
+    private void Reveal(StoryLocation? location)
+    {
+        if ((location ?? Progress.Current) is { File: not null } target)
+        {
+            RevealRequested?.Invoke(this, target);
+        }
+    }
+
     [RelayCommand]
     private void Choose(PlayerChoice choice)
     {
@@ -127,6 +165,8 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
         var session = _session;
         var budget = Budget();
         var generation = ++_replayGeneration;
+        var graph = Graph;
+        var previous = _events;
         IsBusy = true;
         _sessionWork = Task.Run(() =>
         {
@@ -146,6 +186,9 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
                 events.Add(new RuntimeIssue(new Issue(IssueSeverity.RuntimeError, ex.Message, null, IssueOrigin.Runtime)));
             }
 
+            List<StoryEvent> all = [.. previous, .. events];
+            var progress = StoryProgress.Build(graph, all, session.VisitCount);
+
             _dispatcher.Post(() =>
             {
                 if (generation != _replayGeneration)
@@ -153,6 +196,9 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
                     return;
                 }
 
+                _events = all;
+                Progress = progress;
+                _project?.SetProgress(progress);
                 _history = session.History;
                 ChoiceCount = _history.Count;
                 Choices.Clear();
@@ -217,6 +263,8 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
                 return;
             }
 
+            var progress = StoryProgress.Build(success.Graph, result.Events, session.VisitCount);
+
             _dispatcher.Post(() =>
             {
                 if (generation != _replayGeneration || cts.IsCancellationRequested)
@@ -227,6 +275,10 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
 
                 ReleaseSession();
                 _session = session;
+                _events = [.. result.Events];
+                Graph = success.Graph;
+                Progress = progress;
+                _project?.SetProgress(progress);
                 _history = session.History;
                 ChoiceCount = _history.Count;
 

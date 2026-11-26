@@ -35,6 +35,9 @@
         <NativeMenu>
           <NativeMenuItem Header="Restart Story" Command="{Binding RestartStoryCommand}" Gesture="Cmd+R" />
           <NativeMenuItem Header="Step Back" Command="{Binding StepBackStoryCommand}" />
+          <NativeMenuItemSeparator />
+          <NativeMenuItem Header="Show Current Line" Command="{Binding RevealStoryPositionCommand}" Gesture="Cmd+J" />
+          <NativeMenuItem Header="Story Map" Command="{Binding ShowStoryMapCommand}" Gesture="Cmd+Shift+M" />
         </NativeMenu>
       </NativeMenuItem>
       <NativeMenuItem Header="View">
@@ -42,6 +45,7 @@
           <NativeMenuItem Header="Files" Command="{Binding ShowFilesCommand}" />
           <NativeMenuItem Header="Player" Command="{Binding ShowPlayerCommand}" />
           <NativeMenuItem Header="Issues" Command="{Binding ShowIssuesCommand}" />
+          <NativeMenuItem Header="Story Map" Command="{Binding ShowStoryMapCommand}" />
           <NativeMenuItemSeparator />
           <NativeMenuItem Header="Reset Layout" Command="{Binding ResetLayoutCommand}" />
         </NativeMenu>
@@ -88,11 +92,15 @@
       <MenuItem Header="_Story">
         <MenuItem Header="_Restart" Command="{Binding RestartStoryCommand}" InputGesture="Ctrl+R" />
         <MenuItem Header="Step _Back" Command="{Binding StepBackStoryCommand}" />
+        <Separator />
+        <MenuItem Header="Show _Current Line" Command="{Binding RevealStoryPositionCommand}" InputGesture="Ctrl+J" />
+        <MenuItem Header="Story _Map" Command="{Binding ShowStoryMapCommand}" InputGesture="Ctrl+Shift+M" />
       </MenuItem>
       <MenuItem Header="_View">
         <MenuItem Header="_Files" Command="{Binding ShowFilesCommand}" />
         <MenuItem Header="_Player" Command="{Binding ShowPlayerCommand}" />
         <MenuItem Header="_Issues" Command="{Binding ShowIssuesCommand}" />
+        <MenuItem Header="Story _Map" Command="{Binding ShowStoryMapCommand}" />
         <Separator />
         <MenuItem Header="_Reset Layout" Command="{Binding ResetLayoutCommand}" />
       </MenuItem>

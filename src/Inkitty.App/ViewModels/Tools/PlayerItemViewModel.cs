@@ -10,12 +10,22 @@ public abstract record PlayerItem
     public bool IsNew { get; init; }
 }
 
-public sealed record PlayerParagraph(string Text, IReadOnlyList<string> Tags) : PlayerItem
+/// <param name="Source">Where the text was written, for "reveal in editor".</param>
+public sealed record PlayerParagraph(string Text, IReadOnlyList<string> Tags, StoryLocation? Source = null) : PlayerItem
 {
     public bool HasTags => Tags.Count > 0;
+
+    public bool HasSource => Source?.File is not null;
+
+    public string SourceText => Source is { File: { } file, Line: var line } ? $"{file}:{line}" : string.Empty;
 }
 
-public sealed record PlayerChoiceEcho(string Text) : PlayerItem;
+public sealed record PlayerChoiceEcho(string Text, StoryLocation? Source = null) : PlayerItem
+{
+    public bool HasSource => Source?.File is not null;
+
+    public string SourceText => Source is { File: { } file, Line: var line } ? $"{file}:{line}" : string.Empty;
+}
 
 public sealed record PlayerTurnDivider : PlayerItem;
 
@@ -40,10 +50,10 @@ internal static class PlayerItemMapper
             switch (storyEvent)
             {
                 case TextOutput text:
-                    items.Add(new PlayerParagraph(text.Text, text.Tags) { IsNew = isNew });
+                    items.Add(new PlayerParagraph(text.Text, text.Tags, text.Source) { IsNew = isNew });
                     break;
                 case ChoiceTaken taken:
-                    items.Add(new PlayerChoiceEcho(taken.Text) { IsNew = isNew });
+                    items.Add(new PlayerChoiceEcho(taken.Text, taken.Source) { IsNew = isNew });
                     items.Add(new PlayerTurnDivider { IsNew = isNew });
                     break;
                 case ChoicesOffered offered:

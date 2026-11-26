@@ -10,9 +10,10 @@ namespace Inkitty.App.Docking;
 
 /// <summary>
 /// Builds Inkitty's docking layout. The default is three panes, like Inky:
-/// Files | Editor (with Issues below) | Player. Every tool can be moved, tabbed, floated or pinned.
+/// Files | Editor (with Issues below) | Player (with the Story Map below).
+/// Every tool can be moved, tabbed, floated or pinned.
 /// </summary>
-public sealed class InkittyDockFactory(FileTreeToolViewModel files, PlayerToolViewModel player, IssuesToolViewModel issues) : Factory
+public sealed class InkittyDockFactory(FileTreeToolViewModel files, PlayerToolViewModel player, IssuesToolViewModel issues, StoryMapToolViewModel storyMap) : Factory
 {
     private IRootDock? _root;
     private IDocumentDock? _documents;
@@ -23,11 +24,13 @@ public sealed class InkittyDockFactory(FileTreeToolViewModel files, PlayerToolVi
 
     public IssuesToolViewModel IssuesTool { get; } = issues;
 
+    public StoryMapToolViewModel StoryMapTool { get; } = storyMap;
+
     public IDocumentDock? DocumentDock => _documents;
 
     public IRootDock? Root => _root;
 
-    public IEnumerable<ITool> Tools => [FilesTool, PlayerTool, IssuesTool];
+    public IEnumerable<ITool> Tools => [FilesTool, PlayerTool, IssuesTool, StoryMapTool];
 
     public override IRootDock CreateLayout()
     {
@@ -71,10 +74,28 @@ public sealed class InkittyDockFactory(FileTreeToolViewModel files, PlayerToolVi
         var playerDock = new ToolDock
         {
             Id = DockIds.RightDock,
-            Proportion = 0.30,
+            Proportion = 0.58,
             Alignment = Alignment.Right,
             ActiveDockable = PlayerTool,
             VisibleDockables = CreateList<IDockable>(PlayerTool),
+        };
+
+        // The map sits under the player, so both are visible while playing.
+        var mapDock = new ToolDock
+        {
+            Id = DockIds.MapDock,
+            Proportion = 0.42,
+            Alignment = Alignment.Right,
+            ActiveDockable = StoryMapTool,
+            VisibleDockables = CreateList<IDockable>(StoryMapTool),
+        };
+
+        var rightColumn = new ProportionalDock
+        {
+            Id = DockIds.RightColumn,
+            Proportion = 0.30,
+            Orientation = Orientation.Vertical,
+            VisibleDockables = CreateList<IDockable>(playerDock, new ProportionalDockSplitter(), mapDock),
         };
 
         var main = new ProportionalDock
@@ -87,7 +108,7 @@ public sealed class InkittyDockFactory(FileTreeToolViewModel files, PlayerToolVi
                 new ProportionalDockSplitter(),
                 center,
                 new ProportionalDockSplitter(),
-                playerDock),
+                rightColumn),
         };
 
         var root = CreateRootDock();
@@ -117,6 +138,7 @@ public sealed class InkittyDockFactory(FileTreeToolViewModel files, PlayerToolVi
             [DockIds.Files] = () => FilesTool,
             [DockIds.Player] = () => PlayerTool,
             [DockIds.Issues] = () => IssuesTool,
+            [DockIds.StoryMap] = () => StoryMapTool,
         };
 
         HostWindowLocator = new Dictionary<string, Func<IHostWindow?>>

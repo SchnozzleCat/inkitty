@@ -263,6 +263,84 @@
   <Style Selector="Button.flat:disabled /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="Transparent" />
   </Style>
+  <!-- Player: where am I? -->
+  <Style Selector="Button.location">
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="Margin" Value="6,2,6,4" />
+    <Setter Property="Padding" Value="8,2" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Foreground" Value="{DynamicResource InkittyMuted}" />
+  </Style>
+  <Style Selector="Button.location TextBlock.pin">
+    <Setter Property="Foreground" Value="{DynamicResource DockThemeAccentBrush}" />
+    <Setter Property="FontSize" Value="9" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <!-- "Show in editor" arrows: faint, brighter when hovering a transcript line. -->
+  <Style Selector="Button.reveal">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="4,0" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="VerticalAlignment" Value="Top" />
+    <Setter Property="Opacity" Value="0.3" />
+    <Setter Property="Foreground" Value="{DynamicResource InkittyMuted}" />
+  </Style>
+  <Style Selector="Grid:pointerover > Button.reveal">
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+
+  <!-- Story map -->
+  <Style Selector="WrapPanel.map-toolbar">
+    <Setter Property="Margin" Value="6,6,6,2" />
+    <Setter Property="ItemSpacing" Value="2" />
+  </Style>
+  <Style Selector="TextBlock.pane-title">
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Foreground" Value="{DynamicResource InkittyMuted}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Margin" Value="4,0,8,0" />
+  </Style>
+  <Style Selector="WrapPanel.map-legend TextBlock.summary">
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Margin" Value="0,0,14,0" />
+  </Style>
+  <Style Selector="WrapPanel.map-legend">
+    <Setter Property="Margin" Value="10,4" />
+  </Style>
+  <Style Selector="WrapPanel.map-legend > StackPanel">
+    <Setter Property="Orientation" Value="Horizontal" />
+    <Setter Property="Spacing" Value="5" />
+    <Setter Property="Margin" Value="0,0,14,0" />
+  </Style>
+  <Style Selector="WrapPanel.map-legend TextBlock">
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="Foreground" Value="{DynamicResource InkittyMuted}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.swatch">
+    <Setter Property="Width" Value="14" />
+    <Setter Property="Height" Value="10" />
+    <Setter Property="CornerRadius" Value="3" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.swatch.current">
+    <Setter Property="Background" Value="{DynamicResource DockThemeAccentBrush}" />
+  </Style>
+  <Style Selector="Border.swatch.visited">
+    <Setter Property="BorderBrush" Value="{DynamicResource DockThemeAccentBrush}" />
+    <Setter Property="BorderThickness" Value="1.5" />
+  </Style>
+  <Style Selector="Border.swatch.path">
+    <Setter Property="Height" Value="3" />
+    <Setter Property="Background" Value="{DynamicResource DockThemeAccentBrush}" />
+  </Style>
+  <Style Selector="Border.swatch.unvisited">
+    <Setter Property="BorderBrush" Value="{DynamicResource InkittyMuted}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+
   <Style Selector="ScrollViewer#Scroller">
     <Setter Property="Background" Value="{DynamicResource InkittyPlayerBackground}" />
   </Style>

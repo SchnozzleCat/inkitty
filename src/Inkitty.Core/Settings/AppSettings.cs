@@ -39,6 +39,9 @@ public sealed record AppSettings
 
     public bool WordWrap { get; init; } = true;
 
+    /// <summary>Mark the lines the player has been through, and where it is now, in the editor.</summary>
+    public bool ShowPlaythroughInEditor { get; init; } = true;
+
     public int CompileDebounceMs { get; init => field = Math.Clamp(value, 50, 5000); } = 450;
 
     public int ReplayTimeBudgetMs { get; init => field = Math.Clamp(value, 100, 60_000); } = 2000;

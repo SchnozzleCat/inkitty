@@ -87,6 +87,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IRecipient<Navi
         factory.InitLayout(Layout);
         Factory.ActiveDockableChanged += OnActiveDockableChanged;
         Factory.DockableClosed += OnDockableClosed;
+        Factory.PlayerTool.RevealRequested += (_, location) =>
+            Receive(new NavigateToSourceMessage(location.File!, SourceRange.WholeLine(location.File!, location.Line)));
         UpdateTitle();
     }
 
@@ -98,7 +100,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IRecipient<Navi
     public partial IRootDock Layout { get; private set; }
 
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(SaveCommand), nameof(SaveAllCommand), nameof(RestartStoryCommand))]
+    [NotifyCanExecuteChangedFor(nameof(SaveCommand), nameof(SaveAllCommand), nameof(RestartStoryCommand), nameof(RevealStoryPositionCommand))]
     public partial ProjectViewModel? Project { get; private set; }
 
     [ObservableProperty]
@@ -454,6 +456,13 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IRecipient<Navi
 
     [RelayCommand]
     private void ShowIssues() => Factory.ShowTool(Factory.IssuesTool);
+
+    [RelayCommand]
+    private void ShowStoryMap() => Factory.ShowTool(Factory.StoryMapTool);
+
+    /// <summary>Jumps the editor to the line the story is currently at.</summary>
+    [RelayCommand(CanExecute = nameof(HasProject))]
+    private void RevealStoryPosition() => Factory.PlayerTool.RevealCommand.Execute(null);
 
     [RelayCommand]
     private void ResetLayout()

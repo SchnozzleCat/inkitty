@@ -9,6 +9,7 @@ using Inkitty.Core.Diagnostics;
 using Inkitty.Core.FileSystem;
 using Inkitty.Core.Projects;
 using Inkitty.Core.Settings;
+using Inkitty.Core.StoryMap;
 using Inkitty.Core.Symbols;
 using Microsoft.Extensions.Logging;
 
@@ -89,6 +90,10 @@ public sealed partial class ProjectViewModel : ViewModelBase, IAsyncDisposable
     [ObservableProperty]
     public partial IReadOnlyList<Issue> Issues { get; private set; } = [];
 
+    /// <summary>Where the player is in the story; decorates the editors.</summary>
+    [ObservableProperty]
+    public partial StoryProgress Progress { get; private set; } = StoryProgress.Empty;
+
     /// <summary>Symbol index matching the current buffer versions, or null if it's stale.</summary>
     public SymbolIndex? CurrentSymbols { get; private set; }
 
@@ -107,6 +112,7 @@ public sealed partial class ProjectViewModel : ViewModelBase, IAsyncDisposable
         {
             document = new EditorDocumentViewModel(file, this);
             document.Issues = IssuesFor(file.RelativePath);
+            document.Playthrough = Progress.ForFile(file.RelativePath);
             _documents[file] = document;
             DocumentCreated?.Invoke(this, document);
         }
@@ -132,6 +138,15 @@ public sealed partial class ProjectViewModel : ViewModelBase, IAsyncDisposable
     {
         _runtimeIssues = issues;
         UpdateIssues();
+    }
+
+    public void SetProgress(StoryProgress progress)
+    {
+        Progress = progress;
+        foreach (var (file, document) in _documents)
+        {
+            document.Playthrough = progress.ForFile(file.RelativePath);
+        }
     }
 
     public async Task SaveAsync(InkSourceFile file)

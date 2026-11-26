@@ -17,6 +17,7 @@ public sealed class ViewLocator : IDataTemplate
         FileTreeToolViewModel => new FileTreeToolView(),
         PlayerToolViewModel => new PlayerToolView(),
         IssuesToolViewModel => new IssuesToolView(),
+        StoryMapToolViewModel => new StoryMapToolView(),
         _ => new TextBlock { Text = $"No view for {param?.GetType().Name}" },
     };
 

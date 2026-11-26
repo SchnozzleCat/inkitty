@@ -67,6 +67,8 @@ public partial class MainWindow : Window
         Bind(Key.S, command | KeyModifiers.Shift, vm.SaveAllCommand);
         Bind(Key.W, command, vm.CloseDocumentCommand);
         Bind(Key.R, command, vm.RestartStoryCommand);
+        Bind(Key.J, command, vm.RevealStoryPositionCommand);
+        Bind(Key.M, command | KeyModifiers.Shift, vm.ShowStoryMapCommand);
         Bind(Key.OemComma, command, vm.OpenSettingsCommand);
         Bind(Key.F8, KeyModifiers.None, vm.NextIssueCommand);
         Bind(Key.F8, KeyModifiers.Shift, vm.PreviousIssueCommand);

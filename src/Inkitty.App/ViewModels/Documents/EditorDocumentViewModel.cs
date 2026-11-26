@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Inkitty.Core.Diagnostics;
 using Inkitty.Core.Projects;
+using Inkitty.Core.StoryMap;
 using Inkitty.Core.Symbols;
 
 namespace Inkitty.App.ViewModels.Documents;
@@ -52,6 +53,10 @@ public sealed partial class EditorDocumentViewModel : ViewModelBase, IDisposable
     /// <summary>Issues in this file from the latest compile (and the player).</summary>
     [ObservableProperty]
     public partial IReadOnlyList<Issue> Issues { get; set; } = [];
+
+    /// <summary>Lines the current playthrough has been through, is at, or is offering choices on.</summary>
+    [ObservableProperty]
+    public partial FileProgress Playthrough { get; set; } = FileProgress.None;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasInfoBar), nameof(InfoBarMessage), nameof(IsChangedOnDisk), nameof(IsDeletedOnDisk))]

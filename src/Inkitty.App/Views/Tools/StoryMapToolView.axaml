@@ -1,0 +1,36 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:tools="using:Inkitty.App.ViewModels.Tools"
+             xmlns:map="using:Inkitty.App.StoryMap"
+             xmlns:controls="using:Inkitty.App.Controls"
+             x:Class="Inkitty.App.Views.Tools.StoryMapToolView"
+             x:DataType="tools:StoryMapToolViewModel">
+  <Panel>
+    <DockPanel>
+      <WrapPanel DockPanel.Dock="Top" Classes="map-toolbar">
+        <TextBlock Classes="pane-title" Text="Story map" />
+        <Button Classes="flat" Content="◎ Where am I?" Command="{Binding CenterOnCurrentCommand}" ToolTip.Tip="Centre the map on the current knot" />
+        <Button Classes="flat" Content="Fit" Command="{Binding FitToViewCommand}" ToolTip.Tip="Show the whole story (0). Ctrl+wheel or +/- zooms, drag pans." />
+        <ToggleButton Classes="filter" IsChecked="{Binding FollowCurrent}" Content="Follow"
+                      ToolTip.Tip="Keep the current knot in view as you play" />
+      </WrapPanel>
+      <WrapPanel DockPanel.Dock="Bottom" Classes="map-legend">
+        <TextBlock Classes="summary" Text="{Binding Summary}" />
+        <StackPanel><Border Classes="swatch current" /><TextBlock Text="You are here" /></StackPanel>
+        <StackPanel><Border Classes="swatch visited" /><TextBlock Text="Visited" /></StackPanel>
+        <StackPanel><Border Classes="swatch path" /><TextBlock Text="Path taken" /></StackPanel>
+        <StackPanel><Border Classes="swatch unvisited" /><TextBlock Text="Not yet" /></StackPanel>
+      </WrapPanel>
+      <Panel>
+        <map:StoryMapControl x:Name="Map"
+                             Graph="{Binding Graph}"
+                             Progress="{Binding Progress}"
+                             FollowCurrent="{Binding FollowCurrent}"
+                             ToolTip.ShowDelay="300" />
+        <TextBlock Classes="placeholder" IsVisible="{Binding !HasGraph}" TextWrapping="Wrap"
+                   Text="Open an ink file with some knots (=== knot ===) to see the story map." />
+      </Panel>
+    </DockPanel>
+    <controls:PaneGrip Dockable="{Binding}" />
+  </Panel>
+</UserControl>
