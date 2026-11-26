@@ -7,4 +7,21 @@
   <PropertyGroup Condition="'$(IsExternal)' == 'true'">
     <NoWarn>$(NoWarn);CS0108;CS0114;CS0168;CS0169;CS0219;CS0414;CS0618;CS0649;CS1570;CS1572;CS1573;CS1574;CS1587;CS1591;CS8632</NoWarn>
   </PropertyGroup>
+
+  <!--
+    Onigwrap (TextMate's regex engine) ships static wasm archives built with Emscripten up to
+    3.1.56, and asks for a folder named after the SDK's Emscripten version (6.0.x for .NET 11),
+    which doesn't exist. wasm object files link across these versions, so use the newest archive.
+  -->
+  <Target Name="InkittyUseCompatibleOnigwrap" BeforeTargets="_PrepareForBrowserWasmBuildNative" Condition="'$(OnigwrapWasmLibraryPath)' != ''">
+    <PropertyGroup>
+      <_InkittyOnigwrapFlavour Condition="'$(WasmEnableThreads)' == 'true'">mt</_InkittyOnigwrapFlavour>
+      <_InkittyOnigwrapFlavour Condition="'$(WasmEnableThreads)' != 'true'">st</_InkittyOnigwrapFlavour>
+    </PropertyGroup>
+    <ItemGroup>
+      <_InkittyMissingOnigwrap Include="@(NativeFileReference)" Condition="$([System.String]::Copy('%(Identity)').Contains('libonigwrap')) And !Exists('%(Identity)')" />
+      <NativeFileReference Remove="@(_InkittyMissingOnigwrap)" />
+      <NativeFileReference Include="$(OnigwrapWasmLibraryPath)/3.1.56/$(_InkittyOnigwrapFlavour)/libonigwrap.a" Condition="'@(_InkittyMissingOnigwrap)' != ''" />
+    </ItemGroup>
+  </Target>
 </Project>

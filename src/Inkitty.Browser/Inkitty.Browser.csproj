@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk.WebAssembly">
+
+  <!--
+    Browser host (WebAssembly). Needs the wasm-tools workload: Onigwrap (TextMate regexes) is a
+    native library that is linked into the runtime. Build with scripts/publish-web.sh or in CI.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net11.0-browser</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Inkitty.Browser</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
+    <!-- Required for Onigwrap; also lets us link Emscripten's IndexedDB file system. -->
+    <WasmBuildNative>true</WasmBuildNative>
+    <EmccExtraLDFlags>$(EmccExtraLDFlags) -lidbfs.js</EmccExtraLDFlags>
+    <!-- Dock's layout serializer and the ink compiler use reflection: trim only framework assemblies. -->
+    <TrimMode>partial</TrimMode>
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Browser" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Inkitty.App\Inkitty.App.csproj" />
+  </ItemGroup>
+
+  <!-- Seeded into the workspace on first visit. -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\samples\multi-file\**\*.ink" LogicalName="Inkitty.Browser.Sample.%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <StaticWebAssetFingerprintPattern Include="JS" Pattern="*.js" Expression="#[.{fingerprint}]!" />
+  </ItemGroup>
+
+</Project>
