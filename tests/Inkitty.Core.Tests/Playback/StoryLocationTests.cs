@@ -52,6 +52,24 @@ public class StoryLocationTests
     }
 
     [Test]
+    public async Task Text_after_tags_on_their_own_lines_points_at_the_text()
+    {
+        var snapshot = InMemoryProject.Snapshot(("main.ink", """
+            # first
+            # second
+            Hello.
+            """));
+        using var session = new InkCompilerService().Compile(snapshot) is CompileSucceeded ok
+            ? new PlaySession(ok.Story, snapshot)
+            : throw new InvalidOperationException("compile failed");
+
+        var hello = session.ContinueUntilChoice(PlaybackBudget.Default).OfCase<TextOutput>().Single();
+
+        await Assert.That(hello.Tags).IsEquivalentTo(["first", "second"]);
+        await Assert.That(hello.Source?.Line).IsEqualTo(3);
+    }
+
+    [Test]
     public async Task Visit_counts_are_reported_per_knot_and_stitch()
     {
         using var session = Session();

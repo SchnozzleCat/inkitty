@@ -222,14 +222,23 @@ public sealed class PlaySession : IDisposable
 
     /// <summary>
     /// Where the line just produced was written: the first piece of visible text in the output with its
-    /// own source position (leading whitespace often comes from the choice that led here).
+    /// own source position (leading whitespace often comes from the choice that led here). Tag text is
+    /// skipped, so tags on the lines above the prose don't claim it.
     /// </summary>
     private StoryLocation? OutputLocation()
     {
         Ink.Runtime.Object? best = null;
+        var inTag = false;
         foreach (var obj in _story.state.outputStream)
         {
-            if (obj.ownDebugMetadata is null)
+            if (obj is Ink.Runtime.ControlCommand { commandType: var command })
+            {
+                inTag = command == Ink.Runtime.ControlCommand.CommandType.BeginTag
+                    || (inTag && command != Ink.Runtime.ControlCommand.CommandType.EndTag);
+                continue;
+            }
+
+            if (inTag || obj is Ink.Runtime.Tag || obj.ownDebugMetadata is null)
             {
                 continue;
             }
