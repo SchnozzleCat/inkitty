@@ -42,7 +42,7 @@ public static class ReplayEngine
 
                 // Replace the offered choices with the echo of the one taken.
                 events.RemoveAt(events.Count - 1);
-                events.Add(new ChoiceTaken(index, choices[index].Text));
+                events.Add(new ChoiceTaken(index, choices[index].Text, choices[index].Source));
                 session.RecordChoiceWithoutEcho(index, recorded);
                 replayed++;
             }

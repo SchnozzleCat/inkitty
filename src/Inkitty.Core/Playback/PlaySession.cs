@@ -58,7 +58,20 @@ public sealed class PlaySession : IDisposable
     public bool HasEnded { get; private set; }
 
     public IReadOnlyList<ChoiceOption> CurrentChoices =>
-        [.. _story.currentChoices.Select(c => new ChoiceOption(c.index, c.text ?? string.Empty, c.tags ?? []))];
+        [.. _story.currentChoices.Select(c => new ChoiceOption(c.index, c.text ?? string.Empty, c.tags ?? [], ChoiceLocation(c)))];
+
+    /// <summary>How many times the knot or stitch at <paramref name="path"/> has been visited (0 if unknown).</summary>
+    public int VisitCount(string path)
+    {
+        try
+        {
+            return _story.state.VisitCountAtPathString(path);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            return 0;
+        }
+    }
 
     /// <summary>
     /// Runs the story until it presents choices or ends, returning everything that happened.
@@ -76,9 +89,10 @@ public sealed class PlaySession : IDisposable
     public ChoiceTaken Choose(int index)
     {
         var choice = _story.currentChoices[index];
+        var source = ChoiceLocation(choice);
         History = History.Add(new RecordedChoice(index, RecordedChoice.Fingerprint(choice.text ?? string.Empty)));
         _story.ChooseChoiceIndex(index);
-        return new ChoiceTaken(index, choice.text ?? string.Empty);
+        return new ChoiceTaken(index, choice.text ?? string.Empty, source);
     }
 
     internal void Continue(List<StoryEvent> events, PlaybackBudget budget, long startTimestamp, CancellationToken cancellationToken)
@@ -103,7 +117,7 @@ public sealed class PlaySession : IDisposable
             var text = _story.currentText;
             if (!string.IsNullOrWhiteSpace(text) || _story.currentTags.Count > 0)
             {
-                events.Add(new TextOutput(text.TrimEnd('\n'), [.. _story.currentTags]));
+                events.Add(new TextOutput(text.TrimEnd('\n'), [.. _story.currentTags], OutputLocation()));
             }
 
             if (++lines > budget.MaxLines)
@@ -149,6 +163,50 @@ public sealed class PlaySession : IDisposable
             return "?";
         }
     }
+
+    /// <summary>
+    /// Where the line just produced was written: the first piece of visible text in the output with its
+    /// own source position (leading whitespace often comes from the choice that led here).
+    /// </summary>
+    private StoryLocation? OutputLocation()
+    {
+        Ink.Runtime.Object? best = null;
+        foreach (var obj in _story.state.outputStream)
+        {
+            if (obj.ownDebugMetadata is null)
+            {
+                continue;
+            }
+
+            if (obj is Ink.Runtime.StringValue { value: var value } && !string.IsNullOrWhiteSpace(value))
+            {
+                best = obj;
+                break;
+            }
+
+            best ??= obj;
+        }
+
+        return best is null ? null : LocationOf(best.ownDebugMetadata, best.parent?.path?.ToString());
+    }
+
+    private StoryLocation? ChoiceLocation(Ink.Runtime.Choice choice)
+    {
+        try
+        {
+            var content = _story.ContentAtPath(new Ink.Runtime.Path(choice.sourcePath)).obj;
+            return LocationOf(content?.debugMetadata, choice.sourcePath);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            return null;
+        }
+    }
+
+    private StoryLocation? LocationOf(Ink.Runtime.DebugMetadata? metadata, string? runtimePath) =>
+        metadata is { startLineNumber: > 0 }
+            ? new StoryLocation(_snapshot.ResolveFileName(metadata.fileName), metadata.startLineNumber, runtimePath)
+            : null;
 
     private void OnStoryError(string message, Ink.ErrorType type) =>
         _pendingIssues.Add(new RuntimeIssue(IssueMessageParser.Parse(message, type, _snapshot.ResolveFileName, isRuntime: true)));
