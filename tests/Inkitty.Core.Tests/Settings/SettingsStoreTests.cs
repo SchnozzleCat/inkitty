@@ -42,6 +42,25 @@ public class SettingsStoreTests
     }
 
     [Test]
+    public async Task Unreadable_file_falls_back_to_defaults()
+    {
+        if (OperatingSystem.IsWindows() || Environment.UserName == "root")
+        {
+            return; // relies on Unix permissions, which root ignores
+        }
+
+        using var dir = new TempDirectory();
+        var path = dir.Write(SettingsStore.FileName, """{ "editorFontSize": 20 }""");
+        File.SetUnixFileMode(path, UnixFileMode.None);
+
+        var store = new SettingsStore(dir.Path);
+
+        await Assert.That(store.Current).IsEqualTo(new AppSettings());
+        File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+        await Assert.That(dir.Read(SettingsStore.FileName)).Contains("20"); // left alone, not moved aside
+    }
+
+    [Test]
     public async Task Corrupt_file_falls_back_to_defaults_and_is_backed_up()
     {
         using var dir = new TempDirectory();

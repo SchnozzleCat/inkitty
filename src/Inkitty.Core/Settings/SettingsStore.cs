@@ -89,11 +89,23 @@ public sealed class SettingsStore : ISettingsStore, IAsyncDisposable
             return new AppSettings();
         }
 
+        string json;
         try
         {
-            using var stream = File.OpenRead(_path);
-            var loaded = JsonSerializer.Deserialize(stream, SettingsJsonContext.Default.AppSettings) ?? new AppSettings();
-            return Migrate(loaded, File.ReadAllText(_path));
+            json = File.ReadAllText(_path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Unreadable (permissions, locked, a directory...): start with defaults rather than fail to
+            // start. The file is left alone; it isn't known to be corrupt.
+            _logger.LogWarning(ex, "Could not read settings file {Path}; using defaults", _path);
+            return new AppSettings();
+        }
+
+        try
+        {
+            var loaded = JsonSerializer.Deserialize(json, SettingsJsonContext.Default.AppSettings) ?? new AppSettings();
+            return Migrate(loaded, json);
         }
         catch (Exception ex) when (ex is JsonException or NotSupportedException)
         {
