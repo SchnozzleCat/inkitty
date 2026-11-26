@@ -13,6 +13,12 @@ namespace Inkitty.App.StoryMap;
 /// are filled, the path taken is drawn in the accent colour, and the current knot is highlighted.
 /// Wheel zooms, drag pans, clicking a knot raises <see cref="NodeActivated"/>.
 /// </summary>
+/// <remarks>
+/// The map is drawn once onto an inner layer in map coordinates, and redrawn only when what it shows
+/// changes (layout, progress, hover, theme). Panning and zooming just move and scale that layer, which
+/// the compositor does without running any of this code: in the browser, where .NET is interpreted,
+/// redrawing a large story on every mouse move made dragging lag.
+/// </remarks>
 #pragma warning disable CA1001 // the CTS is disposed when the control leaves the visual tree; controls aren't IDisposable
 public sealed class StoryMapControl : Control
 #pragma warning restore CA1001
@@ -46,12 +52,62 @@ public sealed class StoryMapControl : Control
     private Vector _dragOffset;
     private bool _dragged;
     private string? _hover;
+    private readonly MapLayer _map;
+
+    /// <summary>
+    /// Holds <see cref="_map"/> and carries the pan/zoom transform. A control redraws when its own transform
+    /// changes, so the transform sits on this empty parent: moving it leaves the map's drawing untouched.
+    /// </summary>
+    private readonly Panel _viewport = new() { RenderTransformOrigin = RelativePoint.TopLeft };
 
     static StoryMapControl()
     {
-        AffectsRender<StoryMapControl>(ProgressProperty);
         FocusableProperty.OverrideDefaultValue<StoryMapControl>(true);
         ClipToBoundsProperty.OverrideDefaultValue<StoryMapControl>(true);
+    }
+
+    public StoryMapControl()
+    {
+        _map = new MapLayer(this);
+        _viewport.Children.Add(_map);
+        VisualChildren.Add(_viewport);
+        ActualThemeVariantChanged += (_, _) => RedrawAll();
+        ResourcesChanged += (_, _) => RedrawAll(); // theme colours
+        ApplyView();
+    }
+
+    /// <summary>The map's contents, drawn in map coordinates; <see cref="ApplyView"/> places it in the view.</summary>
+    private sealed class MapLayer(StoryMapControl owner) : Control
+    {
+        public override void Render(DrawingContext context) => owner.DrawMap(context);
+    }
+
+    /// <summary>Moves and scales the map layer to the current pan and zoom (no redraw).</summary>
+    private void ApplyView()
+    {
+        _viewport.RenderTransform = new MatrixTransform(Matrix.CreateScale(_zoom, _zoom) * Matrix.CreateTranslation(_offset));
+    }
+
+    /// <summary>Redraws the map's contents (what it shows changed, not where).</summary>
+    private void RedrawMap() => _map.InvalidateVisual();
+
+    /// <summary>Redraws the background and the map (the colours changed).</summary>
+    private void RedrawAll()
+    {
+        InvalidateVisual();
+        RedrawMap();
+    }
+
+    protected override Size MeasureOverride(Size availableSize)
+    {
+        _viewport.Measure(_layout.Size);
+        return default;
+    }
+
+    protected override Size ArrangeOverride(Size finalSize)
+    {
+        _viewport.Arrange(new Rect(_layout.Size));
+        return finalSize;
     }
 
     public StoryGraph? Graph
@@ -96,7 +152,7 @@ public sealed class StoryMapControl : Control
 
         _zoom = Math.Clamp(Math.Min(Bounds.Width / _layout.Size.Width, Bounds.Height / _layout.Size.Height), MinZoom, 1.25);
         _offset = new Vector((Bounds.Width - _layout.Size.Width * _zoom) / 2, (Bounds.Height - _layout.Size.Height * _zoom) / 2);
-        InvalidateVisual();
+        ApplyView();
     }
 
     /// <summary>
@@ -130,7 +186,7 @@ public sealed class StoryMapControl : Control
         }
 
         _offset = new Vector(Bounds.Width / 2 - node.Bounds.Center.X * _zoom, Bounds.Height / 2 - node.Bounds.Center.Y * _zoom);
-        InvalidateVisual();
+        ApplyView();
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -140,9 +196,13 @@ public sealed class StoryMapControl : Control
         {
             RequestLayout();
         }
-        else if (change.Property == ProgressProperty && FollowCurrent)
+        else if (change.Property == ProgressProperty)
         {
-            BringCurrentIntoView();
+            RedrawMap();
+            if (FollowCurrent)
+            {
+                BringCurrentIntoView();
+            }
         }
     }
 
@@ -227,7 +287,9 @@ public sealed class StoryMapControl : Control
                     BringCurrentIntoView();
                 }
 
-                InvalidateVisual();
+                ApplyView();
+                InvalidateMeasure(); // the layer takes the new map's size
+                RedrawMap();
                 MapLayoutUpdated?.Invoke(this, EventArgs.Empty);
             });
         });
@@ -321,28 +383,34 @@ public sealed class StoryMapControl : Control
             new SolidColorBrush(Find("InkittyValueKeyword", accent)));
     }
 
-    public override void Render(DrawingContext context)
+    /// <summary>How many times the map's nodes and edges have been drawn (exposed for tests).</summary>
+    internal int MapDrawCount { get; private set; }
+
+    /// <summary>The background (also makes the whole control take pointer input); the map is a layer above it.</summary>
+    public override void Render(DrawingContext context) =>
+        context.FillRectangle(CurrentPalette().Background, new Rect(Bounds.Size));
+
+    /// <summary>Draws the map's contents in map coordinates (the layer's transform places them).</summary>
+    private void DrawMap(DrawingContext context)
     {
-        var palette = CurrentPalette();
-        context.FillRectangle(palette.Background, new Rect(Bounds.Size));
+        MapDrawCount++;
         if (_layout.Nodes.Count == 0)
         {
             return;
         }
 
+        var palette = CurrentPalette();
         var progress = Progress ?? StoryProgress.Empty;
-        using (context.PushTransform(Matrix.CreateScale(_zoom, _zoom) * Matrix.CreateTranslation(_offset)))
-        {
-            // Edges the story didn't take first, then the path on top.
-            foreach (var edge in _layout.Edges.OrderBy(e => progress.TookEdge(e.From, e.To)))
-            {
-                DrawEdge(context, edge, progress.TookEdge(edge.From, edge.To), palette);
-            }
 
-            foreach (var node in _layout.Nodes)
-            {
-                DrawNode(context, node, progress, palette);
-            }
+        // Edges the story didn't take first, then the path on top.
+        foreach (var edge in _layout.Edges.OrderBy(e => progress.TookEdge(e.From, e.To)))
+        {
+            DrawEdge(context, edge, progress.TookEdge(edge.From, edge.To), palette);
+        }
+
+        foreach (var node in _layout.Nodes)
+        {
+            DrawNode(context, node, progress, palette);
         }
     }
 
@@ -524,7 +592,7 @@ public sealed class StoryMapControl : Control
         _zoom = zoom;
         _offset = new Vector(view.X - anchor.X * zoom, view.Y - anchor.Y * zoom);
         _userMoved = true;
-        InvalidateVisual();
+        ApplyView();
     }
 
     protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
@@ -538,7 +606,7 @@ public sealed class StoryMapControl : Control
         {
             _offset += new Vector(e.Delta.X, e.Delta.Y) * 40;
             _userMoved = true;
-            InvalidateVisual();
+            ApplyView();
         }
 
         e.Handled = true;
@@ -569,11 +637,15 @@ public sealed class StoryMapControl : Control
             var delta = position - start;
             if (_dragged || Math.Abs(delta.X) + Math.Abs(delta.Y) > 4)
             {
-                _dragged = true;
+                if (!_dragged)
+                {
+                    _dragged = true;
+                    Cursor = new Cursor(StandardCursorType.SizeAll);
+                }
+
                 _userMoved = true;
                 _offset = _dragOffset + delta;
-                Cursor = new Cursor(StandardCursorType.SizeAll);
-                InvalidateVisual();
+                ApplyView();
             }
 
             return;
@@ -585,7 +657,7 @@ public sealed class StoryMapControl : Control
             _hover = hover;
             Cursor = hover is null ? Cursor.Default : new Cursor(StandardCursorType.Hand);
             ToolTip.SetTip(this, hover is null ? null : TooltipFor(hover));
-            InvalidateVisual();
+            RedrawMap();
         }
     }
 
@@ -609,10 +681,17 @@ public sealed class StoryMapControl : Control
     protected override void OnPointerExited(PointerEventArgs e)
     {
         base.OnPointerExited(e);
+
+        // Capturing the pointer to drag reports leaving the map; keep the hover (and the drawing) as it is.
+        if (_dragStart is not null)
+        {
+            return;
+        }
+
         if (_hover is not null)
         {
             _hover = null;
-            InvalidateVisual();
+            RedrawMap();
         }
     }
 

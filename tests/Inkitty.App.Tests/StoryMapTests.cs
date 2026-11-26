@@ -1,4 +1,6 @@
 using Avalonia.VisualTree;
+using Avalonia;
+using Avalonia.Headless;
 using Inkitty.App.Docking;
 using Inkitty.App.StoryMap;
 using Inkitty.App.Tests.Infrastructure;
@@ -59,6 +61,42 @@ public class StoryMapTests
             var control = MapControl(app)!;
             await Assert.That(await UiTestHelpers.WaitUntil(() => control.MapLayout.Nodes.Count == map.Graph.Nodes.Count)).IsTrue();
             await Assert.That(control.Progress).IsSameReferenceAs(map.Progress);
+        });
+
+    [Test]
+    public async Task Panning_and_zooming_move_the_map_without_redrawing_it() =>
+        await HeadlessSession.Run(async () =>
+        {
+            var dir = Path.Join(Path.GetTempPath(), "inkitty-app-tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(dir);
+            var main = Path.Join(dir, "TheIntercept.ink");
+            File.Copy(UiTestHelpers.FindSample("the-intercept/TheIntercept.ink"), main);
+            await using var app = AppFixture.Create();
+            await app.OpenAsync(main);
+            var control = MapControl(app)!;
+            await Assert.That(await UiTestHelpers.WaitUntil(() => control.MapLayout.Nodes.Count > 0 && control.MapDrawCount > 0)).IsTrue();
+
+            // Point at the map first (hovering a knot redraws it, to highlight the knot).
+            var centre = control.TranslatePoint(new Avalonia.Point(control.Bounds.Width / 2, control.Bounds.Height / 2), app.Window)!.Value;
+            app.Window.MouseMove(centre, Avalonia.Input.RawInputModifiers.None);
+            await UiTestHelpers.WaitUntil(() => false, 200); // let any follow-up frames settle
+            var draws = control.MapDrawCount;
+            var zoom = control.Zoom;
+
+            // Drag across the map, then zoom.
+            app.Window.MouseDown(centre, Avalonia.Input.MouseButton.Left);
+            for (var i = 1; i <= 10; i++)
+            {
+                app.Window.MouseMove(centre + new Avalonia.Point(i * 8, i * 5), Avalonia.Input.RawInputModifiers.LeftMouseButton);
+                Avalonia.Headless.AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+            }
+
+            app.Window.MouseUp(centre + new Avalonia.Point(80, 50), Avalonia.Input.MouseButton.Left, Avalonia.Input.RawInputModifiers.LeftMouseButton);
+            control.ZoomBy(1.25);
+            await UiTestHelpers.WaitUntil(() => false, 200);
+
+            await Assert.That(control.Zoom).IsNotEqualTo(zoom);
+            await Assert.That(control.MapDrawCount).IsEqualTo(draws);
         });
 
     [Test]
