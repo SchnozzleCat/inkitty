@@ -18,9 +18,10 @@
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <InvariantGlobalization>false</InvariantGlobalization>
     <!--
-      Compile the hot path to WebAssembly ahead of time on publish (see AotAssemblies below): the ink
-      compiler and runtime run several times faster than under the interpreter. The UI stays interpreted.
-      Debug builds stay interpreted too (fast to build).
+      Compile everything to WebAssembly ahead of time on publish: the ink compiler and Avalonia's layout
+      and rendering run several times faster than under the interpreter, for a bigger download
+      (dotnet.native.wasm is about 61 MB, 12 MB with Brotli), so the site needs a host without a small
+      per-file limit (GitHub Pages; Cloudflare Pages stops at 25 MiB). Debug builds stay interpreted.
     -->
     <RunAOTCompilation Condition="'$(Configuration)' == 'Release'">true</RunAOTCompilation>
   </PropertyGroup>
@@ -37,28 +38,6 @@
   <ItemGroup>
     <EmbeddedResource Include="..\..\samples\the-intercept\**\*.ink" LogicalName="Inkitty.Browser.Sample.%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
-
-  <!--
-    Only these assemblies are precompiled; the rest run on the interpreter. Precompiling everything makes
-    dotnet.native.wasm about 61 MB, over Cloudflare Pages' 25 MiB per-file limit (and a slow first load).
-    Matched by file name. Keep the published dotnet.native.*.wasm under 25 MiB when adding to this list:
-    this set is about 20.4 MiB, and adding Inkitty.App or Avalonia.Base takes it to 25.7 MiB (also with
-    -Oz, which saves almost nothing here).
-  -->
-  <ItemGroup>
-    <AotAssemblies Include="ink_compiler;ink-engine-runtime;Inkitty.Core" />
-    <AotAssemblies Include="System.Private.CoreLib;System.Linq;System.Collections" />
-  </ItemGroup>
-
-  <!-- Marks every other assembly for the interpreter (the WebAssembly SDK's hook for skipping assemblies). -->
-  <Target Name="InterpretAssembliesNotOnTheHotPath" BeforeTargets="_WasmAotCompileApp" Condition="'$(RunAOTCompilation)' == 'true'">
-    <ItemGroup>
-      <_InkittyAllAssemblies Include="@(_WasmAssembliesInternal->'%(Filename)')" />
-      <_InkittyInterpreted Include="@(_InkittyAllAssemblies)" Exclude="@(AotAssemblies)" />
-      <_AOT_InternalForceInterpretAssemblies Include="@(_InkittyInterpreted->'%(Identity).dll')" />
-    </ItemGroup>
-    <Message Importance="high" Text="AOT: @(AotAssemblies->Count()) assemblies precompiled, @(_InkittyInterpreted->Count()) interpreted" />
-  </Target>
 
   <ItemGroup>
     <StaticWebAssetFingerprintPattern Include="JS" Pattern="*.js" Expression="#[.{fingerprint}]!" />

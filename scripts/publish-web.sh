@@ -5,7 +5,8 @@
 # is used; otherwise (e.g. the read-only Nix SDK) the build runs in the official SDK container with
 # podman or docker. Sources are copied into the container, so it writes nothing but artifacts/web.
 #
-# Usage: scripts/publish-web.sh   (or `just serve` to publish and serve it)
+# Usage: scripts/publish-web.sh [extra dotnet publish args]
+#        (or `just serve` to publish and serve it)
 set -euo pipefail
 
 repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -13,7 +14,7 @@ out="$repo/artifacts/web"
 project="src/Inkitty.Browser/Inkitty.Browser.csproj"
 image="inkitty-web-build:11.0"
 
-publish_args=(-c Release -p:SuppressTrimAnalysisWarnings=true)
+publish_args=(-c Release -p:SuppressTrimAnalysisWarnings=true "$@")
 
 if dotnet workload list 2>/dev/null | grep -q '^wasm-tools'; then
     dotnet publish "$repo/$project" "${publish_args[@]}" -o "$out"
