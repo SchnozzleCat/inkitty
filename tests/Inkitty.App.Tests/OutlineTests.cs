@@ -44,7 +44,9 @@ public class OutlineTests
             var start = outline.Nodes.Single(n => n.Name == "start");
             await Assert.That(start.IsExpanded).IsTrue();
             await Assert.That(start.Children.Select(c => c.Name)).Contains("Go left, into the forest");
-            await Assert.That(start.Children.Single(c => c.Name == "Light the torch first").Detail).IsEqualTo("{has_torch}");
+            var torch = start.Children.Single(c => c.Name == "Light the torch first");
+            await Assert.That(torch.Condition).IsEqualTo("{has_torch}");
+            await Assert.That(torch.HasDetail).IsFalse();
 
             app.Shell.OpenDocument(app.Project.Project.Find("chapters/forest.ink")!);
             await Assert.That(outline.FileName).IsEqualTo("forest.ink");
