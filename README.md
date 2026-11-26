@@ -66,7 +66,7 @@ docker. `.github/workflows/web.yml` publishes `main` to GitHub Pages.
 `just deploy` uses Cloudflare's wrangler, pinned in `tools/deploy` (Node is in the dev shell). It
 authenticates with `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`; use an account API token with
 only the *Pages: Write* permission. If they aren't set, `just deploy` reads them from `pass`
-(`cloudflare/api-token` and `cloudflare/account-id`). Pages asks to create the project on the first
+(`cloudflare/pages-api-token` and `cloudflare/account-id`). Pages asks to create the project on the first
 deploy if it doesn't exist.
 
 The npm side is locked down against malicious packages:

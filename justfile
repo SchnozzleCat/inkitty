@@ -32,7 +32,7 @@ deploy project="inkitty" branch="main":
     CLOUDFLARE_API_TOKEN="${CLOUDFLARE_API_TOKEN:-$(pass show cloudflare/pages-api-token | head -n1)}"
     CLOUDFLARE_ACCOUNT_ID="${CLOUDFLARE_ACCOUNT_ID:-$(pass show cloudflare/account-id | head -n1)}"
     if [[ -z "$CLOUDFLARE_API_TOKEN" || -z "$CLOUDFLARE_ACCOUNT_ID" ]]; then
-        echo "error: empty Cloudflare credentials (pass cloudflare/api-token, cloudflare/account-id)" >&2
+        echo "error: empty Cloudflare credentials (pass cloudflare/pages-api-token, cloudflare/account-id)" >&2
         exit 1
     fi
     export CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID
@@ -41,6 +41,8 @@ deploy project="inkitty" branch="main":
         --commit-hash "$(git rev-parse HEAD)" --commit-message "$(git log -1 --format=%s)"
 
 # Run the pinned wrangler (tools/deploy), installed from its lockfile with install scripts disabled.
+# Arguments are passed through as-is ("$@"), so values with spaces or quotes stay intact.
+[positional-arguments]
 wrangler *args:
     cd tools/deploy && npm ci --ignore-scripts --no-audit --no-fund --loglevel=error
-    WRANGLER_SEND_METRICS=false node tools/deploy/node_modules/wrangler/bin/wrangler.js {{args}}
+    WRANGLER_SEND_METRICS=false node tools/deploy/node_modules/wrangler/bin/wrangler.js "$@"
