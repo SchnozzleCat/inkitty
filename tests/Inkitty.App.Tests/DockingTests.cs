@@ -655,6 +655,41 @@ public class DockingTests
             await Assert.That(ShownTools(factory)).Contains(factory.PlayerTool);
         });
 
+    [Test]
+    public async Task Map_docked_back_from_a_floating_window_still_shows_the_story() =>
+        await HeadlessSession.Run(async () =>
+        {
+            var hostMode = Dock.Settings.DockSettings.FloatingWindowHostMode;
+            Dock.Settings.DockSettings.FloatingWindowHostMode = DockFloatingWindowHostMode.Managed;
+            using var restore = new Restore(() => Dock.Settings.DockSettings.FloatingWindowHostMode = hostMode);
+            await using var app = AppFixture.Create();
+            await app.OpenAsync(UiTestHelpers.CopySample("multi-file", out _));
+            var factory = app.Shell.Factory;
+            Inkitty.App.StoryMap.StoryMapControl? Map()
+            {
+                app.Window.UpdateLayout();
+                return app.Window.GetVisualDescendants().OfType<Inkitty.App.StoryMap.StoryMapControl>().FirstOrDefault(m => m.IsEffectivelyVisible);
+            }
+
+            await Assert.That(await UiTestHelpers.WaitUntil(() => Map()?.MapLayout.Nodes.Count > 0)).IsTrue();
+            var nodes = Map()!.MapLayout.Nodes.Count;
+
+            factory.FloatDockable(factory.StoryMapTool);
+            await UiTestHelpers.WaitUntil(() => FloatingWindows(app).Length == 1);
+            await Assert.That(await UiTestHelpers.WaitUntil(() => Map()?.MapLayout.Nodes.Count == nodes)).IsTrue();
+
+            // Drop the floating window below the player. The move rebinds the map's graph (briefly to none);
+            // the empty layout for "none" used to land last, leaving the map blank.
+            var root = factory.FindRoot(factory.StoryMapTool, _ => true)!;
+            var dockManager = new Dock.Model.DockManager(new Dock.Model.DockService());
+            await Assert.That(dockManager.ValidateDockable(root.ActiveDockable!, factory.PlayerTool, DragAction.Move, DockOperation.Bottom, bExecute: true)).IsTrue();
+            await UiTestHelpers.WaitUntil(() => FloatingWindows(app).Length == 0);
+            await Assert.That(factory.IsInMainWindow(factory.StoryMapTool)).IsTrue();
+
+            await Task.Delay(300); // let any stale layout land
+            await Assert.That(await UiTestHelpers.WaitUntil(() => Map()?.MapLayout.Nodes.Count == nodes)).IsTrue();
+        });
+
     private sealed class Restore(Action action) : IDisposable
     {
         public void Dispose() => action();

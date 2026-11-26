@@ -155,6 +155,12 @@ public sealed class StoryMapControl : Control
         }
     }
 
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        RequestLayout(); // a layout cancelled by detaching (the pane moving) is started again; no-op if current
+    }
+
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
@@ -166,13 +172,17 @@ public sealed class StoryMapControl : Control
     private void RequestLayout()
     {
         var graph = Graph ?? StoryGraph.Empty;
+        // A newer graph always wins over one still being laid out. Without this, a graph that briefly goes
+        // away and comes back (the map pane moving between windows rebinds it) left the "no graph" layout
+        // running, and it replaced the map with an empty one.
+        _layoutCts?.Cancel();
+        _layoutCts?.Dispose();
+        _layoutCts = null;
         if (graph.StructureKey == _layout.StructureKey)
         {
             return; // same shape (e.g. text edits): keep the layout and the view
         }
 
-        _layoutCts?.Cancel();
-        _layoutCts?.Dispose();
         var cts = _layoutCts = new CancellationTokenSource();
         var sizes = Measure(graph);
         _ = Task.Run(() =>
