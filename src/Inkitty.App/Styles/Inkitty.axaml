@@ -34,7 +34,9 @@
       <Thickness x:Key="DockDocumentContentBorderThickness">0</Thickness>
       <x:Double x:Key="DockDocumentTabStripSeparatorSize">1</x:Double>
       <Thickness x:Key="DockDocumentTabItemPadding">10,0,6,0</Thickness>
-      <x:Double x:Key="DockDocumentTabItemMinHeight">30</x:Double>
+      <!-- 27 + the 1px line under the strip = a pane header's 28, so the editor's tab row lines up with
+           the pane headers beside it. -->
+      <x:Double x:Key="DockDocumentTabItemMinHeight">27</x:Double>
     </ResourceDictionary>
   </Styles.Resources>
 
@@ -338,6 +340,11 @@
     <Setter Property="FontSize" Value="11" />
     <Setter Property="MinWidth" Value="16" />
     <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <!-- Issues and Variables: the list sits on the pane's background, like the filter bar above it. -->
+  <Style Selector="ListBox.issues, ListBox.variables">
+    <Setter Property="Background" Value="Transparent" />
   </Style>
 
   <!-- Issues -->
