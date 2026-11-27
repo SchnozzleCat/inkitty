@@ -1,0 +1,49 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Inkitty.App.ViewModels"
+             x:Class="Inkitty.App.Views.KeyboardShortcutsView"
+             x:DataType="vm:KeyboardShortcutsViewModel"
+             Width="620">
+  <DockPanel Margin="20">
+    <TextBox DockPanel.Dock="Top" x:Name="FilterBox" Classes="filter-box" Margin="0,0,0,10"
+             Text="{Binding Filter}" PlaceholderText="Search commands or shortcuts" />
+
+    <DockPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
+      <Button DockPanel.Dock="Right" Content="Close" IsDefault="True" Click="OnClose" />
+      <Button Content="Reset all to defaults" Command="{Binding ResetAllCommand}" IsEnabled="{Binding HasCustomisations}" />
+    </DockPanel>
+
+    <TextBlock DockPanel.Dock="Bottom" Classes="shortcut-hint" TextWrapping="Wrap" Margin="0,10,0,0"
+               IsVisible="{Binding IsBrowser}"
+               Text="Some shortcuts, such as Ctrl+N, Ctrl+T and Ctrl+W, are kept by the browser and never reach Inkitty." />
+    <TextBlock DockPanel.Dock="Bottom" Classes="shortcut-warning" TextWrapping="Wrap" Margin="0,10,0,0"
+               Text="{Binding RecordingHint}" IsVisible="{Binding RecordingHint, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+    <ScrollViewer Height="440" HorizontalScrollBarVisibility="Disabled">
+      <ItemsControl x:Name="RowsList" ItemsSource="{Binding Rows}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate DataType="vm:ShortcutRowViewModel">
+            <Grid ColumnDefinitions="*,190,Auto,Auto" Classes="shortcut-row" ColumnSpacing="4">
+              <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,8,0">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <TextBlock Text="{Binding Name}" />
+                  <TextBlock Classes="shortcut-category" Text="{Binding Category}" VerticalAlignment="Center" />
+                </StackPanel>
+                <TextBlock Classes="shortcut-warning" Text="{Binding Warning}" TextWrapping="Wrap"
+                           IsVisible="{Binding Warning, Converter={x:Static ObjectConverters.IsNotNull}}" />
+              </StackPanel>
+              <Button Grid.Column="1" Classes="shortcut" Classes.recording="{Binding IsRecording}" Classes.none="{Binding !HasGesture}"
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                      Content="{Binding ButtonText}" Command="{Binding RecordCommand}"
+                      ToolTip.Tip="Click, then press the new shortcut (Esc cancels)" />
+              <Button Grid.Column="2" Classes="flat" Content="Clear" Command="{Binding ClearCommand}"
+                      IsEnabled="{Binding HasGesture}" ToolTip.Tip="No shortcut for this command" />
+              <Button Grid.Column="3" Classes="flat" Content="Reset" Command="{Binding ResetCommand}"
+                      IsEnabled="{Binding IsCustomised}" ToolTip.Tip="{Binding DefaultText}" />
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

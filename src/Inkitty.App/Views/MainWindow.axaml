@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:Inkitty.App.ViewModels"
+        xmlns:input="using:Inkitty.App.Input"
         x:Class="Inkitty.App.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Title="{Binding WindowTitle}"
@@ -12,46 +13,52 @@
     <NativeMenu>
       <NativeMenuItem Header="File">
         <NativeMenu>
-          <NativeMenuItem Header="New Project…" Command="{Binding NewProjectCommand}" Gesture="Cmd+N" />
-          <NativeMenuItem Header="Open…" Command="{Binding OpenCommand}" Gesture="Cmd+O" />
+          <NativeMenuItem Header="New Project…" Command="{Binding NewProjectCommand}" input:Shortcut.Id="file.new" />
+          <NativeMenuItem Header="Open…" Command="{Binding OpenCommand}" input:Shortcut.Id="file.open" />
           <NativeMenuItemSeparator />
-          <NativeMenuItem Header="Save" Command="{Binding SaveCommand}" Gesture="Cmd+S" />
-          <NativeMenuItem Header="Save All" Command="{Binding SaveAllCommand}" Gesture="Cmd+Shift+S" />
-          <NativeMenuItem Header="Export Project as .zip…" Command="{Binding ExportProjectCommand}" />
+          <NativeMenuItem Header="Save" Command="{Binding SaveCommand}" input:Shortcut.Id="file.save" />
+          <NativeMenuItem Header="Save All" Command="{Binding SaveAllCommand}" input:Shortcut.Id="file.saveAll" />
+          <NativeMenuItem Header="Export Project as .zip…" Command="{Binding ExportProjectCommand}" input:Shortcut.Id="file.export" />
           <NativeMenuItemSeparator />
-          <NativeMenuItem Header="Close Tab" Command="{Binding CloseDocumentCommand}" Gesture="Cmd+W" />
-          <NativeMenuItem Header="Close Project" Command="{Binding CloseProjectCommandCommand}" />
+          <NativeMenuItem Header="Close Tab" Command="{Binding CloseDocumentCommand}" input:Shortcut.Id="file.closeTab" />
+          <NativeMenuItem Header="Close Project" Command="{Binding CloseProjectCommandCommand}" input:Shortcut.Id="file.closeProject" />
+        </NativeMenu>
+      </NativeMenuItem>
+      <NativeMenuItem Header="Edit">
+        <NativeMenu>
+          <NativeMenuItem Header="Settings…" Command="{Binding OpenSettingsCommand}" input:Shortcut.Id="app.settings" />
+          <NativeMenuItem Header="Keyboard Shortcuts…" Command="{Binding OpenKeyboardShortcutsCommand}" input:Shortcut.Id="app.keyboardShortcuts" />
         </NativeMenu>
       </NativeMenuItem>
       <NativeMenuItem Header="Go">
         <NativeMenu>
-          <NativeMenuItem Header="Go to Definition" Command="{Binding GoToDefinitionCommand}" Gesture="F12" />
-          <NativeMenuItem Header="Back" Command="{Binding GoBackCommand}" Gesture="Ctrl+OemMinus" />
-          <NativeMenuItem Header="Forward" Command="{Binding GoForwardCommand}" Gesture="Ctrl+Shift+OemMinus" />
+          <NativeMenuItem Header="Go to Definition" Command="{Binding GoToDefinitionCommand}" input:Shortcut.Id="go.definition" />
+          <NativeMenuItem Header="Back" Command="{Binding GoBackCommand}" input:Shortcut.Id="go.back" />
+          <NativeMenuItem Header="Forward" Command="{Binding GoForwardCommand}" input:Shortcut.Id="go.forward" />
           <NativeMenuItemSeparator />
-          <NativeMenuItem Header="Next Issue" Command="{Binding NextIssueCommand}" Gesture="F8" />
-          <NativeMenuItem Header="Previous Issue" Command="{Binding PreviousIssueCommand}" Gesture="Shift+F8" />
+          <NativeMenuItem Header="Next Issue" Command="{Binding NextIssueCommand}" input:Shortcut.Id="go.nextIssue" />
+          <NativeMenuItem Header="Previous Issue" Command="{Binding PreviousIssueCommand}" input:Shortcut.Id="go.previousIssue" />
         </NativeMenu>
       </NativeMenuItem>
       <NativeMenuItem Header="Story">
         <NativeMenu>
-          <NativeMenuItem Header="Restart Story" Command="{Binding RestartStoryCommand}" Gesture="Cmd+R" />
-          <NativeMenuItem Header="Step Back" Command="{Binding StepBackStoryCommand}" />
+          <NativeMenuItem Header="Restart Story" Command="{Binding RestartStoryCommand}" input:Shortcut.Id="story.restart" />
+          <NativeMenuItem Header="Step Back" Command="{Binding StepBackStoryCommand}" input:Shortcut.Id="story.stepBack" />
           <NativeMenuItemSeparator />
-          <NativeMenuItem Header="Show Current Line" Command="{Binding RevealStoryPositionCommand}" Gesture="Cmd+J" />
-          <NativeMenuItem Header="Map" Command="{Binding ShowStoryMapCommand}" Gesture="Cmd+Shift+M" />
+          <NativeMenuItem Header="Show Current Line" Command="{Binding RevealStoryPositionCommand}" input:Shortcut.Id="story.showCurrentLine" />
+          <NativeMenuItem Header="Map" Command="{Binding ShowStoryMapCommand}" input:Shortcut.Id="story.map" />
         </NativeMenu>
       </NativeMenuItem>
       <NativeMenuItem Header="View">
         <NativeMenu>
-          <NativeMenuItem Header="Files" Command="{Binding ShowFilesCommand}" />
-          <NativeMenuItem Header="Outline" Command="{Binding ShowOutlineCommand}" />
-          <NativeMenuItem Header="Player" Command="{Binding ShowPlayerCommand}" />
-          <NativeMenuItem Header="Issues" Command="{Binding ShowIssuesCommand}" />
-          <NativeMenuItem Header="Map" Command="{Binding ShowStoryMapCommand}" />
-          <NativeMenuItem Header="Variables" Command="{Binding ShowVariablesCommand}" />
+          <NativeMenuItem Header="Files" Command="{Binding ShowFilesCommand}" input:Shortcut.Id="view.files" />
+          <NativeMenuItem Header="Outline" Command="{Binding ShowOutlineCommand}" input:Shortcut.Id="view.outline" />
+          <NativeMenuItem Header="Player" Command="{Binding ShowPlayerCommand}" input:Shortcut.Id="view.player" />
+          <NativeMenuItem Header="Issues" Command="{Binding ShowIssuesCommand}" input:Shortcut.Id="view.issues" />
+          <NativeMenuItem Header="Map" Command="{Binding ShowStoryMapCommand}" input:Shortcut.Id="story.map" />
+          <NativeMenuItem Header="Variables" Command="{Binding ShowVariablesCommand}" input:Shortcut.Id="view.variables" />
           <NativeMenuItemSeparator />
-          <NativeMenuItem Header="Reset Layout" Command="{Binding ResetLayoutCommand}" />
+          <NativeMenuItem Header="Reset Layout" Command="{Binding ResetLayoutCommand}" input:Shortcut.Id="view.resetLayout" />
         </NativeMenu>
       </NativeMenuItem>
     </NativeMenu>

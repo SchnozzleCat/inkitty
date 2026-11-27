@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Inkitty.App.ViewModels"
+             xmlns:input="using:Inkitty.App.Input"
              xmlns:app="using:Inkitty.App"
              x:Class="Inkitty.App.Views.MainView"
              x:DataType="vm:MainWindowViewModel"
@@ -13,8 +14,8 @@
         <TextBlock DockPanel.Dock="Left" Classes="app-name" Text="Inkitty" />
         <Menu x:Name="InWindowMenu">
           <MenuItem Header="_File">
-            <MenuItem Header="_New Project…" Command="{Binding NewProjectCommand}" InputGesture="Ctrl+N" />
-            <MenuItem Header="_Open…" Command="{Binding OpenCommand}" InputGesture="Ctrl+O" />
+            <MenuItem Header="_New Project…" Command="{Binding NewProjectCommand}" input:Shortcut.Id="file.new" />
+            <MenuItem Header="_Open…" Command="{Binding OpenCommand}" input:Shortcut.Id="file.open" />
             <MenuItem x:Name="RecentMenu" Header="Open _Recent" ItemsSource="{Binding RecentProjects}" IsEnabled="{Binding HasRecentProjects}">
               <MenuItem.Styles>
                 <!-- Only the generated children: a bare "MenuItem" selector would also match this item itself. -->
@@ -26,42 +27,43 @@
               </MenuItem.Styles>
             </MenuItem>
             <Separator />
-            <MenuItem Header="_Save" Command="{Binding SaveCommand}" InputGesture="Ctrl+S" />
-            <MenuItem Header="Save _All" Command="{Binding SaveAllCommand}" InputGesture="Ctrl+Shift+S" />
-            <MenuItem Header="_Export Project as .zip…" Command="{Binding ExportProjectCommand}" />
+            <MenuItem Header="_Save" Command="{Binding SaveCommand}" input:Shortcut.Id="file.save" />
+            <MenuItem Header="Save _All" Command="{Binding SaveAllCommand}" input:Shortcut.Id="file.saveAll" />
+            <MenuItem Header="_Export Project as .zip…" Command="{Binding ExportProjectCommand}" input:Shortcut.Id="file.export" />
             <Separator />
-            <MenuItem Header="_Close Tab" Command="{Binding CloseDocumentCommand}" InputGesture="Ctrl+W" />
-            <MenuItem Header="Close _Project" Command="{Binding CloseProjectCommandCommand}" />
+            <MenuItem Header="_Close Tab" Command="{Binding CloseDocumentCommand}" input:Shortcut.Id="file.closeTab" />
+            <MenuItem Header="Close _Project" Command="{Binding CloseProjectCommandCommand}" input:Shortcut.Id="file.closeProject" />
             <Separator x:Name="ExitSeparator" />
             <MenuItem x:Name="ExitMenuItem" Header="E_xit" Command="{Binding ExitCommand}" />
           </MenuItem>
           <MenuItem Header="_Edit">
-            <MenuItem Header="_Settings…" Command="{Binding OpenSettingsCommand}" InputGesture="Ctrl+OemComma" />
+            <MenuItem Header="_Settings…" Command="{Binding OpenSettingsCommand}" input:Shortcut.Id="app.settings" />
+            <MenuItem Header="_Keyboard Shortcuts…" Command="{Binding OpenKeyboardShortcutsCommand}" input:Shortcut.Id="app.keyboardShortcuts" />
           </MenuItem>
           <MenuItem Header="_Go">
-            <MenuItem Header="Go to _Definition" Command="{Binding GoToDefinitionCommand}" InputGesture="F12" />
-            <MenuItem Header="_Back" Command="{Binding GoBackCommand}" InputGesture="Alt+Left" />
-            <MenuItem Header="_Forward" Command="{Binding GoForwardCommand}" InputGesture="Alt+Right" />
+            <MenuItem Header="Go to _Definition" Command="{Binding GoToDefinitionCommand}" input:Shortcut.Id="go.definition" />
+            <MenuItem Header="_Back" Command="{Binding GoBackCommand}" input:Shortcut.Id="go.back" />
+            <MenuItem Header="_Forward" Command="{Binding GoForwardCommand}" input:Shortcut.Id="go.forward" />
             <Separator />
-            <MenuItem Header="_Next Issue" Command="{Binding NextIssueCommand}" InputGesture="F8" />
-            <MenuItem Header="_Previous Issue" Command="{Binding PreviousIssueCommand}" InputGesture="Shift+F8" />
+            <MenuItem Header="_Next Issue" Command="{Binding NextIssueCommand}" input:Shortcut.Id="go.nextIssue" />
+            <MenuItem Header="_Previous Issue" Command="{Binding PreviousIssueCommand}" input:Shortcut.Id="go.previousIssue" />
           </MenuItem>
           <MenuItem Header="_Story">
-            <MenuItem Header="_Restart" Command="{Binding RestartStoryCommand}" InputGesture="Ctrl+R" />
-            <MenuItem Header="Step _Back" Command="{Binding StepBackStoryCommand}" />
+            <MenuItem Header="_Restart" Command="{Binding RestartStoryCommand}" input:Shortcut.Id="story.restart" />
+            <MenuItem Header="Step _Back" Command="{Binding StepBackStoryCommand}" input:Shortcut.Id="story.stepBack" />
             <Separator />
-            <MenuItem Header="Show _Current Line" Command="{Binding RevealStoryPositionCommand}" InputGesture="Ctrl+J" />
-            <MenuItem Header="_Map" Command="{Binding ShowStoryMapCommand}" InputGesture="Ctrl+Shift+M" />
+            <MenuItem Header="Show _Current Line" Command="{Binding RevealStoryPositionCommand}" input:Shortcut.Id="story.showCurrentLine" />
+            <MenuItem Header="_Map" Command="{Binding ShowStoryMapCommand}" input:Shortcut.Id="story.map" />
           </MenuItem>
           <MenuItem Header="_View">
-            <MenuItem Header="_Files" Command="{Binding ShowFilesCommand}" />
-            <MenuItem Header="_Outline" Command="{Binding ShowOutlineCommand}" />
-            <MenuItem Header="_Player" Command="{Binding ShowPlayerCommand}" />
-            <MenuItem Header="_Issues" Command="{Binding ShowIssuesCommand}" />
-            <MenuItem Header="_Map" Command="{Binding ShowStoryMapCommand}" />
-            <MenuItem Header="_Variables" Command="{Binding ShowVariablesCommand}" />
+            <MenuItem Header="_Files" Command="{Binding ShowFilesCommand}" input:Shortcut.Id="view.files" />
+            <MenuItem Header="_Outline" Command="{Binding ShowOutlineCommand}" input:Shortcut.Id="view.outline" />
+            <MenuItem Header="_Player" Command="{Binding ShowPlayerCommand}" input:Shortcut.Id="view.player" />
+            <MenuItem Header="_Issues" Command="{Binding ShowIssuesCommand}" input:Shortcut.Id="view.issues" />
+            <MenuItem Header="_Map" Command="{Binding ShowStoryMapCommand}" input:Shortcut.Id="story.map" />
+            <MenuItem Header="_Variables" Command="{Binding ShowVariablesCommand}" input:Shortcut.Id="view.variables" />
             <Separator />
-            <MenuItem Header="_Reset Layout" Command="{Binding ResetLayoutCommand}" />
+            <MenuItem Header="_Reset Layout" Command="{Binding ResetLayoutCommand}" input:Shortcut.Id="view.resetLayout" />
           </MenuItem>
         </Menu>
       </DockPanel>

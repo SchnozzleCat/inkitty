@@ -172,6 +172,12 @@ public partial class MainView : UserControl, IModalHost
     {
         base.OnDetachedFromVisualTree(e);
         _topLevel?.KeyBindings.Clear();
+        if (_shortcutsOf is { } vm)
+        {
+            vm.Shortcuts.Changed -= OnShortcutsChanged;
+            _shortcutsOf = null;
+        }
+
         _topLevel = null;
         if (Current == this)
         {
@@ -185,6 +191,7 @@ public partial class MainView : UserControl, IModalHost
         if (ViewModel is { } vm)
         {
             vm.SettingsRequested += (_, _) => _ = ShowSettingsAsync();
+            vm.KeyboardShortcutsRequested += (_, _) => _ = ShowKeyboardShortcutsAsync();
             RegisterShortcuts(vm);
         }
     }
@@ -198,10 +205,39 @@ public partial class MainView : UserControl, IModalHost
 
         var view = new SettingsView { DataContext = settings };
         view.CloseRequested += (_, _) => CloseModal();
+        view.EditShortcutsRequested += (_, _) => _ = ShowKeyboardShortcutsAsync();
         await ShowModalAsync("Settings", view);
     }
 
-    /// <summary>Shortcuts are bound on the top level so they work wherever focus is.</summary>
+    private bool _showingShortcuts;
+
+    private async Task ShowKeyboardShortcutsAsync()
+    {
+        if (_showingShortcuts || ViewModel is not { } vm)
+        {
+            return;
+        }
+
+        _showingShortcuts = true;
+        using (var shortcuts = new KeyboardShortcutsViewModel(vm.Shortcuts))
+        {
+            var view = new KeyboardShortcutsView { DataContext = shortcuts };
+            view.CloseRequested += (_, _) => CloseModal();
+            try
+            {
+                await ShowModalAsync("Keyboard Shortcuts", view);
+            }
+            finally
+            {
+                _showingShortcuts = false;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Shortcuts are bound on the top level so they work wherever focus is. They come from the
+    /// shortcut service (defaults plus the user's changes) and are rebound when those change.
+    /// </summary>
     private void RegisterShortcuts(MainWindowViewModel vm)
     {
         if (_topLevel is null)
@@ -209,38 +245,41 @@ public partial class MainView : UserControl, IModalHost
             return;
         }
 
-        var command = Application.Current?.PlatformSettings?.HotkeyConfiguration.CommandModifiers ?? KeyModifiers.Control;
-        var bindings = _topLevel.KeyBindings;
-        bindings.Clear();
-        void Bind(Key key, KeyModifiers modifiers, System.Windows.Input.ICommand cmd) =>
-            bindings.Add(new KeyBinding { Gesture = new KeyGesture(key, modifiers), Command = cmd });
+        if (_shortcutsOf != vm)
+        {
+            if (_shortcutsOf is { } previous)
+            {
+                previous.Shortcuts.Changed -= OnShortcutsChanged;
+            }
 
-        Bind(Key.N, command, vm.NewProjectCommand);
-        Bind(Key.O, command, vm.OpenCommand);
-        Bind(Key.S, command, vm.SaveCommand);
-        Bind(Key.S, command | KeyModifiers.Shift, vm.SaveAllCommand);
-        Bind(Key.W, command, vm.CloseDocumentCommand);
-        Bind(Key.R, command, vm.RestartStoryCommand);
-        Bind(Key.J, command, vm.RevealStoryPositionCommand);
-        Bind(Key.M, command | KeyModifiers.Shift, vm.ShowStoryMapCommand);
-        Bind(Key.OemComma, command, vm.OpenSettingsCommand);
-        Bind(Key.F8, KeyModifiers.None, vm.NextIssueCommand);
-        Bind(Key.F8, KeyModifiers.Shift, vm.PreviousIssueCommand);
-        if (OperatingSystem.IsMacOS())
-        {
-            Bind(Key.OemMinus, KeyModifiers.Control, vm.GoBackCommand);
-            Bind(Key.OemMinus, KeyModifiers.Control | KeyModifiers.Shift, vm.GoForwardCommand);
+            _shortcutsOf = vm;
+            vm.Shortcuts.Changed += OnShortcutsChanged;
         }
-        else
+
+        Input.Shortcut.Bind(_topLevel.KeyBindings, vm.Shortcuts, vm);
+        Input.Shortcut.Label(InWindowMenu, vm.Shortcuts);
+        if (_topLevel is Window window && NativeMenu.GetMenu(window) is { } native)
         {
-            Bind(Key.Left, KeyModifiers.Alt, vm.GoBackCommand);
-            Bind(Key.Right, KeyModifiers.Alt, vm.GoForwardCommand);
+            Input.Shortcut.Label(native, vm.Shortcuts);
+        }
+    }
+
+    private MainWindowViewModel? _shortcutsOf;
+
+    private void OnShortcutsChanged(object? sender, EventArgs e)
+    {
+        if (ViewModel is { } vm)
+        {
+            RegisterShortcuts(vm);
         }
     }
 
     private void OnModalKeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Escape && IsModalOpen)
+        // A dialog recording a shortcut takes Esc itself (to cancel the recording).
+        var capturing = e.Source is Visual source
+            && Avalonia.VisualTree.VisualExtensions.GetSelfAndVisualAncestors(source).OfType<Input.IKeyCapture>().Any(c => c.IsCapturingKeys);
+        if (e.Key == Key.Escape && IsModalOpen && !capturing)
         {
             e.Handled = true;
             CloseModal();

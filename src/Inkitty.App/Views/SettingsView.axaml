@@ -56,6 +56,12 @@
       <CheckBox Grid.Row="2" Grid.Column="1" Content="{Binding AltClickLabel}" IsChecked="{Binding AltClickNavigates}" />
     </Grid>
 
+    <TextBlock Classes="section" Text="Keyboard" />
+    <Grid ColumnDefinitions="180,*">
+      <TextBlock Text="Shortcuts" VerticalAlignment="Center" />
+      <Button Grid.Column="1" Content="Edit keyboard shortcuts…" Click="OnEditShortcuts" />
+    </Grid>
+
     <DockPanel Margin="0,8,0,0">
       <Button DockPanel.Dock="Right" Content="Close" IsDefault="True" Click="OnClose" />
       <Button Content="Reset to defaults" Command="{Binding ResetToDefaultsCommand}" />

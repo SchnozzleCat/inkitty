@@ -16,7 +16,7 @@ namespace Inkitty.App.Controls.InkEditor;
 
 /// <summary>
 /// The ink editor: AvaloniaEdit with TextMate highlighting, issue squiggles and gutter, and
-/// modifier+click / F12 go-to-definition. Binds to an <see cref="EditorDocumentViewModel"/>.
+/// modifier+click go-to-definition (the shortcut, F12 by default, is bound by the main view). Binds to an <see cref="EditorDocumentViewModel"/>.
 /// </summary>
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1001", Justification = "The highlighter is disposed when the editor leaves the visual tree.")]
 public sealed class InkEditor : UserControl
@@ -445,14 +445,6 @@ public sealed class InkEditor : UserControl
 
     private void OnEditorKeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.Key == Key.F12 && e.KeyModifiers == KeyModifiers.None && _viewModel is not null)
-        {
-            var caret = _editor.TextArea.Caret.Location;
-            _viewModel.GoToDefinitionAt(new SourcePosition(caret.Line, caret.Column));
-            e.Handled = true;
-            return;
-        }
-
         if (_lastPointer is { } pointer && IsNavigationModifier(e.KeyModifiers))
         {
             UpdateUnderline(pointer);

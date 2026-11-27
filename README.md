@@ -130,6 +130,11 @@ can open them with Inkitty.
 | Show the map                  | Ctrl+Shift+M          | Cmd+Shift+M           |
 | Settings                      | Ctrl+,                | Cmd+,                 |
 
+These are the defaults. To change them, open **Edit → Keyboard Shortcuts…** (or the button in
+Settings), click a command's shortcut and press the new one. Changes are saved in `settings.json`
+under `keyBindings`, with `Mod` standing for Ctrl (Cmd on macOS). The editor's own keys (undo,
+copy, find, ...) can't be changed.
+
 ## Where things are stored
 
 Settings (`settings.json`) and the dock layout (`layout.json`) are stored in:

@@ -4,6 +4,7 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.Messaging;
 using Inkitty.App.Docking;
+using Inkitty.App.Input;
 using Inkitty.App.Services;
 using Inkitty.App.ViewModels;
 using Inkitty.App.ViewModels.Tools;
@@ -118,6 +119,7 @@ public partial class App : Application
         services.AddSingleton(options.Dialogs ?? new DialogService());
         services.AddSingleton<IInkCompilerService, InkCompilerService>();
         services.AddSingleton<ThemeService>();
+        services.AddSingleton(sp => new ShortcutService(sp.GetRequiredService<ISettingsStore>()));
         services.AddSingleton<AutoSaveService>();
         services.AddSingleton(sp => new DockLayoutService(configDirectory, sp.GetRequiredService<ILogger<DockLayoutService>>()));
         services.AddSingleton<FileTreeToolViewModel>();
@@ -139,7 +141,8 @@ public partial class App : Application
             sp.GetRequiredService<ILoggerFactory>(),
             sp.GetRequiredService<TimeProvider>(),
             options.WatchFiles,
-            sp.GetRequiredService<ThemeService>())
+            sp.GetRequiredService<ThemeService>(),
+            sp.GetRequiredService<ShortcutService>())
         {
             ProjectNamer = options.ProjectNamer,
         });

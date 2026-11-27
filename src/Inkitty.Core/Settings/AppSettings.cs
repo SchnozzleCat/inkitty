@@ -52,6 +52,16 @@ public sealed record AppSettings
     /// </summary>
     public bool AltClickNavigates { get; init; } = !OperatingSystem.IsLinux();
 
+    /// <summary>
+    /// Keyboard shortcuts the user changed: command id (see the app's shortcut catalog) to gesture,
+    /// e.g. <c>"file.save": "Mod+S"</c>. <c>Mod</c> is Ctrl, or Cmd on macOS; an empty gesture means
+    /// no shortcut. Commands that aren't listed use their default.
+    /// </summary>
+    public IReadOnlyDictionary<string, string> KeyBindings { get; init => field = value ?? NoKeyBindings; } = NoKeyBindings;
+
+    /// <summary>Shared empty <see cref="KeyBindings"/>, so default settings compare equal.</summary>
+    public static readonly IReadOnlyDictionary<string, string> NoKeyBindings = new Dictionary<string, string>();
+
     public IReadOnlyList<string> RecentProjects { get; init; } = [];
 
     public WindowBounds? LastWindowBounds { get; init; }

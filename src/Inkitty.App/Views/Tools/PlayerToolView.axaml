@@ -18,7 +18,7 @@
       </StackPanel>
       <Button DockPanel.Dock="Top" Classes="flat location" IsVisible="{Binding HasLocation}"
               Command="{Binding RevealCommand}" CommandParameter="{x:Null}"
-              ToolTip.Tip="Where the story is now. Click to show the line in the editor (Ctrl+J)">
+              ToolTip.Tip="Where the story is now. Click to show the line in the editor">
         <StackPanel Orientation="Horizontal" Spacing="6">
           <TextBlock Classes="pin" Text="●" />
           <TextBlock Text="{Binding LocationText}" TextTrimming="CharacterEllipsis" />

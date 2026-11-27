@@ -138,6 +138,34 @@ public class SettingsStoreTests
     }
 
     [Test]
+    public async Task Key_bindings_round_trip_and_default_to_none()
+    {
+        using var dir = new TempDirectory();
+        var store = new SettingsStore(dir.Path);
+        await Assert.That(store.Current.KeyBindings.Count).IsEqualTo(0);
+
+        store.Update(s => s with { KeyBindings = new Dictionary<string, string> { ["file.save"] = "Mod+Alt+S", ["go.nextIssue"] = "" } });
+        await store.FlushAsync();
+
+        var reloaded = new SettingsStore(dir.Path).Current.KeyBindings;
+        await Assert.That(reloaded["file.save"]).IsEqualTo("Mod+Alt+S");
+        await Assert.That(reloaded["go.nextIssue"]).IsEqualTo(string.Empty);
+        await Assert.That(dir.Read(SettingsStore.FileName)).Contains("\"keyBindings\"");
+    }
+
+    [Test]
+    public async Task Null_key_bindings_in_the_file_load_as_none()
+    {
+        using var dir = new TempDirectory();
+        dir.Write(SettingsStore.FileName, """{ "keyBindings": null, "editorFontSize": 20 }""");
+
+        var settings = new SettingsStore(dir.Path).Current;
+
+        await Assert.That(settings.KeyBindings.Count).IsEqualTo(0);
+        await Assert.That(settings.EditorFontSize).IsEqualTo(20);
+    }
+
+    [Test]
     public async Task Recent_projects_are_deduplicated_and_capped()
     {
         var settings = new AppSettings();

@@ -63,7 +63,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
     private void ResetToDefaults()
     {
         var defaults = new AppSettings();
-        _store.Update(s => defaults with { RecentProjects = s.RecentProjects, LastWindowBounds = s.LastWindowBounds });
+        _store.Update(s => defaults with { RecentProjects = s.RecentProjects, LastWindowBounds = s.LastWindowBounds, KeyBindings = s.KeyBindings });
         Load(_store.Current);
     }
 

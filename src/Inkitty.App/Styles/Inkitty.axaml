@@ -262,6 +262,36 @@
     <Setter Property="FontSize" Value="15" />
   </Style>
 
+  <!-- Keyboard shortcuts editor -->
+  <Style Selector="Grid.shortcut-row">
+    <Setter Property="Margin" Value="0,2" />
+    <Setter Property="MinHeight" Value="32" />
+  </Style>
+  <Style Selector="TextBlock.shortcut-category">
+    <Setter Property="Foreground" Value="{DynamicResource InkittyMuted}" />
+    <Setter Property="FontSize" Value="11" />
+  </Style>
+  <Style Selector="TextBlock.shortcut-warning">
+    <Setter Property="Foreground" Value="{StaticResource InkittyWarning}" />
+    <Setter Property="FontSize" Value="11" />
+  </Style>
+  <Style Selector="TextBlock.shortcut-hint">
+    <Setter Property="Foreground" Value="{DynamicResource InkittyMuted}" />
+    <Setter Property="FontSize" Value="11" />
+  </Style>
+  <Style Selector="Button.shortcut">
+    <Setter Property="FontFamily" Value="fonts:Inkitty#JetBrains Mono, monospace" />
+    <Setter Property="FontSize" Value="12" />
+  </Style>
+  <Style Selector="Button.shortcut.none">
+    <Setter Property="Foreground" Value="{DynamicResource InkittyMuted}" />
+  </Style>
+  <Style Selector="Button.shortcut.recording">
+    <Setter Property="BorderBrush" Value="{DynamicResource DockThemeAccentBrush}" />
+    <Setter Property="BorderThickness" Value="1.5" />
+    <Setter Property="FontStyle" Value="Italic" />
+  </Style>
+
   <!-- Window chrome: menu bar and status bar share one colour. -->
   <Style Selector="DockPanel.menu-bar">
     <Setter Property="Background" Value="{DynamicResource InkittyChromeBackground}" />

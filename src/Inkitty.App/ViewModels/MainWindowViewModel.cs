@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using Inkitty.App.Docking;
+using Inkitty.App.Input;
 using Inkitty.App.Messages;
 using Inkitty.App.Services;
 using Inkitty.App.ViewModels.Documents;
@@ -54,8 +55,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IRecipient<Navi
         ILoggerFactory loggerFactory,
         TimeProvider? time = null,
         bool watchFiles = true,
-        ThemeService? themes = null)
+        ThemeService? themes = null,
+        ShortcutService? shortcuts = null)
     {
+        Shortcuts = shortcuts ?? new ShortcutService(settings);
+        StatusText = Shortcuts.DisplayText("file.open") is { Length: > 0 } open ? $"Open an ink file to start ({open})" : "Open an ink file to start";
         Factory = factory;
         _compiler = compiler;
         _settings = settings;
@@ -116,7 +120,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IRecipient<Navi
     public partial string WindowTitle { get; private set; } = "Inkitty";
 
     [ObservableProperty]
-    public partial string StatusText { get; private set; } = "Open an ink file to start (Ctrl+O)";
+    public partial string StatusText { get; private set; } = string.Empty;
 
     [ObservableProperty]
     public partial string CompileStatus { get; private set; } = string.Empty;
@@ -142,12 +146,18 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IRecipient<Navi
 
     public AppSettings Settings => _settings.Current;
 
+    /// <summary>The keyboard shortcuts in effect; the views bind them and label the menus.</summary>
+    public ShortcutService Shortcuts { get; }
+
     /// <summary>The editor's TextMate theme, from the selected colour theme.</summary>
     [ObservableProperty]
     public partial TextMateSharp.Grammars.ThemeName? SyntaxTheme { get; private set; }
 
     /// <summary>Raised when the view should show the settings window.</summary>
     public event EventHandler? SettingsRequested;
+
+    /// <summary>Raised when the view should show the keyboard shortcuts editor.</summary>
+    public event EventHandler? KeyboardShortcutsRequested;
 
     /// <summary>Raised when the view should quit the application.</summary>
     public event EventHandler? ExitRequested;
@@ -551,6 +561,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IRecipient<Navi
 
     [RelayCommand]
     private void OpenSettings() => SettingsRequested?.Invoke(this, EventArgs.Empty);
+
+    [RelayCommand]
+    private void OpenKeyboardShortcuts() => KeyboardShortcutsRequested?.Invoke(this, EventArgs.Empty);
 
     [RelayCommand]
     private void Exit() => ExitRequested?.Invoke(this, EventArgs.Empty);
