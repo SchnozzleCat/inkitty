@@ -66,7 +66,7 @@
               <DataTemplate DataType="tools:PlayerChoiceEcho">
                 <Grid Classes="echo-row" ColumnDefinitions="*,Auto">
                   <TextBlock Classes="echo" Classes.new="{Binding IsNew}" TextWrapping="Wrap">
-                    <Run Text="↝ " /><Run Classes="choice-text" Text="{Binding Text}" />
+                    <Run Classes="choice-arrow" Text="↝ " /><Run Classes="choice-text" Text="{Binding Text}" />
                   </TextBlock>
                   <Button Grid.Column="1" Classes="reveal" IsVisible="{Binding HasSource}"
                           Command="{Binding $parent[UserControl].((tools:PlayerToolViewModel)DataContext).RevealCommand}"

@@ -795,6 +795,10 @@
     <Setter Property="Foreground" Value="{DynamicResource InkittyMuted}" />
     <Setter Property="Margin" Value="16,0,0,0" />
   </Style>
+  <!-- Inter has no ↝, and the browser has no system fonts to fall back on; JetBrains Mono has it. -->
+  <Style Selector="TextBlock.echo Run.choice-arrow">
+    <Setter Property="FontFamily" Value="fonts:Inkitty#JetBrains Mono, monospace" />
+  </Style>
   <Style Selector="TextBlock.echo Run.choice-text">
     <Setter Property="FontStyle" Value="Italic" />
   </Style>
