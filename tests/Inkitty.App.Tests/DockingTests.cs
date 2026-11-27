@@ -208,6 +208,39 @@ public class DockingTests
         });
 
     [Test]
+    public async Task Native_floating_window_with_one_pane_moves_by_its_header() =>
+        await HeadlessSession.Run(async () =>
+        {
+            // Native windows (Windows, macOS): no title bar, the pane's own header is the only handle.
+            var hostMode = Dock.Settings.DockSettings.FloatingWindowHostMode;
+            Dock.Settings.DockSettings.FloatingWindowHostMode = DockFloatingWindowHostMode.Native;
+            using var restore = new Restore(() => Dock.Settings.DockSettings.FloatingWindowHostMode = hostMode);
+            await using var app = AppFixture.Create();
+            var factory = app.Shell.Factory;
+            factory.FloatDockable(factory.PlayerTool);
+
+            HostWindow? host = null;
+            PaneGrip? header = null;
+            await UiTestHelpers.WaitUntil(() =>
+            {
+                host = factory.HostWindows.OfType<HostWindow>().FirstOrDefault(w => w.IsVisible);
+                host?.UpdateLayout();
+                header = host?.GetVisualDescendants().OfType<PaneGrip>().FirstOrDefault(g => g.Dockable == factory.PlayerTool);
+                return header?.IsEffectivelyVisible == true;
+            });
+
+            await Assert.That(header?.IsEffectivelyVisible).IsTrue();
+            await Assert.That(header!.Classes.Contains(":moves-window")).IsTrue();
+            await Assert.That(host!.ToolChromeControlsWholeWindow).IsTrue();
+
+            var at = header.TranslatePoint(new Point(header.Bounds.Width / 3, header.Bounds.Height / 2), host)!.Value;
+            host.MouseDown(at, MouseButton.Left);
+            await Assert.That(host.Classes.Contains(":dragging")).IsTrue();
+            host.MouseUp(at, MouseButton.Left);
+            host.Close();
+        });
+
+    [Test]
     public async Task Floating_pane_can_be_docked_at_the_bottom_edge_after_it_stops_moving() =>
         await HeadlessSession.Run(async () =>
         {

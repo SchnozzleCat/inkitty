@@ -2,8 +2,11 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Metadata;
 using Avalonia.Controls.Primitives;
+using Avalonia.Input;
 using Avalonia.Interactivity;
+using Dock.Avalonia.Controls;
 using Dock.Model.Core;
+using Dock.Settings;
 using Inkitty.App.Docking;
 
 namespace Inkitty.App.Controls;
@@ -16,7 +19,7 @@ namespace Inkitty.App.Controls;
 /// </summary>
 [TemplatePart("PART_CloseButton", typeof(Button))]
 [TemplatePart("PART_PinButton", typeof(Button))]
-[PseudoClasses(":floating", ":pinned", ":can-pin")]
+[PseudoClasses(":floating", ":moves-window", ":pinned", ":can-pin")]
 public sealed class PaneGrip : TemplatedControl
 {
     public static readonly StyledProperty<IDockable?> DockableProperty =
@@ -59,7 +62,10 @@ public sealed class PaneGrip : TemplatedControl
         var canPin = factory?.CanPinTool(Dockable) == true;
         PseudoClasses.Set(":pinned", pinned);
         PseudoClasses.Set(":can-pin", canPin);
-        PseudoClasses.Set(":floating", Dockable is { } tool && factory?.IsInSinglePaneFloatingWindow(tool) == true);
+        var singlePane = Dockable is { } tool && factory?.IsInSinglePaneFloatingWindow(tool) == true;
+        var nativeWindow = TopLevel.GetTopLevel(this) is HostWindow;
+        PseudoClasses.Set(":floating", singlePane && !nativeWindow);
+        PseudoClasses.Set(":moves-window", singlePane && nativeWindow);
         _pinItem.Header = pinned ? "Unpin" : "Auto Hide";
         _pinItem.IsVisible = canPin;
         _floatItem.IsVisible = Dockable is { } t && factory?.IsInMainWindow(t) == true && !pinned;
@@ -93,8 +99,10 @@ public sealed class PaneGrip : TemplatedControl
     private void OnLayoutChanged(object? sender, EventArgs e) => UpdatePinState();
 
     /// <summary>
-    /// When a floating window holds just this pane, the window's own title bar (styled to match, see
-    /// Styles/Inkitty.axaml) is the header, so this one hides there (<c>:floating</c>).
+    /// When an in-app floating window holds just this pane, the window's own title bar (styled to match, see
+    /// Styles/Inkitty.axaml) is the header, so this one hides there (<c>:floating</c>). A native floating
+    /// window (Windows, macOS) holding just this pane has no title bar at all (Dock leaves moving it to its
+    /// own pane title bar, which Inkitty hides), so this header moves the window instead (<c>:moves-window</c>).
     /// </summary>
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
@@ -107,6 +115,21 @@ public sealed class PaneGrip : TemplatedControl
     {
         base.OnDetachedFromVisualTree(e);
         Subscribe(null);
+    }
+
+    protected override void OnPointerPressed(PointerPressedEventArgs e)
+    {
+        base.OnPointerPressed(e);
+        if (e.Handled
+            || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed
+            || TopLevel.GetTopLevel(this) is not HostWindow { ToolChromeControlsWholeWindow: true } host
+            || Dockable is not { Factory: InkittyDockFactory factory } dockable
+            || !factory.IsInSinglePaneFloatingWindow(dockable))
+        {
+            return;
+        }
+
+        e.Handled = host.TryBeginMoveDrag(e, WindowDragDockScope.FullWindow);
     }
 
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)

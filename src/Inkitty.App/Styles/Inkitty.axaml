@@ -112,8 +112,9 @@
   </Style>
   <!-- Dock looks for drag areas among everything under the pointer, even what's hidden behind a floating
        panel, so a header under a floating panel's title bar would start a second drag. Only the header the
-       pointer is actually over (never a covered one) is a drag area. -->
-  <Style Selector="controls|PaneGrip:pointerover /template/ DockPanel#PART_DragArea">
+       pointer is actually over (never a covered one) is a drag area. A header that moves its native
+       floating window (:moves-window, see PaneGrip) starts a window move instead of a pane drag. -->
+  <Style Selector="controls|PaneGrip:pointerover:not(:moves-window) /template/ DockPanel#PART_DragArea">
     <Setter Property="DockProperties.IsDragArea" Value="True" />
   </Style>
   <Style Selector="Button.pane-close">
