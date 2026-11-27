@@ -1,9 +1,13 @@
+<p align="center"><img src="assets/icon/cat.svg" width="128" alt="Inkitty icon: a cat face"></p>
+
 # Inkitty
 
 An IDE for [ink](https://github.com/inkle/ink), inkle's narrative scripting language, built with
 [Avalonia](https://avaloniaui.net/) and modern C# as an alternative to
 [Inky](https://github.com/inkle/inky) and runs on **Linux, Windows and macOS**, and in the browser at
 **<https://schnozzlecat.github.io/inkitty/>**.
+
+![Inkitty playing The Intercept: the editor with the current line and the choices on offer highlighted, alongside the outline, variables, player and story map](assets/screenshots/preview.png)
 
 > [!CAUTION]
 > This is alpha software that was created to fit my own needs, so your mileage may vary.
