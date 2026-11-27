@@ -7,6 +7,7 @@
 #   src/Inkitty.Desktop/Assets/Icons/inkitty.icns  macOS app bundle icon (Info.plist CFBundleIconFile)
 #   src/Inkitty.App/Assets/Icons/inkitty.png       window icon (title bar, taskbar, Linux docks)
 #   src/Inkitty.Browser/wwwroot/favicon.ico        browser tab icon
+#   src/Inkitty.Browser/wwwroot/cat.svg            browser loading screen logo (the SVG itself)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -24,5 +25,6 @@ magick $(for s in 16 20 24 32 40 48 64 128 256; do png "$s"; done) src/Inkitty.D
 png2icns src/Inkitty.Desktop/Assets/Icons/inkitty.icns $(for s in 16 32 48 128 256 512 1024; do png "$s"; done) >/dev/null
 cp "$(png 256)" src/Inkitty.App/Assets/Icons/inkitty.png
 magick $(for s in 16 24 32 48 64; do png "$s"; done) src/Inkitty.Browser/wwwroot/favicon.ico
+cp "$svg" src/Inkitty.Browser/wwwroot/cat.svg
 
-ls -l src/Inkitty.Desktop/Assets/Icons/inkitty.{ico,icns} src/Inkitty.App/Assets/Icons/inkitty.png src/Inkitty.Browser/wwwroot/favicon.ico
+ls -l src/Inkitty.Desktop/Assets/Icons/inkitty.{ico,icns} src/Inkitty.App/Assets/Icons/inkitty.png src/Inkitty.Browser/wwwroot/{favicon.ico,cat.svg}

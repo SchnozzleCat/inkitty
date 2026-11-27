@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Inkitty: an IDE for inkle's ink narrative scripting language, in your browser.">
     <link rel="icon" href="favicon.ico">
+    <link rel="preload" href="cat.svg" as="image" type="image/svg+xml">
     <link rel="preload" id="webassembly" />
     <script type="importmap"></script>
     <script type='module' src="main#[.{fingerprint}].js"></script>
@@ -16,6 +17,7 @@
 <body>
 <div id="out">
     <div class="avalonia-splash">
+        <div class="splash-logo" role="img" aria-label="Inkitty cat logo"></div>
         <h1>Inkitty</h1>
         <p class="splash-status" id="splash-status">Loading…</p>
         <noscript><p>Inkitty needs JavaScript and WebAssembly.</p></noscript>
