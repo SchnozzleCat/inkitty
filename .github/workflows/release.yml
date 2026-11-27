@@ -24,11 +24,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.rid }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
 
@@ -71,7 +71,7 @@ jobs:
           ln -s /Applications dmg/Applications     # drag-to-install target in the dmg window
           hdiutil create -volname Inkitty -srcfolder dmg -format UDZO dist/inkitty-${{ matrix.rid }}.dmg
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: inkitty-${{ matrix.rid }}
           path: dist/inkitty-${{ matrix.rid }}*
@@ -83,7 +83,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: inkitty-*
           path: dist
