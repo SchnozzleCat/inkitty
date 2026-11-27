@@ -316,6 +316,44 @@ public sealed class InkittyDockFactory(FileTreeToolViewModel files, PlayerToolVi
         }
     }
 
+    /// <summary>
+    /// Closes every floating window of the current layout, before it's replaced (Reset Layout). Left open,
+    /// a window outlived its layout, still showing tools that the new layout shows too; closing it later
+    /// closed those tools there. Each window's panes are taken out first, so closing it closes nothing else.
+    /// </summary>
+    public void CloseAllWindows()
+    {
+        foreach (var window in _root?.Windows?.ToList() ?? [])
+        {
+            if (window.Layout is { } layout)
+            {
+                foreach (var tool in All(layout).OfType<ITool>().ToList())
+                {
+                    if (tool.Owner is IDock owner)
+                    {
+                        owner.VisibleDockables?.Remove(tool);
+                        if (ReferenceEquals(owner.ActiveDockable, tool))
+                        {
+                            owner.ActiveDockable = null;
+                        }
+                    }
+
+                    (layout as IRootDock)?.HiddenDockables?.Remove(tool);
+                }
+            }
+
+            RemoveWindow(window);
+            _root?.Windows?.Remove(window);
+        }
+
+        static IEnumerable<IDockable> All(IDockable dockable) => dockable switch
+        {
+            IRootDock root => [root, .. (root.VisibleDockables ?? []).SelectMany(All), .. root.HiddenDockables ?? []],
+            IDock dock => [dock, .. (dock.VisibleDockables ?? []).SelectMany(All)],
+            _ => [dockable],
+        };
+    }
+
     private void HideInMainWindow(ITool tool, IDock? home)
     {
         _root!.HiddenDockables ??= CreateList<IDockable>();

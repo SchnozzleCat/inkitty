@@ -208,6 +208,44 @@ public class DockingTests
         });
 
     [Test]
+    [Arguments(DockFloatingWindowHostMode.Native)]
+    [Arguments(DockFloatingWindowHostMode.Managed)]
+    public async Task Reset_layout_closes_floating_windows_and_keeps_their_tools(DockFloatingWindowHostMode mode) =>
+        await HeadlessSession.Run(async () =>
+        {
+            var hostMode = Dock.Settings.DockSettings.FloatingWindowHostMode;
+            Dock.Settings.DockSettings.FloatingWindowHostMode = mode;
+            using var restore = new Restore(() => Dock.Settings.DockSettings.FloatingWindowHostMode = hostMode);
+            await using var app = AppFixture.Create();
+            var factory = app.Shell.Factory;
+            var map = factory.StoryMapTool;
+            factory.FloatDockable(map);
+            await UiTestHelpers.WaitUntil(() => OpenFloatingHosts(app, factory) == 1);
+            await Assert.That(OpenFloatingHosts(app, factory)).IsEqualTo(1);
+
+            app.Shell.ResetLayoutCommand.Execute(null);
+            await UiTestHelpers.WaitUntil(() => OpenFloatingHosts(app, factory) == 0);
+
+            // The old window is gone, and the map is back in the main window.
+            await Assert.That(OpenFloatingHosts(app, factory)).IsEqualTo(0);
+            await Assert.That(app.Shell.Layout.Windows?.Count ?? 0).IsEqualTo(0);
+            await Assert.That(factory.FindRoot(map, _ => true)).IsSameReferenceAs(app.Shell.Layout);
+            await Assert.That(factory.IsToolVisible(map)).IsTrue();
+
+            // Closing whatever window is left (none should be) must not take the map with it.
+            foreach (var host in factory.HostWindows.OfType<HostWindow>().ToList())
+            {
+                host.Close();
+            }
+
+            await Assert.That(factory.IsToolVisible(map)).IsTrue();
+        });
+
+    /// <summary>Floating windows on screen: native host windows, or in-app ones drawn in the main window.</summary>
+    private static int OpenFloatingHosts(AppFixture app, InkittyDockFactory factory) =>
+        factory.HostWindows.OfType<HostWindow>().Count(w => w.IsVisible) + FloatingWindows(app).Length;
+
+    [Test]
     public async Task Native_floating_window_with_one_pane_moves_by_its_header() =>
         await HeadlessSession.Run(async () =>
         {

@@ -522,6 +522,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IRecipient<Navi
 
         Factory.ActiveDockableChanged -= OnActiveDockableChanged;
         Factory.DockableClosed -= OnDockableClosed;
+        Factory.CloseAllWindows();
         foreach (var tool in Factory.Tools)
         {
             tool.Owner = null;
