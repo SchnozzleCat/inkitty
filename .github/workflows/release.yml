@@ -71,7 +71,11 @@ jobs:
           cp src/Inkitty.Desktop/Assets/Icons/inkitty.icns "$app/Contents/Resources/"
           codesign --force --deep --sign - "$app"   # ad-hoc: required to run on Apple silicon
           ln -s /Applications dmg/Applications     # drag-to-install target in the dmg window
-          hdiutil create -volname Inkitty -srcfolder dmg -format UDZO dist/inkitty-${{ matrix.rid }}.dmg
+          # hdiutil's own size estimate for -srcfolder is often too small on the APFS runners
+          # ("No space left on device"), so size the image explicitly with some headroom.
+          size_mb=$(( $(du -sm dmg | cut -f1) + 50 ))
+          hdiutil create -volname Inkitty -srcfolder dmg -fs HFS+ -size ${size_mb}m \
+            -format UDZO dist/inkitty-${{ matrix.rid }}.dmg
 
       - uses: actions/upload-artifact@v7
         with:
