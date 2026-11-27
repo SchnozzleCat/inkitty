@@ -23,7 +23,9 @@ public static class ThemeCatalog
         Sidebar: Color.Parse("#F3F3F3"),
         Chrome: Color.Parse("#E8E8E8"),
         Menu: Color.Parse("#F8F8F8"),
-        Accent: Color.Parse("#0078D4"));
+        Accent: Color.Parse("#0078D4"),
+        Playhead: Color.Parse("#0078D4"),
+        Choice: Color.Parse("#F5B800"));
 
     private static readonly ThemeColors DarkPlusColors = new(
         Background: Color.Parse("#1E1E1E"),
@@ -31,7 +33,9 @@ public static class ThemeCatalog
         Sidebar: Color.Parse("#252526"),
         Chrome: Color.Parse("#2D2D30"),
         Menu: Color.Parse("#2D2D30"),
-        Accent: Color.Parse("#0078D4"));
+        Accent: Color.Parse("#0078D4"),
+        Playhead: Color.Parse("#0078D4"),
+        Choice: Color.Parse("#FFD54F"));
 
     // (id, name, TextMate theme) in the order shown in the UI. Duplicates and bare VS themes are skipped.
     private static readonly (string Id, string Name, ThemeName Theme)[] Sources =
@@ -109,7 +113,54 @@ public static class ThemeCatalog
         var menu = ColorMath.Over(Get("menu.background", "editorWidget.background", "dropdown.background") ?? Step(0.06), background);
         var accent = ColorMath.Over(Get("focusBorder", "button.background", "activityBarBadge.background", "textLink.foreground") ?? Color.Parse("#0078D4"), background);
 
-        return new ThemeDefinition(source.Id, source.Name, source.Theme, isDark, new ThemeColors(background, foreground, sidebar, chrome, menu, accent));
+        // The playthrough is blue and choices yellow in every theme, but in the theme's own blue and yellow
+        // (its terminal palette, else a syntax colour), so they sit with its colours rather than on top of them.
+        var playhead = ThemeHue(source.Theme, Get("terminal.ansiBlue", "terminal.ansiBrightBlue"), background, 200, 250) ?? accent;
+        var choice = ThemeHue(source.Theme, Get("terminal.ansiYellow", "terminal.ansiBrightYellow"), background, 30, 65)
+            ?? (isDark ? Color.Parse("#FFD54F") : Color.Parse("#F5B800"));
+
+        return new ThemeDefinition(source.Id, source.Name, source.Theme, isDark, new ThemeColors(background, foreground, sidebar, chrome, menu, accent, playhead, choice));
+    }
+
+    // Syntax scopes tried, in order, for a theme colour of a given hue when its terminal palette has none.
+    private static readonly string[] HueScopes =
+    [
+        "entity.name.function", "support.function", "entity.name.type", "support.type", "storage.type",
+        "keyword.control", "keyword", "constant.numeric", "constant.language", "string", "variable",
+        "entity.name.tag", "entity.other.attribute-name",
+    ];
+
+    /// <summary>A colour of the theme's with a hue in the range (degrees): the preferred colour, else a syntax colour.</summary>
+    private static Color? ThemeHue(ThemeName name, Color? preferred, Color background, double minHue, double maxHue)
+    {
+        if (Hued(preferred, background, minHue, maxHue) is { } color)
+        {
+            return color;
+        }
+
+        // Parsed once here rather than through SyntaxColor, which loads the theme per scope (slow at startup in the browser).
+        var registry = new RegistryOptions(name);
+        var theme = Theme.CreateFromRawTheme(registry.LoadTheme(name), registry);
+        return HueScopes
+            .Select(scope => theme.Match([scope]).FirstOrDefault() is { foreground: > 0 } rule ? ColorMath.ParseVsCode(theme.GetColor(rule.foreground)) : null)
+            .Select(c => Hued(c, background, minHue, maxHue))
+            .FirstOrDefault(c => c is not null);
+    }
+
+    /// <summary>
+    /// The colour flattened onto the background, if it's a clear, saturated colour with a hue in the range
+    /// (degrees), so e.g. a theme's "yellow" that is really a dull brown isn't used to mark choices.
+    /// </summary>
+    private static Color? Hued(Color? color, Color background, double minHue, double maxHue)
+    {
+        if (color is not { } c)
+        {
+            return null;
+        }
+
+        var flat = ColorMath.Over(c, background);
+        var hsv = flat.ToHsv();
+        return hsv.S >= 0.35 && hsv.V >= 0.5 && hsv.H >= minHue && hsv.H <= maxHue ? flat : null;
     }
 
     /// <summary>The theme's VS Code UI colours, following <c>include</c> chains (e.g. Dark+ → Dark (Visual Studio)).</summary>

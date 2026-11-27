@@ -7,13 +7,17 @@ namespace Inkitty.App.Theming;
 /// The handful of colours a theme needs to style the whole window. Everything else
 /// (Fluent palette, Dock panes, player) is derived from these.
 /// </summary>
+/// <param name="Playhead">The playthrough in the editor: the trail, the current-line arrow and tint.</param>
+/// <param name="Choice">Choices on offer in the editor: the gutter dot and line tint.</param>
 public sealed record ThemeColors(
     Color Background,
     Color Foreground,
     Color Sidebar,
     Color Chrome,
     Color Menu,
-    Color Accent);
+    Color Accent,
+    Color Playhead,
+    Color Choice);
 
 /// <summary>A colour theme: a TextMate theme for the editor plus matching window colours.</summary>
 /// <param name="Id">Stable id stored in settings, e.g. <c>dracula</c>.</param>

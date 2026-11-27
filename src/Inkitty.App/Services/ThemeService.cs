@@ -190,6 +190,8 @@ public sealed class ThemeService
             ["InkittyChoiceHover"] = ColorMath.Mix(c.Background, contrast, 0.14),
             ["InkittyInfoBar"] = ColorMath.Mix(c.Background, warm, theme.IsDark ? 0.22 : 0.3),
             ["InkittyNewHighlight"] = ColorMath.WithAlpha(warm, 0x33),
+            ["InkittyPlayhead"] = c.Playhead,
+            ["InkittyPlaythroughChoice"] = c.Choice,
 
             // Value colours (variables pane) taken from the theme's syntax colours, so they match the editor.
             ["InkittyValueNumber"] = Syntax(theme, "constant.numeric", c.Foreground),

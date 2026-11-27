@@ -49,6 +49,16 @@ public class ThemeTests
 
     [Test]
     [MethodDataSource(nameof(ThemeIds))]
+    public async Task Every_theme_marks_choices_in_a_yellow_apart_from_the_playthrough(string id)
+    {
+        var colors = ThemeCatalog.Find(id)!.Colors;
+        await Assert.That(colors.Choice.ToHsv().H).IsBetween(30, 65);
+        await Assert.That(colors.Choice).IsNotEqualTo(colors.Playhead);
+        await Assert.That(colors.Playhead).IsNotEqualTo(colors.Background);
+    }
+
+    [Test]
+    [MethodDataSource(nameof(ThemeIds))]
     public async Task Every_theme_gives_a_coherent_window(string id) =>
         await HeadlessSession.Run(async () =>
         {

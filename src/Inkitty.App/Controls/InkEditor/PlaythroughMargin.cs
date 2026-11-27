@@ -9,7 +9,8 @@ namespace Inkitty.App.Controls.InkEditor;
 
 /// <summary>
 /// Shows the playthrough in the editor: a bar beside lines the story has been through, an arrow at the
-/// line it most recently output, and a dot beside each choice on offer. The current line is also tinted.
+/// line it most recently output, and a dot beside each choice on offer. The current line is also tinted
+/// (blue), as are the lines of the choices on offer (yellow); both shades come from the colour theme.
 /// </summary>
 public sealed class PlaythroughMargin : AbstractMargin, IBackgroundRenderer
 {
@@ -22,19 +23,34 @@ public sealed class PlaythroughMargin : AbstractMargin, IBackgroundRenderer
         set
         {
             _progress = value;
-            InvalidateVisual();
-            TextView?.InvalidateLayer(Layer);
+            Redraw();
         }
     }
 
     public KnownLayer Layer => KnownLayer.Background;
 
+    public PlaythroughMargin()
+    {
+        // Theme colours (accent, choice yellow) are looked up when drawing; redraw when they change.
+        ResourcesChanged += (_, _) => Redraw();
+        ActualThemeVariantChanged += (_, _) => Redraw();
+    }
+
+    private void Redraw()
+    {
+        InvalidateVisual();
+        TextView?.InvalidateLayer(Layer);
+    }
+
     protected override Size MeasureOverride(Size availableSize) => new(MarginWidth, 0);
 
-    private Color Accent =>
-        this.TryFindResource("SystemAccentColor", ActualThemeVariant, out var value) && value is Color color
-            ? color
-            : Color.FromRgb(0x00, 0x78, 0xD4);
+    // Both come from the colour theme (ThemeColors.Playhead / Choice, via ThemeService).
+    private Color Accent => ThemeColor("InkittyPlayhead", Color.FromRgb(0x00, 0x78, 0xD4));
+
+    private Color ChoiceColor => ThemeColor("InkittyPlaythroughChoice", Color.FromRgb(0xF5, 0xB8, 0x00));
+
+    private Color ThemeColor(string key, Color fallback) =>
+        this.TryFindResource(key, ActualThemeVariant, out var value) && value is ISolidColorBrush brush ? brush.Color : fallback;
 
     public override void Render(DrawingContext context)
     {
@@ -47,6 +63,7 @@ public sealed class PlaythroughMargin : AbstractMargin, IBackgroundRenderer
         var accent = Accent;
         var trail = new SolidColorBrush(accent, 0.45);
         var strong = new SolidColorBrush(accent);
+        var choice = new SolidColorBrush(ChoiceColor);
         foreach (var line in textView.VisualLines)
         {
             var number = line.FirstDocumentLine.LineNumber;
@@ -73,23 +90,31 @@ public sealed class PlaythroughMargin : AbstractMargin, IBackgroundRenderer
             }
             else if (_progress.ChoiceLines.Contains(number))
             {
-                context.DrawEllipse(null, new Pen(strong, 1.5), new Point(MarginWidth / 2, middle), 3, 3);
+                context.DrawEllipse(null, new Pen(choice, 1.5), new Point(MarginWidth / 2, middle), 3, 3);
             }
         }
     }
 
-    /// <summary>Tints the current line across the whole text area.</summary>
+    /// <summary>Tints the current line and the lines of the choices on offer across the whole text area.</summary>
     public void Draw(TextView textView, DrawingContext drawingContext)
     {
-        if (_progress.CurrentLine is not { } current || !textView.VisualLinesValid)
+        if (_progress.IsEmpty || !textView.VisualLinesValid)
         {
             return;
         }
 
-        var tint = new SolidColorBrush(Accent, 0.12);
-        foreach (var line in textView.VisualLines.Where(l => l.FirstDocumentLine.LineNumber == current))
+        var currentTint = new SolidColorBrush(Accent, 0.12);
+        var choiceTint = new SolidColorBrush(ChoiceColor, 0.18);
+        foreach (var line in textView.VisualLines)
         {
-            drawingContext.FillRectangle(tint, new Rect(0, line.VisualTop - textView.VerticalOffset, textView.Bounds.Width, line.Height));
+            var number = line.FirstDocumentLine.LineNumber;
+            var tint = _progress.CurrentLine == number ? currentTint
+                : _progress.ChoiceLines.Contains(number) ? choiceTint
+                : null;
+            if (tint is not null)
+            {
+                drawingContext.FillRectangle(tint, new Rect(0, line.VisualTop - textView.VerticalOffset, textView.Bounds.Width, line.Height));
+            }
         }
     }
 
