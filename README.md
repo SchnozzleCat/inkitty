@@ -160,3 +160,8 @@ samples/              example ink projects (multi-file; The Intercept, the brows
 Inkitty is released under the [MIT License](LICENSE). ink and _The Intercept_ (`samples/the-intercept`)
 are also MIT, © inkle Ltd; their notices are in `external/ink/LICENSE.txt` and
 `samples/the-intercept/README.md`.
+
+The app icon is [Cat](https://www.svgrepo.com/svg/525263/cat) by
+[Solar Icons](https://www.figma.com/community/file/1166831539721848736), licensed under
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) (`assets/icon/cat.svg`; rendered unchanged
+into the icon files by `scripts/make-icons.sh`).

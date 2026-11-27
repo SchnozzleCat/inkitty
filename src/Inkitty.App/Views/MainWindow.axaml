@@ -6,6 +6,7 @@
         Title="{Binding WindowTitle}"
         Width="1400" Height="860" MinWidth="640" MinHeight="400"
         WindowStartupLocation="CenterScreen"
+        Icon="avares://Inkitty.App/Assets/Icons/inkitty.png"
         xmlns:views="using:Inkitty.App.Views">
   <NativeMenu.Menu>
     <NativeMenu>

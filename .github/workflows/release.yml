@@ -67,6 +67,8 @@ jobs:
           mkdir -p "$app/Contents/MacOS" dist
           cp publish/Inkitty "$app/Contents/MacOS/"
           cp src/Inkitty.Desktop/Info.plist "$app/Contents/"
+          mkdir -p "$app/Contents/Resources"
+          cp src/Inkitty.Desktop/Assets/Icons/inkitty.icns "$app/Contents/Resources/"
           codesign --force --deep --sign - "$app"   # ad-hoc: required to run on Apple silicon
           ln -s /Applications dmg/Applications     # drag-to-install target in the dmg window
           hdiutil create -volname Inkitty -srcfolder dmg -format UDZO dist/inkitty-${{ matrix.rid }}.dmg

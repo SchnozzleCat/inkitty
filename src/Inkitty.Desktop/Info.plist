@@ -9,6 +9,8 @@
   <string>Inkitty</string>
   <key>CFBundleIdentifier</key>
   <string>app.inkitty.Inkitty</string>
+  <key>CFBundleIconFile</key>
+  <string>inkitty</string>
   <key>CFBundleExecutable</key>
   <string>Inkitty</string>
   <key>CFBundlePackageType</key>

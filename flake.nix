@@ -98,7 +98,16 @@
 
     devShells = forAllSystems (pkgs: {
       default = pkgs.mkShell {
-        packages = [pkgs.dotnetCorePackages.sdk_11_0 pkgs.just] ++ runtimeLibs pkgs;
+        packages =
+          [
+            pkgs.dotnetCorePackages.sdk_11_0
+            pkgs.just
+            # `just icons` (scripts/make-icons.sh): SVG to PNG, PNGs to .ico, PNGs to .icns.
+            pkgs.librsvg
+            pkgs.imagemagick
+            pkgs.libicns
+          ]
+          ++ runtimeLibs pkgs;
 
         LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath (runtimeLibs pkgs);
         DOTNET_ROOT = "${pkgs.dotnetCorePackages.sdk_11_0}/share/dotnet";

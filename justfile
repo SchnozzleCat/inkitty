@@ -19,6 +19,10 @@ publish rid="linux-x64":
 publish-web *args:
     bash scripts/publish-web.sh {{args}}
 
+# Render assets/icon/cat.svg into the app's icon files (Windows, macOS, window, browser).
+icons:
+    bash scripts/make-icons.sh
+
 # Publish the browser version and serve it on http://localhost:<port>.
 serve port="8080": publish-web
     dotnet tool restore
