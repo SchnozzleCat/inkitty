@@ -202,7 +202,8 @@ public class ProjectBehaviourTests
 
             app.Dialogs.UnsavedChoice = Services.UnsavedChangesChoice.Save;
             await Assert.That(await app.Shell.OnClosingAsync()).IsTrue();
-            await Assert.That(File.ReadAllText(Path.Join(root, "chapters", "forest.ink"))).StartsWith("// more\n// unsaved forest");
+            // Saving keeps the file's line endings, which are CRLF on a Windows checkout.
+            await Assert.That(File.ReadAllText(Path.Join(root, "chapters", "forest.ink")).ReplaceLineEndings("\n")).StartsWith("// more\n// unsaved forest");
         });
 
     [Test]
