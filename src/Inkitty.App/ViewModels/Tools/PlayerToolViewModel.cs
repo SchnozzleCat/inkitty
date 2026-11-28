@@ -31,6 +31,12 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
     private List<StoryEvent> _events = [];
     private CancellationTokenSource? _reachabilityCts;
 
+    /// <summary>
+    /// Seed of the story's randomness. Kept across replays (edits, step back) so random text and choices
+    /// don't change under the reader; Restart picks a new one unless <see cref="KeepSeed"/> is on.
+    /// </summary>
+    private int _seed = PlaySession.NewSeed();
+
     public PlayerToolViewModel(IUiDispatcher dispatcher, ISettingsStore settings, TimeProvider? time = null)
     {
         _dispatcher = dispatcher;
@@ -41,8 +47,10 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
         CanClose = true;
         CanPin = true;
         CanFloat = true;
+        KeepSeed = settings.Current.KeepStorySeed;
         settings.Changed += (_, _) => _dispatcher.Post(() =>
         {
+            KeepSeed = _settings.Current.KeepStorySeed; // e.g. Settings > Reset to defaults (latest value, not the posted one)
             OnPropertyChanged(nameof(ReachabilityToolTip));
             OnPropertyChanged(nameof(ReachabilityLabel));
         });
@@ -98,6 +106,28 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
     [NotifyCanExecuteChangedFor(nameof(StepBackCommand))]
     public partial int ChoiceCount { get; private set; }
 
+    /// <summary>Restart with the same seed (persisted), so random text and choices come out the same.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SeedToolTip))]
+    public partial bool KeepSeed { get; set; }
+
+    partial void OnKeepSeedChanged(bool value)
+    {
+        if (_settings.Current.KeepStorySeed != value)
+        {
+            _settings.Update(s => s with { KeepStorySeed = value });
+        }
+    }
+
+    /// <summary>The seed of the story's randomness, for the tooltip.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SeedToolTip))]
+    public partial int Seed { get; private set; }
+
+    public string SeedToolTip => KeepSeed
+        ? $"Restart keeps the seed ({Seed}), so random text and choices come out the same"
+        : $"Restart picks a new seed (now {Seed}). Turn on to replay the same random text and choices";
+
     /// <summary>True while a reachability check is running.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ReachabilityToolTip), nameof(ReachabilityLabel))]
@@ -132,6 +162,11 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
         HasProject = project is not null;
         _history = ChoiceHistory.Empty;
         ChoiceCount = 0;
+        if (!KeepSeed)
+        {
+            _seed = PlaySession.NewSeed();
+        }
+
         ReleaseSession();
         Items.Clear();
         Choices.Clear();
@@ -155,6 +190,11 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
     [RelayCommand]
     private void Restart()
     {
+        if (!KeepSeed)
+        {
+            _seed = PlaySession.NewSeed();
+        }
+
         _history = ChoiceHistory.Empty;
         ChoiceCount = 0;
         if (_project?.LastSuccess is { } success)
@@ -377,8 +417,10 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
         var cts = _replayCts = new CancellationTokenSource();
         var generation = ++_replayGeneration;
         var history = _history;
+        var seed = _seed;
         var budget = Budget();
         IsBusy = true;
+        Seed = seed;
 
         _ = Task.Run(() =>
         {
@@ -390,7 +432,7 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
             IReadOnlyList<StoryVariable> variables;
             try
             {
-                session = new PlaySession(success.Story, success.Snapshot, _time);
+                session = new PlaySession(success.Story, success.Snapshot, _time, seed);
                 result = ReplayEngine.Replay(session, history, budget, _time, cts.Token);
                 progress = StoryProgress.Build(success.Graph, result.Events, session.VisitCount);
                 variables = session.Variables();

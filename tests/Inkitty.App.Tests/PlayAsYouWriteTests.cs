@@ -131,4 +131,39 @@ public class PlayAsYouWriteTests
             await Assert.That(app.Project.Issues.Any(Unreached)).IsFalse();
             await Assert.That(app.Shell.ActiveDocument!.Issues.Any(Unreached)).IsFalse();
         });
+
+    [Test]
+    public async Task Random_text_survives_edits_and_keep_seed_keeps_it_on_restart() =>
+        await HeadlessSession.Run(async () =>
+        {
+            var main = UiTestHelpers.CopySample("multi-file", out _);
+            File.WriteAllText(main, "Roll {RANDOM(1, 1000000)}.\n* [Go] Gone.\n-> END\n");
+            await using var app = AppFixture.Create();
+            await app.OpenAsync(main);
+            var player = app.Shell.Factory.PlayerTool;
+            string Roll() => player.Items.OfType<PlayerParagraph>().First().Text;
+            var first = Roll();
+
+            // An edit replays with the same seed: the random text doesn't change under the reader.
+            await app.WaitForCompileAfter(() => app.Shell.ActiveDocument!.Document.Insert(0, "// edited\n"));
+            await Assert.That(Roll()).IsEqualTo(first);
+
+            player.KeepSeed = true;
+            await Assert.That(app.Settings.Current.KeepStorySeed).IsTrue();
+            player.RestartCommand.Execute(null);
+            await UiTestHelpers.WaitUntil(() => !player.IsBusy);
+            await Assert.That(Roll()).IsEqualTo(first);
+
+            // Without it, restarting rerolls (a few tries, in case a roll happens to repeat).
+            player.KeepSeed = false;
+            var rerolled = false;
+            for (var i = 0; i < 5 && !rerolled; i++)
+            {
+                player.RestartCommand.Execute(null);
+                await UiTestHelpers.WaitUntil(() => !player.IsBusy);
+                rerolled = Roll() != first;
+            }
+
+            await Assert.That(rerolled).IsTrue();
+        });
 }

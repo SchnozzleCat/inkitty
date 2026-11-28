@@ -168,4 +168,21 @@ public class ReplayEngineTests
         var text = events.OfCase<TextOutput>().Single();
         await Assert.That(text.Tags).IsEquivalentTo(["mood: happy", "loud"]);
     }
+
+    [Test]
+    public async Task The_same_seed_gives_the_same_random_text()
+    {
+        const string shuffled = "{~A|B|C|D|E|F|G|H} {RANDOM(1, 1000)}\n-> END\n";
+        var snapshot = InMemoryProject.OneFile(shuffled);
+        var story = ((CompileSucceeded)new InkCompilerService().Compile(snapshot)).Story;
+        string Play(int seed)
+        {
+            using var session = new PlaySession(story, snapshot, seed: seed);
+            return session.ContinueUntilChoice(PlaybackBudget.Default).OfCase<TextOutput>().Single().Text;
+        }
+
+        var first = Play(42);
+        await Assert.That(Play(42)).IsEqualTo(first);
+        await Assert.That(Enumerable.Range(1, 20).Select(Play).Distinct().Count()).IsGreaterThan(1);
+    }
 }

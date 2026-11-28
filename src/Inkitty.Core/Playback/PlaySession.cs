@@ -22,7 +22,11 @@ public sealed class PlaySession : IDisposable
 
     private readonly bool _ownsOriginal;
 
-    public PlaySession(Ink.Runtime.Story story, ProjectSnapshot snapshot, TimeProvider? time = null)
+    /// <param name="seed">
+    /// Seeds the story's randomness (<c>RANDOM</c>, shuffles). The same seed and choices give the same
+    /// output, so a replay after an edit matches the original. Null lets ink pick one from the clock.
+    /// </param>
+    public PlaySession(Ink.Runtime.Story story, ProjectSnapshot snapshot, TimeProvider? time = null, int? seed = null)
     {
         // Each session needs exclusive use of its Story. Take the compiled one if it's free and
         // resettable; otherwise (another session may be running it on a background thread, or a run
@@ -36,10 +40,21 @@ public sealed class PlaySession : IDisposable
         _snapshot = snapshot;
         _time = time ?? TimeProvider.System;
         _story.ResetState(); // always play from the beginning, even when reusing a compiled story
+        if (seed is { } value)
+        {
+            _story.state.storySeed = value;
+        }
+
         _story.onError += OnStoryError;
     }
 
     public ProjectSnapshot Snapshot => _snapshot;
+
+    /// <summary>The seed of the story's randomness.</summary>
+    public int Seed => _story.state.storySeed;
+
+    /// <summary>A new seed for <see cref="PlaySession(Ink.Runtime.Story, ProjectSnapshot, TimeProvider?, int?)"/>.</summary>
+    public static int NewSeed() => Random.Shared.Next(1, 1_000_000);
 
     /// <summary>
     /// An independent copy of a compiled story. The JSON round trip drops ink's debug metadata (source

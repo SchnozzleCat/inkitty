@@ -46,6 +46,9 @@ public sealed record AppSettings
 
     public int ReplayTimeBudgetMs { get; init => field = Math.Clamp(value, 100, 60_000); } = 2000;
 
+    /// <summary>Restart the story with the same seed, so random text and choices come out the same.</summary>
+    public bool KeepStorySeed { get; init; }
+
     /// <summary>How many playthroughs the reachability check makes (Player &gt; Reachable).</summary>
     public int ReachabilityRuns { get; init => field = Math.Clamp(value, 1, 100_000); } = Playback.ReachabilityOptions.DefaultRuns;
 
