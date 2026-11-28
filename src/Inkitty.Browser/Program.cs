@@ -91,7 +91,7 @@ internal static partial class Program
         {
             if (e.PropertyName == nameof(shell.WindowTitle))
             {
-                Interop.SetTitle(shell.Project is { } p ? $"{p.Name} — Inkitty" : "Inkitty");
+                Interop.SetTitle(shell.Project is { } p ? $"Inkitty — {p.Name}" : "Inkitty");
             }
         };
 
