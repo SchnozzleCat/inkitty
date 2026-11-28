@@ -781,8 +781,7 @@
   <Style Selector="ScrollViewer.stale StackPanel.transcript">
     <Setter Property="Opacity" Value="0.45" />
   </Style>
-  <!-- Padded and rounded so the "new" highlight reads as a soft card. Always padded (not just when
-       new) so the text doesn't shift when the highlight fades. -->
+  <!-- Padded so the text lines up with the choice echoes and the "show in editor" arrows. -->
   <Style Selector="Border.paragraph">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="CornerRadius" Value="8" />
@@ -792,10 +791,7 @@
     <Setter Property="FontSize" Value="15" />
     <Setter Property="LineHeight" Value="23" />
   </Style>
-  <Style Selector="Border.paragraph.new">
-    <Setter Property="Background" Value="{DynamicResource InkittyNewHighlight}" />
-  </Style>
-  <!-- Consecutive paragraphs draw as one block: only the run's outer corners are rounded. -->
+  <!-- Consecutive paragraphs sit closer together than a paragraph and a choice. -->
   <Style Selector="Border.paragraph.joins-above">
     <Setter Property="CornerRadius" Value="0,0,8,8" />
     <Setter Property="Padding" Value="12,3,12,8" />
