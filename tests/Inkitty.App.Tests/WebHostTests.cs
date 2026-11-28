@@ -81,6 +81,35 @@ public class WebHostTests
         }));
 
     [Test]
+    public async Task Clearing_a_number_in_the_settings_keeps_the_last_value() =>
+        await HeadlessSession.Run(() => InOverlays(async () =>
+        {
+            await using var app = AppFixture.Create();
+            var view = app.Window.MainView;
+            app.Shell.OpenSettingsCommand.Execute(null);
+            await UiTestHelpers.WaitUntil(() => view.GetVisualDescendants().OfType<SettingsView>().Any());
+            var before = app.Settings.Current.EditorFontSize;
+
+            // Deleting the text sets the box's value to null; that must not reach the (non-null) setting.
+            foreach (var box in view.GetVisualDescendants().OfType<NumericUpDown>().ToList())
+            {
+                box.Value = null;
+            }
+
+            var boxes = view.GetVisualDescendants().OfType<NumericUpDown>().ToList();
+            await Assert.That(boxes.Any(DataValidationErrors.GetHasErrors)).IsFalse();
+            await Assert.That(app.Settings.Current.EditorFontSize).IsEqualTo(before);
+
+            // Leaving the box shows the value again.
+            var fontSize = boxes.Single(b => b.Maximum == 72);
+            fontSize.Focus();
+            ButtonLabelled(view, "Close").Focus();
+            await Assert.That(boxes.All(b => b.Value is not null)).IsTrue();
+            await Assert.That(fontSize.Value).IsEqualTo((decimal)before);
+            return true;
+        }));
+
+    [Test]
     public async Task Message_dialogs_return_the_clicked_button() =>
         await HeadlessSession.Run(() => InOverlays(async () =>
         {

@@ -29,8 +29,10 @@ public sealed partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     public partial AutoSaveMode AutoSave { get; set; }
 
+    // The numbers are nullable because a NumericUpDown's value is null while its text is empty. An empty
+    // box leaves the setting as it was, and RestoreEmptyNumbers puts the value back when the box loses focus.
     [ObservableProperty]
-    public partial decimal AutoSaveDelayMs { get; set; }
+    public partial decimal? AutoSaveDelayMs { get; set; }
 
     [ObservableProperty]
     public partial ThemeChoice? Theme { get; set; }
@@ -39,19 +41,19 @@ public sealed partial class SettingsViewModel : ViewModelBase
     public partial string EditorFontFamily { get; set; } = string.Empty;
 
     [ObservableProperty]
-    public partial decimal EditorFontSize { get; set; }
+    public partial decimal? EditorFontSize { get; set; }
 
     [ObservableProperty]
     public partial bool WordWrap { get; set; }
 
     [ObservableProperty]
-    public partial decimal CompileDebounceMs { get; set; }
+    public partial decimal? CompileDebounceMs { get; set; }
 
     [ObservableProperty]
-    public partial decimal ReplayTimeBudgetMs { get; set; }
+    public partial decimal? ReplayTimeBudgetMs { get; set; }
 
     [ObservableProperty]
-    public partial decimal ReachabilityRuns { get; set; }
+    public partial decimal? ReachabilityRuns { get; set; }
 
     [ObservableProperty]
     public partial bool AltClickNavigates { get; set; }
@@ -86,16 +88,35 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _store.Update(s => s with
         {
             AutoSave = AutoSave,
-            AutoSaveDelayMs = (int)AutoSaveDelayMs,
+            AutoSaveDelayMs = AutoSaveDelayMs is { } autoSaveDelay ? (int)autoSaveDelay : s.AutoSaveDelayMs,
             ColorTheme = Theme?.Id ?? ThemeCatalog.SystemId,
             EditorFontFamily = string.IsNullOrWhiteSpace(EditorFontFamily) ? AppSettings.DefaultEditorFont : EditorFontFamily,
-            EditorFontSize = (double)EditorFontSize,
+            EditorFontSize = EditorFontSize is { } fontSize ? (double)fontSize : s.EditorFontSize,
             WordWrap = WordWrap,
-            CompileDebounceMs = (int)CompileDebounceMs,
-            ReplayTimeBudgetMs = (int)ReplayTimeBudgetMs,
-            ReachabilityRuns = (int)ReachabilityRuns,
+            CompileDebounceMs = CompileDebounceMs is { } debounce ? (int)debounce : s.CompileDebounceMs,
+            ReplayTimeBudgetMs = ReplayTimeBudgetMs is { } replayBudget ? (int)replayBudget : s.ReplayTimeBudgetMs,
+            ReachabilityRuns = ReachabilityRuns is { } runs ? (int)runs : s.ReachabilityRuns,
             AltClickNavigates = AltClickNavigates,
         });
+    }
+
+    /// <summary>Puts the current value back into any number box that was left empty.</summary>
+    public void RestoreEmptyNumbers()
+    {
+        var s = _store.Current;
+        _loading = true;
+        try
+        {
+            AutoSaveDelayMs ??= s.AutoSaveDelayMs;
+            EditorFontSize ??= (decimal)s.EditorFontSize;
+            CompileDebounceMs ??= s.CompileDebounceMs;
+            ReplayTimeBudgetMs ??= s.ReplayTimeBudgetMs;
+            ReachabilityRuns ??= s.ReachabilityRuns;
+        }
+        finally
+        {
+            _loading = false;
+        }
     }
 
     private void Load(AppSettings s)

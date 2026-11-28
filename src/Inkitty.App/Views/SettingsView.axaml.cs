@@ -1,12 +1,25 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.VisualTree;
 
 namespace Inkitty.App.Views;
 
 /// <summary>The settings dialog content (shown modally by <see cref="MainView"/>).</summary>
 public partial class SettingsView : UserControl
 {
-    public SettingsView() => InitializeComponent();
+    public SettingsView()
+    {
+        InitializeComponent();
+
+        // A number box left empty shows its value again (the setting itself never changed).
+        AddHandler(LostFocusEvent, (_, e) =>
+        {
+            if (e.Source is Control control && control.FindAncestorOfType<NumericUpDown>(includeSelf: true) is not null)
+            {
+                (DataContext as ViewModels.SettingsViewModel)?.RestoreEmptyNumbers();
+            }
+        });
+    }
 
     /// <summary>Raised when the user clicks Close.</summary>
     public event EventHandler? CloseRequested;
