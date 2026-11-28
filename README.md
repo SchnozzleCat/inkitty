@@ -24,6 +24,7 @@ An IDE for [ink](https://github.com/inkle/ink), inkle's narrative scripting lang
 - **Colour themes** so you don't burn your eyes.
 - **Error highlighting** so any syntax mistakes are quickly spotted.
 - **Issue browser** showing errors, warnings, and TODOs across the project.
+- **Reachability check** to identify unreachable parts of the story.
 - **Jump to definition** for knots, stitches, labels, variables, constants, lists, functions and parameters, across files.
 - **Multi-file projects** with `INCLUDE`s. Writing an include for a file that doesn't exist creates it.
 - **File watching** with unsaved edit detection.

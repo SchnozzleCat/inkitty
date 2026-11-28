@@ -7,6 +7,7 @@ using Inkitty.App.ViewModels.Documents;
 using Inkitty.Core.Compilation;
 using Inkitty.Core.Diagnostics;
 using Inkitty.Core.FileSystem;
+using Inkitty.Core.Playback;
 using Inkitty.Core.Projects;
 using Inkitty.Core.Settings;
 using Inkitty.Core.StoryMap;
@@ -29,6 +30,7 @@ public sealed partial class ProjectViewModel : ViewModelBase, IAsyncDisposable
     private readonly Dictionary<InkSourceFile, EditorDocumentViewModel> _documents = [];
     private IReadOnlyList<Issue> _compileIssues = [];
     private IReadOnlyList<Issue> _runtimeIssues = [];
+    private IReadOnlyList<Issue> _reachabilityIssues = [];
 
     public ProjectViewModel(
         InkProject project,
@@ -104,6 +106,9 @@ public sealed partial class ProjectViewModel : ViewModelBase, IAsyncDisposable
     /// <summary>Raised after every compile result is applied (UI thread).</summary>
     public event EventHandler<CompileResult>? Compiled;
 
+    /// <summary>Raised when any file's text changes (an edit, or a reload from disk).</summary>
+    public event EventHandler? Edited;
+
     /// <summary>Raised when a document view model is created for a file.</summary>
     public event EventHandler<EditorDocumentViewModel>? DocumentCreated;
 
@@ -133,7 +138,47 @@ public sealed partial class ProjectViewModel : ViewModelBase, IAsyncDisposable
     internal void OnBufferEdited(InkSourceFile file)
     {
         CurrentSymbols = null; // ranges are stale until the next compile
+        OnEdited();
         _scheduler.Request();
+    }
+
+    /// <summary>True if no file has changed since <paramref name="snapshot"/> was taken.</summary>
+    public bool IsCurrent(ProjectSnapshot snapshot) =>
+        Project.Files.Count == snapshot.Files.Count()
+        && Project.Files.All(f => snapshot.VersionOf(f.RelativePath) == f.Version);
+
+    /// <summary>
+    /// Shows the result of a reachability check of <paramref name="snapshot"/> as warnings. Ignored if
+    /// the project has changed since, as any edit can change what is reachable.
+    /// </summary>
+    public bool SetReachabilityResult(ProjectSnapshot snapshot, ReachabilityReport report)
+    {
+        if (!IsCurrent(snapshot))
+        {
+            return false;
+        }
+
+        _reachabilityIssues = report.ToIssues();
+        UpdateIssues();
+        _messenger.Send(new StatusMessage(report.Unreached.Count == 0
+            ? $"Every line was reached ({report.CoverableLines} lines, {report.Runs} playthroughs)"
+            : $"{report.Unreached.Count} of {report.CoverableLines} lines not reached in {report.Runs} playthroughs"));
+        return true;
+    }
+
+    /// <summary>Briefly shows a message in the status bar.</summary>
+    public void SendStatus(string text) => _messenger.Send(new StatusMessage(text));
+
+    /// <summary>Any edit can change what is reachable, so the last check's warnings no longer apply.</summary>
+    private void OnEdited()
+    {
+        if (_reachabilityIssues.Count > 0)
+        {
+            _reachabilityIssues = [];
+            UpdateIssues();
+        }
+
+        Edited?.Invoke(this, EventArgs.Empty);
     }
 
     public void SetRuntimeIssues(IReadOnlyList<Issue> issues)
@@ -244,7 +289,7 @@ public sealed partial class ProjectViewModel : ViewModelBase, IAsyncDisposable
 
     private void UpdateIssues()
     {
-        List<Issue> all = [.. Project.IncludeIssues, .. _compileIssues, .. _runtimeIssues];
+        List<Issue> all = [.. Project.IncludeIssues, .. _compileIssues, .. _runtimeIssues, .. _reachabilityIssues];
         Issues =
         [
             .. all.Distinct()
@@ -338,6 +383,7 @@ public sealed partial class ProjectViewModel : ViewModelBase, IAsyncDisposable
 
         if (anyChange)
         {
+            OnEdited();
             RefreshUnincluded();
             _scheduler.Request();
         }

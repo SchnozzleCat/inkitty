@@ -106,4 +106,29 @@ public class PlayAsYouWriteTests
             player.RestartCommand.Execute(null);
             await Assert.That(await UiTestHelpers.WaitUntil(() => !player.IsBusy && player.Choices.Count == 2, 5000)).IsTrue();
         });
+
+    [Test]
+    public async Task Reachable_warns_about_unreached_lines_until_the_next_edit() =>
+        await HeadlessSession.Run(async () =>
+        {
+            var main = UiTestHelpers.CopySample("multi-file", out _);
+            File.WriteAllText(main, "Start.\n* [Go] Gone.\n-> END\n=== orphan ===\nNobody comes here.\n-> END\n");
+            await using var app = AppFixture.Create(configure: s => s.Update(x => x with { ReachabilityRuns = 20 }));
+            await app.OpenAsync(main);
+            var player = app.Shell.Factory.PlayerTool;
+            bool Unreached(Inkitty.Core.Diagnostics.Issue i) => i.Origin == Inkitty.Core.Diagnostics.IssueOrigin.Reachability;
+
+            await player.CheckReachabilityCommand.ExecuteAsync(null);
+
+            await Assert.That(player.IsCheckingReachability).IsFalse();
+            var warning = app.Project.Issues.Single(Unreached);
+            await Assert.That(warning.Severity).IsEqualTo(Inkitty.Core.Diagnostics.IssueSeverity.Warning);
+            await Assert.That(warning.Line).IsEqualTo(5);
+            await Assert.That(app.Shell.ActiveDocument!.Issues.Any(Unreached)).IsTrue();
+
+            // Any edit may change what is reachable, so the warnings go at once (not after the recompile).
+            app.Shell.ActiveDocument!.Document.Insert(0, "// edited\n");
+            await Assert.That(app.Project.Issues.Any(Unreached)).IsFalse();
+            await Assert.That(app.Shell.ActiveDocument!.Issues.Any(Unreached)).IsFalse();
+        });
 }

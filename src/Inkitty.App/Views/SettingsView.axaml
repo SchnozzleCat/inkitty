@@ -48,12 +48,15 @@
     </Grid>
 
     <TextBlock Classes="section" Text="Editing &amp; playback" />
-    <Grid ColumnDefinitions="180,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="8">
+    <Grid ColumnDefinitions="180,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="8">
       <TextBlock Grid.Row="0" Text="Recompile delay (ms)" VerticalAlignment="Center" />
       <NumericUpDown Grid.Row="0" Grid.Column="1" Value="{Binding CompileDebounceMs}" Minimum="50" Maximum="5000" Increment="50" FormatString="0" />
       <TextBlock Grid.Row="1" Text="Replay time limit (ms)" VerticalAlignment="Center" />
       <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding ReplayTimeBudgetMs}" Minimum="100" Maximum="60000" Increment="100" FormatString="0" />
-      <CheckBox Grid.Row="2" Grid.Column="1" Content="{Binding AltClickLabel}" IsChecked="{Binding AltClickNavigates}" />
+      <TextBlock Grid.Row="2" Text="Reachability playthroughs" VerticalAlignment="Center"
+                 ToolTip.Tip="How many times the Reachable check plays the story, with random choices" />
+      <NumericUpDown Grid.Row="2" Grid.Column="1" Value="{Binding ReachabilityRuns}" Minimum="1" Maximum="100000" Increment="50" FormatString="0" />
+      <CheckBox Grid.Row="3" Grid.Column="1" Content="{Binding AltClickLabel}" IsChecked="{Binding AltClickNavigates}" />
     </Grid>
 
     <TextBlock Classes="section" Text="Keyboard" />

@@ -46,6 +46,9 @@ public sealed record AppSettings
 
     public int ReplayTimeBudgetMs { get; init => field = Math.Clamp(value, 100, 60_000); } = 2000;
 
+    /// <summary>How many playthroughs the reachability check makes (Player &gt; Reachable).</summary>
+    public int ReachabilityRuns { get; init => field = Math.Clamp(value, 1, 100_000); } = Playback.ReachabilityOptions.DefaultRuns;
+
     /// <summary>
     /// Alt/Option+click goes to definition (Inky parity). Off by default on Linux, where many
     /// window managers use Alt+drag to move windows. Ctrl/Cmd+click always works.

@@ -14,6 +14,10 @@
         <Button Classes="flat" Command="{Binding StepBackCommand}" ToolTip.Tip="Undo the last choice">
           <StackPanel Orientation="Horizontal" Spacing="6"><Path Classes="icon" Data="{StaticResource IconStepBack}" /><TextBlock Text="Step back" /></StackPanel>
         </Button>
+        <Button Classes="flat" Command="{Binding CheckReachabilityCommand}" IsEnabled="{Binding HasProject}"
+                ToolTip.Tip="{Binding ReachabilityToolTip}">
+          <StackPanel Orientation="Horizontal" Spacing="6"><Path Classes="icon" Data="{StaticResource IconQuestion}" /><TextBlock Text="{Binding ReachabilityLabel}" /></StackPanel>
+        </Button>
         <ProgressBar IsIndeterminate="True" Width="60" IsVisible="{Binding IsBusy}" VerticalAlignment="Center" Margin="8,0" />
       </StackPanel>
       <Button DockPanel.Dock="Top" Classes="flat location" IsVisible="{Binding HasLocation}"

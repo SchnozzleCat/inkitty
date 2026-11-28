@@ -18,6 +18,7 @@
            depend on system fonts the browser doesn't have. -->
       <StreamGeometry x:Key="IconRestart">M3.5,8 A4.5,4.5 0 1 0 5,4.6 M5.4,1.8 L5,4.6 L7.8,5</StreamGeometry>
       <StreamGeometry x:Key="IconStepBack">M3,6.5 L10,6.5 A3.5,3.5 0 0 1 10,13.5 L7,13.5 M5.8,3.7 L3,6.5 L5.8,9.3</StreamGeometry>
+      <StreamGeometry x:Key="IconQuestion">M8,1.5 A6.5,6.5 0 1 1 7.99,1.5 Z M5.9,6.2 A2.1,2.1 0 1 1 8.9,8.1 C8.3,8.4 8,8.8 8,9.5 L8,9.9 M8,12 L8,12.1</StreamGeometry>
       <StreamGeometry x:Key="IconTarget">M8,2.5 A5.5,5.5 0 1 1 7.99,2.5 Z M8,6 A2,2 0 1 1 7.99,6 Z M8,0.5 L8,2.5 M8,13.5 L8,15.5 M0.5,8 L2.5,8 M13.5,8 L15.5,8</StreamGeometry>
       <StreamGeometry x:Key="IconCollapseAll">M2.5,2.5 L13.5,2.5 L13.5,13.5 L2.5,13.5 Z M5,8 L11,8</StreamGeometry>
       <StreamGeometry x:Key="IconExpandAll">M2.5,2.5 L13.5,2.5 L13.5,13.5 L2.5,13.5 Z M5,8 L11,8 M8,5 L8,11</StreamGeometry>

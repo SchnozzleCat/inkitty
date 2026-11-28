@@ -46,7 +46,7 @@ public sealed class PlaySession : IDisposable
     /// file and line of each piece of content), so it is copied across from the original's identical tree;
     /// without it, output from the copy can't be traced back to the source.
     /// </summary>
-    private static Ink.Runtime.Story CopyOf(Ink.Runtime.Story original)
+    internal static Ink.Runtime.Story CopyOf(Ink.Runtime.Story original)
     {
         var copy = new Ink.Runtime.Story(JsonCache.GetValue(original, s => s.ToJson()));
         CopyDebugMetadata(original.mainContentContainer, copy.mainContentContainer);

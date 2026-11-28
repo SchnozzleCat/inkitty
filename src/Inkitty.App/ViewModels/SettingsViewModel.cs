@@ -51,6 +51,9 @@ public sealed partial class SettingsViewModel : ViewModelBase
     public partial decimal ReplayTimeBudgetMs { get; set; }
 
     [ObservableProperty]
+    public partial decimal ReachabilityRuns { get; set; }
+
+    [ObservableProperty]
     public partial bool AltClickNavigates { get; set; }
 
     public bool IsAutoSaveDelayEnabled => AutoSave == AutoSaveMode.AfterDelay;
@@ -90,6 +93,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
             WordWrap = WordWrap,
             CompileDebounceMs = (int)CompileDebounceMs,
             ReplayTimeBudgetMs = (int)ReplayTimeBudgetMs,
+            ReachabilityRuns = (int)ReachabilityRuns,
             AltClickNavigates = AltClickNavigates,
         });
     }
@@ -107,6 +111,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
             WordWrap = s.WordWrap;
             CompileDebounceMs = s.CompileDebounceMs;
             ReplayTimeBudgetMs = s.ReplayTimeBudgetMs;
+            ReachabilityRuns = s.ReachabilityRuns;
             AltClickNavigates = s.AltClickNavigates;
         }
         finally

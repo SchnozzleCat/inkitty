@@ -29,6 +29,7 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
     private CancellationTokenSource? _replayCts;
     private int _replayGeneration;
     private List<StoryEvent> _events = [];
+    private CancellationTokenSource? _reachabilityCts;
 
     public PlayerToolViewModel(IUiDispatcher dispatcher, ISettingsStore settings, TimeProvider? time = null)
     {
@@ -40,6 +41,11 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
         CanClose = true;
         CanPin = true;
         CanFloat = true;
+        settings.Changed += (_, _) => _dispatcher.Post(() =>
+        {
+            OnPropertyChanged(nameof(ReachabilityToolTip));
+            OnPropertyChanged(nameof(ReachabilityLabel));
+        });
     }
 
     public ObservableCollection<PlayerItem> Items { get; } = [];
@@ -92,14 +98,34 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
     [NotifyCanExecuteChangedFor(nameof(StepBackCommand))]
     public partial int ChoiceCount { get; private set; }
 
+    /// <summary>True while a reachability check is running.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ReachabilityToolTip), nameof(ReachabilityLabel))]
+    public partial bool IsCheckingReachability { get; private set; }
+
+    /// <summary>Playthroughs finished by the running reachability check.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ReachabilityToolTip), nameof(ReachabilityLabel))]
+    public partial int ReachabilityRunsDone { get; private set; }
+
+    public string ReachabilityLabel => IsCheckingReachability
+        ? $"Stop ({ReachabilityRunsDone}/{_settings.Current.ReachabilityRuns})"
+        : "Reachable";
+
+    public string ReachabilityToolTip => IsCheckingReachability
+        ? $"Checking… {ReachabilityRunsDone} of {_settings.Current.ReachabilityRuns} playthroughs. Click to stop"
+        : $"Play the story {_settings.Current.ReachabilityRuns} times with random choices and warn about every line that was never reached";
+
     /// <summary>Raised after the transcript changes, so the view can scroll to the end.</summary>
     public event EventHandler? TranscriptUpdated;
 
     public void Attach(ProjectViewModel? project)
     {
+        CancelReachabilityCheck();
         if (_project is not null)
         {
             _project.Compiled -= OnCompiled;
+            _project.Edited -= OnProjectEdited;
         }
 
         _project = project;
@@ -118,6 +144,7 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
         if (project is not null)
         {
             project.Compiled += OnCompiled;
+            project.Edited += OnProjectEdited;
             if (project.LastSuccess is { } success)
             {
                 StartReplay(success);
@@ -148,6 +175,93 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
     }
 
     private bool CanStepBack() => ChoiceCount > 0;
+
+    /// <summary>
+    /// Plays the story many times with automatic choices and reports every line no playthrough
+    /// reached as a warning. Clicking again while it runs stops it. Any edit stops it too, and clears
+    /// the warnings, since reachability may then have changed.
+    /// </summary>
+    [RelayCommand(AllowConcurrentExecutions = true)] // a second click while running stops it
+    private async Task CheckReachabilityAsync()
+    {
+        if (IsCheckingReachability)
+        {
+            CancelReachabilityCheck();
+            return;
+        }
+
+        if (_project is not { } project)
+        {
+            return;
+        }
+
+        if (project.LastSuccess is not { } success || !project.IsCurrent(success.Snapshot))
+        {
+            project.SendStatus(project.LastResult?.HasErrors == true
+                ? "Fix the story's errors before checking reachability"
+                : "The story is still compiling; try again in a moment");
+            return;
+        }
+
+        var cts = _reachabilityCts = new CancellationTokenSource();
+        var settings = _settings.Current;
+        var options = new ReachabilityOptions(settings.ReachabilityRuns, RunTimeBudget: TimeSpan.FromMilliseconds(settings.ReplayTimeBudgetMs));
+        ReachabilityRunsDone = 0;
+        IsCheckingReachability = true;
+        try
+        {
+            var report = await Task.Run(
+                () => ReachabilityChecker.CheckAsync(
+                    success.Story,
+                    success.Snapshot,
+                    options,
+                    runs => _dispatcher.Post(() =>
+                    {
+                        if (!cts.IsCancellationRequested)
+                        {
+                            ReachabilityRunsDone = runs;
+                        }
+                    }),
+                    _time,
+                    cts.Token),
+                cts.Token);
+
+            if (!cts.IsCancellationRequested && ReferenceEquals(project, _project))
+            {
+                project.SetReachabilityResult(success.Snapshot, report);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Stopped, or the story was edited.
+        }
+        catch (Exception ex)
+        {
+            project.SendStatus($"Reachability check failed: {ex.Message}");
+        }
+        finally
+        {
+            if (ReferenceEquals(_reachabilityCts, cts))
+            {
+                _reachabilityCts = null;
+                IsCheckingReachability = false;
+            }
+
+            cts.Dispose();
+        }
+    }
+
+    private void CancelReachabilityCheck()
+    {
+        if (_reachabilityCts is { } cts)
+        {
+            _reachabilityCts = null;
+            cts.Cancel();
+            IsCheckingReachability = false;
+        }
+    }
+
+    private void OnProjectEdited(object? sender, EventArgs e) => CancelReachabilityCheck();
 
     /// <summary>Jumps the editor to where a transcript line (or, without a parameter, the current position) was written.</summary>
     [RelayCommand]
@@ -366,6 +480,7 @@ public sealed partial class PlayerToolViewModel : Tool, IDisposable
 
     public void Dispose()
     {
+        CancelReachabilityCheck();
         _replayCts?.Cancel();
         _replayCts?.Dispose();
         ReleaseSession();

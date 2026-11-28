@@ -7,6 +7,9 @@ public enum IssueOrigin
     Compiler,
     Runtime,
     Project,
+
+    /// <summary>The reachability check (lines no test playthrough reached).</summary>
+    Reachability,
 }
 
 /// <summary>An error, warning or TODO. <see cref="Range"/> is null if ink reported no location.</summary>
