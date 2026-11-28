@@ -22,7 +22,7 @@ public sealed record ReachabilityOptions(
     int MaxLinesPerRun = 10_000,
     int Seed = 0)
 {
-    public const int DefaultRuns = 500;
+    public const int DefaultRuns = 5000;
 
     public TimeSpan TimeBudget => RunTimeBudget ?? TimeSpan.FromSeconds(2);
 }
